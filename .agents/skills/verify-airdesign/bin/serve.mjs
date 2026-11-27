@@ -68,6 +68,25 @@ function serveSite(pathname, res, siteDist, appOrigin) {
   else createReadStream(file).pipe(res)
 }
 
+async function serveSignInPage(signInWorker, req, res, siteDist, appOrigin) {
+  const url = new URL(req.url ?? "/", "http://site")
+  let page = false
+  const answer = await signInWorker.fetch(
+    new Request(url, { method: req.method, headers: { cookie: req.headers.cookie ?? "" } }),
+    {
+      APP_ORIGIN: appOrigin,
+      ASSETS: {
+        fetch: () => {
+          page = true
+          return Promise.resolve(new Response())
+        },
+      },
+    },
+  )
+  if (page) serveSite(url.pathname, res, siteDist, appOrigin)
+  else res.writeHead(answer.status, Object.fromEntries(answer.headers)).end()
+}
+
 const originalBase = "/verify-original"
 
 function serveOriginal(originals, pathname, req, res) {
@@ -233,10 +252,13 @@ async function startStack(
   const apiPaths = new Set(routes.map((route) => route.path))
   const { countryHeader, signInPaths, signOutPaths } = await packageBuild(repo, "@airdesign/catalog")
   const sitePaths = new Set([...signInPaths, ...signOutPaths])
+  const signInWorker = await import(pathToFileURL(path.join(repo, "apps/site/worker/sign-in-forward.ts")).href)
+  const signInPages = new Set(signInWorker.signInPagePaths ?? [])
   const origins = { app: "", site: "" }
   const site = createServer((req, res) => {
     const pathname = new URL(req.url ?? "/", "http://front").pathname
     if (sitePaths.has(pathname)) forward(req, res, apiPort, countryHeader, origins)
+    else if (signInPages.has(pathname)) void serveSignInPage(signInWorker.default, req, res, siteDist, origins.app)
     else serveSite(pathname, res, siteDist, origins.app)
   })
   const front = createServer((req, res) => {
