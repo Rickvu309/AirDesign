@@ -6,7 +6,8 @@ import * as doom from "@airdesign/doom"
 
 import { servedFontMetrics } from "../platform/font-metrics.js"
 import type { FontSource } from "../platform/font-source.js"
-import { fetchImage, type ImageNet } from "../platform/image-fetch.js"
+import { fetchImage } from "../platform/image-fetch.js"
+import type { PinnedNet } from "../platform/pinned-net.js"
 import type { OriginalStore } from "../platform/original-store.js"
 import type { Sql } from "../platform/pool.js"
 import { viewOpening, type DeckScreenshots } from "./deck-screenshots.js"
@@ -46,7 +47,7 @@ function opened(deck: DeckId, answer: Awaited<ReturnType<typeof openDoom>>) {
   return fold === undefined ? refusal("payload") : ({ ok: true, deck, rev: answer.rev, fold } as const)
 }
 
-type ImageStore = { readonly originals: OriginalStore | undefined; readonly net: ImageNet | undefined }
+type ImageStore = { readonly originals: OriginalStore | undefined; readonly net: PinnedNet | undefined }
 
 const sizeOf = (bytes: Uint8Array) => {
   const size = doom.mediaSize(bytes)
@@ -91,7 +92,7 @@ export type AgentHostDeps = {
   readonly email: string
   readonly fonts: FontSource
   readonly originals?: OriginalStore
-  readonly imageNet?: ImageNet
+  readonly imageNet?: PinnedNet
   readonly screenshots?: DeckScreenshots
   readonly screenshotWait?: number | undefined
 }

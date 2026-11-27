@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { fetchImage, imageAddress, publicAddress, type ImageNet, type Resolved } from "./image-fetch.js"
+import { fetchImage, imageAddress } from "./image-fetch.js"
+import { publicAddress, type PinnedNet, type Resolved } from "./pinned-net.js"
 
 function png(width: number, height: number): Uint8Array {
   const bytes = new Uint8Array(24)
@@ -19,7 +20,7 @@ type Page = {
 
 function net(hosts: Readonly<Record<string, readonly string[]>>, pages: Readonly<Record<string, Page>>) {
   const asked: { url: string; at: string }[] = []
-  const shown: ImageNet = {
+  const shown: PinnedNet = {
     resolve: async (host) => {
       const found = hosts[host]
       if (found === undefined) throw new Error("no such host")
@@ -167,7 +168,7 @@ describe("fetching an image an agent names", () => {
   })
 
   it("stops waiting when the server does not answer in time", async () => {
-    const slow: ImageNet = {
+    const slow: PinnedNet = {
       resolve: async () => [{ address: "93.184.216.34", family: 4 }],
       get: (_url, _at, signal) =>
         new Promise((_done, failed) => signal.addEventListener("abort", () => failed(signal.reason))),

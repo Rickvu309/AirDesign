@@ -16,6 +16,7 @@ public:
       local-original-store.ts,
       mail.ts,
       original-store.ts,
+      pinned-net.ts,
       pool.ts,
       provision.ts,
       r2-original-store.ts,

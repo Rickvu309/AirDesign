@@ -46,7 +46,7 @@ import { serveMcp, serveServerCard } from "./mcp/mcp.js"
 import type { Sql } from "./platform/pool.js"
 import { mediaAnswers } from "./doom/media.js"
 import type { OriginalStore } from "./platform/original-store.js"
-import type { ImageNet } from "./platform/image-fetch.js"
+import type { PinnedNet } from "./platform/pinned-net.js"
 import { sameSecret } from "./platform/secrets.js"
 import { checkedResource, readUrl } from "./platform/resource.js"
 import { requireDomain, requireOrigin } from "./platform/start-origins.js"
@@ -72,7 +72,7 @@ export type ApiOptions = {
   readonly originals?: OriginalStore
   readonly fonts?: FontSource
   readonly recordFontComparison?: (result: LayoutComparison) => void
-  readonly imageNet?: ImageNet
+  readonly imageNet?: PinnedNet
   readonly screenshotWait?: number
   readonly viewHold?: number
   readonly aira?: AiraSettings

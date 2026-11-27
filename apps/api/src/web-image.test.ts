@@ -4,7 +4,7 @@ import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/cli
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
-import type { ImageNet, Resolved } from "./platform/image-fetch.js"
+import type { PinnedNet, Resolved } from "./platform/pinned-net.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 import { LocalOriginalStore } from "./platform/local-original-store.js"
 
@@ -29,7 +29,7 @@ const hosts: Readonly<Record<string, readonly string[]>> = {
 }
 const fetches: string[] = []
 
-const net: ImageNet = {
+const net: PinnedNet = {
   resolve: async (host) => (hosts[host] ?? []).map((address): Resolved => ({ address, family: 4 })),
   get: async (url) => {
     fetches.push(url.href)
