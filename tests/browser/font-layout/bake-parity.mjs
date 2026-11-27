@@ -125,7 +125,7 @@ const delta = (left, right) => Math.max(...["x", "y", "w", "h"].map((edge) => Ma
 export async function bakeParity(business = false) {
   const root = process.cwd()
   const doom = await packageBuild(root, "@airdesign/doom")
-  const { themePresets } = await packageBuild(root, "@airdesign/skills")
+  const { themePresets } = await packageBuild(root, "@airdesign/taste")
   const { measureDoom } = await packageBuild(root, "@airdesign/render")
   const { FontMetrics } = await packageBuild(root, "@airdesign/api", "platform/font-metrics.js")
   const { callTool } = await packageBuild(root, "@airdesign/agent")

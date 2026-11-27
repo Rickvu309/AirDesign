@@ -1,9 +1,9 @@
-import { themePresetById, themePresets } from "@airdesign/skills"
+import { themePresetById, themePresets } from "@airdesign/taste"
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import * as doom from "@airdesign/doom"
-import { skills } from "@airdesign/skills"
+import { skills } from "@airdesign/taste"
 import { describe, expect, it } from "vitest"
 
 import { callTool, type DeckHost, type Session } from "./index.js"

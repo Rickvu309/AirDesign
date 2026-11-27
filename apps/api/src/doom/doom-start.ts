@@ -1,7 +1,7 @@
 import { blankDeckName } from "@airdesign/catalog"
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { newDeckTheme } from "@airdesign/skills"
+import { newDeckTheme } from "@airdesign/taste"
 
 export const startIds = {
   deck: doom.nodeId("s:1"),

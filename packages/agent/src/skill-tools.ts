@@ -1,4 +1,4 @@
-import { listStyles, readSkill, readStyle, skills } from "@airdesign/skills"
+import { listStyles, readSkill, readStyle, skills } from "@airdesign/taste"
 
 import { answered, refused, type Answer } from "./answer.js"
 

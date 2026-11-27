@@ -1,6 +1,6 @@
 import { callTool, type Answer, type Session } from "@airdesign/agent"
 import { evalDeckId, memoryDecks, suite } from "@airdesign/agent/testing/evals"
-import { listStyles, skills } from "@airdesign/skills"
+import { listStyles, skills } from "@airdesign/taste"
 import { expect, it } from "vitest"
 
 import { encode } from "./encode.js"

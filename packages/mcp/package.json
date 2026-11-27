@@ -27,7 +27,7 @@
     "@airdesign/agent": "workspace:*",
     "@airdesign/catalog": "workspace:*",
     "@airdesign/doom": "workspace:*",
-    "@airdesign/skills": "workspace:*",
+    "@airdesign/taste": "workspace:*",
     "@modelcontextprotocol/server": "^2.4.0",
     "zod": "^4.6.7"
   }

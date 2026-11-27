@@ -1,4 +1,4 @@
-import { newDeckTheme, themePresets } from "@airdesign/skills"
+import { newDeckTheme, themePresets } from "@airdesign/taste"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { UnionControl } from "../design/controls/union"

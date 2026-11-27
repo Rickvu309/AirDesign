@@ -44,7 +44,7 @@ flowchart TD
   subgraph p_layer_model["model"]
     p_packages_catalog["packages/catalog"]
     p_packages_render["packages/render"]
-    p_packages_skills["packages/skills"]
+    p_packages_taste["packages/taste"]
   end
   subgraph p_layer_core["core"]
     p_packages_doom["packages/doom"]
@@ -180,6 +180,6 @@ flowchart TD
 | `packages/mcp` | service | runtime: packages/mcp/src/index.ts | packages/agent | none |
 | `packages/oauth` | core | src/index.ts | none | none |
 | `packages/render` | model | src/index.ts | none | none |
-| `packages/skills` | model | runtime: packages/skills/src/index.ts | none | none |
+| `packages/taste` | model | runtime: packages/taste/src/index.ts | none | none |
 | `packages/theme` | core | none | none | none |
 | `packages/usage` | core | src/index.ts | none | none |

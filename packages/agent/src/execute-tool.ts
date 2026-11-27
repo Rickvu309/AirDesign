@@ -1,6 +1,6 @@
 import { readCreateDeck, readExecute, readNamedDeck } from "@airdesign/catalog"
 import type { Theme } from "@airdesign/doom"
-import { themePresetById, themePresets } from "@airdesign/skills"
+import { themePresetById, themePresets } from "@airdesign/taste"
 
 import { answered, doomRefused, hostRefused, refused, told, unadmitted, type Answer } from "./answer.js"
 import { resultChars, scriptLimits, shotsPerCall } from "./budget.js"

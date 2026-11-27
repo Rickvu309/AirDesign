@@ -20,7 +20,7 @@ const luminance = (color: Hex) =>
 describe("built-in themes", () => {
   it("ships one preset for every style", () => {
     const ids = themePresets.map(({ id }) => id).sort()
-    const files = readdirSync("packages/skills/files/styles").filter((file) => file.endsWith(".json"))
+    const files = readdirSync("packages/taste/files/styles").filter((file) => file.endsWith(".json"))
     expect(files.sort()).toEqual(ids.map((id) => `${id}.json`))
     expect(ids).toEqual(listStyles().map(({ name }) => name))
   })

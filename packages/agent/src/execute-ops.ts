@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { themePresetById, themePresets } from "@airdesign/skills"
+import { themePresetById, themePresets } from "@airdesign/taste"
 
 import { doomRefused, refused, type Answer } from "./answer.js"
 import { imagesPerCall } from "./budget.js"

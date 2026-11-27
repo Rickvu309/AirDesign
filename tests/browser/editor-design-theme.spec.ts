@@ -25,9 +25,9 @@ test("each theme picked by keyboard saves in one undo step and repaints both tab
   stack,
 }) => {
   const { packageBuild } = await import("../../scripts/package-build.mjs")
-  const { themePresetById, themePresets }: typeof import("../../packages/skills/src/index.ts") = await packageBuild(
+  const { themePresetById, themePresets }: typeof import("../../packages/taste/src/index.ts") = await packageBuild(
     process.cwd(),
-    "@airdesign/skills",
+    "@airdesign/taste",
   )
   const opened = await designing(page, context, stack)
   await landNodes(stack, opened, [

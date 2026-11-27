@@ -11,12 +11,12 @@
     "deploy": "pnpm build && wrangler deploy --keep-vars --var COMMIT:$(git rev-parse HEAD)"
   },
   "dependencies": {
-    "@airdesign/skills": "workspace:*",
     "@airdesign/catalog": "workspace:*",
     "@airdesign/doom": "workspace:*",
     "@airdesign/fonts": "workspace:*",
     "@airdesign/live": "workspace:*",
     "@airdesign/render": "workspace:*",
+    "@airdesign/taste": "workspace:*",
     "@airdesign/theme": "workspace:*",
     "@base-ui/react": "^1.9.0",
     "@fontsource-variable/geist": "^5.3.0",

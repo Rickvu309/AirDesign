@@ -6,8 +6,6 @@ it("leaves Doom with one fallback and no preset imports", () => {
   const files = readdirSync(root, { recursive: true, encoding: "utf8" })
   expect(files.filter((file) => file.endsWith(".json") && /theme/.test(file))).toEqual(["fallback-theme.json"])
   for (const file of files.filter((file) => file.endsWith(".ts") && !file.endsWith(".test.ts"))) {
-    expect(readFileSync(new URL(file, root), "utf8"), file).not.toMatch(
-      /themeLibrary|libraryThemeOf|@airdesign\/skills/,
-    )
+    expect(readFileSync(new URL(file, root), "utf8"), file).not.toMatch(/themeLibrary|libraryThemeOf|@airdesign\/taste/)
   }
 })

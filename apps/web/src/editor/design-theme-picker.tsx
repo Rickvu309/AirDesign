@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { themePresets, themePresetOf } from "@airdesign/skills"
+import { themePresets, themePresetOf } from "@airdesign/taste"
 import { fontFamily } from "@airdesign/fonts"
 import { fontsFor } from "@airdesign/render"
 import { useEffect } from "react"

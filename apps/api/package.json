@@ -20,12 +20,12 @@
   },
   "dependencies": {
     "@airdesign/agent": "workspace:*",
-    "@airdesign/skills": "workspace:*",
     "@airdesign/catalog": "workspace:*",
     "@airdesign/doom": "workspace:*",
     "@airdesign/fonts": "workspace:*",
     "@airdesign/mcp": "workspace:*",
     "@airdesign/oauth": "workspace:*",
+    "@airdesign/taste": "workspace:*",
     "@airdesign/usage": "workspace:*",
     "@anthropic-ai/sdk": "^1.7.0",
     "@modelcontextprotocol/node": "^2.1.2",

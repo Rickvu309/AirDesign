@@ -261,9 +261,9 @@ importers:
       '@airdesign/oauth':
         specifier: workspace:*
         version: link:../../packages/oauth
-      '@airdesign/skills':
+      '@airdesign/taste':
         specifier: workspace:*
-        version: link:../../packages/skills
+        version: link:../../packages/taste
       '@airdesign/usage':
         specifier: workspace:*
         version: link:../../packages/usage
@@ -359,9 +359,9 @@ importers:
       '@airdesign/render':
         specifier: workspace:*
         version: link:../../packages/render
-      '@airdesign/skills':
+      '@airdesign/taste':
         specifier: workspace:*
-        version: link:../../packages/skills
+        version: link:../../packages/taste
       '@airdesign/theme':
         specifier: workspace:*
         version: link:../../packages/theme
@@ -447,9 +447,9 @@ importers:
       '@airdesign/doom':
         specifier: workspace:*
         version: link:../doom
-      '@airdesign/skills':
+      '@airdesign/taste':
         specifier: workspace:*
-        version: link:../skills
+        version: link:../taste
       '@jitl/quickjs-wasmfile-release-sync':
         specifier: 0.32.0
         version: 0.32.0
@@ -535,9 +535,9 @@ importers:
       '@airdesign/doom':
         specifier: workspace:*
         version: link:../doom
-      '@airdesign/skills':
+      '@airdesign/taste':
         specifier: workspace:*
-        version: link:../skills
+        version: link:../taste
       '@modelcontextprotocol/server':
         specifier: ^2.4.0
         version: 2.4.0
@@ -598,7 +598,7 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
 
-  packages/skills:
+  packages/taste:
     dependencies:
       '@airdesign/doom':
         specifier: workspace:*

@@ -1,4 +1,4 @@
-import { newDeckTheme, themePresets } from "@airdesign/skills"
+import { newDeckTheme, themePresets } from "@airdesign/taste"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { pickerSwatches } from "@/design/color-choices"
