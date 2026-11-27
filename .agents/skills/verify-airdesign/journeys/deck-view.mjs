@@ -49,6 +49,43 @@ async function difference(page, first, second) {
   )
 }
 
+const widths = [
+  [300, 300],
+  [480, 360],
+  [640, 480],
+  [1024, 768],
+  [1470, 923],
+  [2940, 1600],
+]
+
+async function slideLeads(page, capture, [width, height]) {
+  await page.setViewportSize({ width, height })
+  const slide = page.locator("[data-view-slide]")
+  const strip = page.locator("nav[data-slide-list]")
+  const room = page.locator("main")
+  await expect
+    .poll(
+      async () => {
+        const [shown, space] = [await slide.boundingBox(), await room.boundingBox()]
+        return Math.min(space.width - shown.width, space.height - shown.height)
+      },
+      { message: `at ${String(width)} px the slide fills its room` },
+    )
+    .toBeLessThanOrEqual(2 * (width < 640 ? 16 : 24) + 1)
+  if (width < 480) {
+    await expect(strip, `at ${String(width)} px the strip is hidden`).toBeHidden()
+  } else {
+    await expect(strip).toBeVisible()
+    const shown = await slide.boundingBox()
+    for (const thumb of await page.locator("[data-view-thumb]").all()) {
+      const box = await thumb.boundingBox()
+      expect(box.height, `at ${String(width)} px a thumbnail stays a thin row`).toBeLessThanOrEqual(48)
+      expect(box.width, `at ${String(width)} px a thumbnail is smaller than the slide`).toBeLessThan(shown.width / 2)
+    }
+  }
+  await capture(`deck-view-${String(width)}`)
+}
+
 export default async function drive(kit) {
   const { page, capture, note } = kit
   const opened = await openDoomDeck(kit)
@@ -95,6 +132,12 @@ export default async function drive(kit) {
   )
   expect(gap.size).toBeUndefined()
   expect(gap.mean).toBeLessThan(0.5)
+
+  for (const size of widths) await slideLeads(page, capture, size)
+  note(
+    `The slide is the largest thing on the page at ${widths.map(([width]) => String(width)).join(", ")} px wide; the strip is hidden under 480 px.`,
+  )
+  await page.setViewportSize({ width: 1470, height: 923 })
 
   await page.setContent(
     `<body style="margin:0;display:flex;gap:16px;padding:16px;background:#eee;font:14px sans-serif">${[

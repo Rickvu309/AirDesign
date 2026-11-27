@@ -1,6 +1,6 @@
 # Deck view
 
-A deck shown outside the editor, the page the MCP App will carry: the chosen slide fit to the window, a strip of thumbnails when the deck has more than one slide, and `Open in AirDesign`. It only shows; nothing edits. It follows the deck like an editor tab, so it holds a painter lease and answers an agent's `screenshot()` with the editor's painter.
+A deck shown outside the editor, the page the MCP App will carry: the chosen slide fit to the window and always the largest thing on the page, a thin strip of small thumbnails when the deck has more than one slide (hidden under 480 px wide), and `Open in AirDesign`. It only shows; nothing edits. It follows the deck like an editor tab, so it holds a painter lease and answers an agent's `screenshot()` with the editor's painter.
 
 ## Sub-features
 
@@ -16,7 +16,7 @@ A deck shown outside the editor, the page the MCP App will carry: the chosen sli
 
 ## Driving it with verify-airdesign
 
-- **Journey.** `deck-view`: the editor answers an agent's screenshot; the agent marks and unmarks the slide so the server holds no picture at its key; the editor closes and the view opens (capture `deck-view`); the agent asks again and the view answers. Pass: the view's JPEG matches the editor's, mean pixel difference under 0.5 of 255.
+- **Journey.** `deck-view`: the editor answers an agent's screenshot; the agent marks and unmarks the slide so the server holds no picture at its key; the editor closes and the view opens (capture `deck-view`); the agent asks again and the view answers. Pass: the view's JPEG matches the editor's, mean pixel difference under 0.5 of 255. Then it resizes to 300, 480, 640, 1024, 1470 and 2940 px wide (captures `deck-view-<width>`) and checks the slide fills its room, every thumbnail is under half the slide's width and 48 px tall, and the strip is hidden under 480 px.
 - **State for look.** `deck-view`: two slides, the second chosen.
 
 ## Gotchas
