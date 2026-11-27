@@ -17,7 +17,7 @@ assert.deepEqual(kinds("agent-place.ts", "export const gapShare = 0.015"), [
   "host: file agent-place.ts",
   "taste: gapShare, a share of the slide",
 ])
-assert.deepEqual(kinds("layout-findings.ts", "export type Finding = { readonly note: string }"), [
+assert.deepEqual(kinds("layout-problems.ts", "export type Problem = { readonly note: string }"), [
   "host: a note for a reader",
 ])
 assert.deepEqual(kinds("read-kit.ts", 'export const forms = { node: "A node id, or null." }'), [

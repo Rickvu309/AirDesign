@@ -3,7 +3,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
 import { callTool, type DeckHost, type Session } from "./index.js"
-import { layoutOf } from "./layout-findings-answer.js"
+import { layoutOf } from "./problems-answer.js"
 import { readOf, scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
@@ -49,7 +49,7 @@ function agent(measure: DeckHost["measure"] = async () => measured()) {
 
 type Found = { readonly code: string; readonly node: string; readonly with?: string; readonly note: string }
 
-describe("layout findings in the answers, measured by the host with the deck's fonts and no open tab", () => {
+describe("layout problems in the answers, measured by the host with the deck's fonts and no open tab", () => {
   it("lands an edit that covers the title's words and names the overlap on the slide it touched", async () => {
     const call = agent()
     const { deck, rev, slides } = (await call("execute", { script: "createDeck()" })).fields as {
@@ -189,7 +189,7 @@ describe("the layout call never fails a landed edit", () => {
     const laid = await layoutOf(host, titled(), () => {
       throw new Error("touched broke")
     })
-    expect(laid).toEqual({ findings: [], layout: "fault" })
+    expect(laid).toEqual({ problems: [], layout: "fault" })
   })
 })
 

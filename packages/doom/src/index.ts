@@ -15,15 +15,15 @@ export { pictureFit } from "./picture-fit.js"
 export { coverCrop, type ImageCrop } from "./picture-crop.js"
 export { slideKeyText } from "./slide-key.js"
 export { type AgentEdit, type AgentSession, type Bake, agentEditSession } from "./agent-edit.js"
-export type { AgentFinding } from "./agent-findings.js"
+export type { ThemeProblem } from "./theme-problems.js"
 export {
-  type LayoutFinding,
+  type LayoutProblem,
   type MissingGlyphs,
-  layoutFindings,
+  layoutProblems,
   missingGlyphsIn,
   touchedSlides,
   unmeasuredTexts,
-} from "./layout-findings.js"
+} from "./layout-problems.js"
 export { kindOf as agentKind, readForAgent } from "./agent-read.js"
 export { applyEdit, countsOf, hasDeck, landEdit } from "./apply-edit.js"
 export { readFold, readLanded, readRuns, readStoredNode, revsToJson, runsToJson } from "./fold-json.js"
@@ -39,7 +39,7 @@ export { paletteColorVars } from "./paint.js"
 export { type NodeType, type PropName, type Props, type WriteKey, props } from "./props.js"
 export { textFromMarkdown } from "./markdown.js"
 export { readEdit } from "./read-write.js"
-export { type Refusal, isRefusal } from "./refusal.js"
+export { type GridShortfall, type Refusal, isRefusal } from "./refusal.js"
 export {
   type Author,
   type Edit,

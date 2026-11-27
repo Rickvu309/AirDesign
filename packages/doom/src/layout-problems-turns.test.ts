@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest"
 import { block, label, measure, plainTheme, spot } from "./testing/doom-fixtures-art.js"
 import { type TreeNode, doomFromTree } from "./doom-tree.js"
-import { layoutFindings } from "./layout-findings.js"
+import { layoutProblems } from "./layout-problems.js"
 
 const filled = { fills: [{ kind: "solid", color: { var: "accent1" } }] }
 
 function found(children: readonly TreeNode[]) {
   const grown = doomFromTree({ theme: plainTheme, slides: [{ children }] })
-  return { ids: grown.ids, findings: layoutFindings(grown.doom, grown.slides, measure) }
+  return { ids: grown.ids, problems: layoutProblems(grown.doom, grown.slides, measure) }
 }
 
-describe("layout findings: nested turns, judged once where the corners land", () => {
+describe("layout problems: nested turns, judged once where the corners land", () => {
   it("names words a 30 degree frame and a 45 degree frame carry onto a layer, in either order, and stays quiet 8 px clear", () => {
     const nested = (outer: number, inner: number) => ({
       type: "frame" as const,
@@ -27,27 +27,25 @@ describe("layout findings: nested turns, judged once where the corners land", ()
     })
     const chart = (at: ReturnType<typeof spot>) => block("chart", at.w, at.h, { box: at, ...filled })
     const carried = found([nested(30, 45), chart(spot(540, 250, 30, 30))])
-    expect(carried.findings).toEqual([
+    expect(carried.problems).toEqual([
       {
         code: "overlap",
         node: carried.ids.card,
         with: carried.ids.chart,
         area: { x: 550, y: 250, w: 20, h: 30 },
-        note: `${carried.ids.card}: its words and ${carried.ids.chart} overlap over 20x30 px at 550,250; move one clear of the other.`,
       },
     ])
     const swapped = found([nested(45, 30), chart(spot(533, 268, 30, 30))])
-    expect(swapped.findings).toEqual([
+    expect(swapped.problems).toEqual([
       {
         code: "overlap",
         node: swapped.ids.card,
         with: swapped.ids.chart,
         area: { x: 543, y: 268, w: 20, h: 30 },
-        note: `${swapped.ids.card}: its words and ${swapped.ids.chart} overlap over 20x30 px at 543,268; move one clear of the other.`,
       },
     ])
-    expect(found([nested(30, 45), chart(spot(516, 235, 25, 20))]).findings).toEqual([])
-    expect(found([nested(45, 30), chart(spot(509, 252, 25, 20))]).findings).toEqual([])
+    expect(found([nested(30, 45), chart(spot(516, 235, 25, 20))]).problems).toEqual([])
+    expect(found([nested(45, 30), chart(spot(509, 252, 25, 20))]).problems).toEqual([])
   })
 
   it("names a filled shape a frame holds past the slide's edge, where that frame paints it", () => {
@@ -61,14 +59,14 @@ describe("layout findings: nested turns, judged once where the corners land", ()
         },
       ])
     const plain = held(0)
-    expect(plain.findings).toEqual([
+    expect(plain.problems).toEqual([
       {
         code: "off-slide",
         node: plain.ids.card,
         past: 180,
-        note: `${plain.ids.card}: it runs 180 px past the slide's edge, where the slide cuts it off.`,
+        whole: false,
       },
     ])
-    expect(held(60).findings).toEqual([])
+    expect(held(60).problems).toEqual([])
   })
 })

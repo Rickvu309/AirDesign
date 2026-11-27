@@ -149,16 +149,37 @@ describe("a grid sets its values in the body face and keeps every word whole", (
       ["", "Pneumonoultramicroscopicsilicovolcanoconiosis", "B", "C", "D"],
       ["A", "1", "2", "3", "4"],
     ]
-    expect(() => build(agentDeck(), add({ kind: "frame", rows }))).toThrow(
-      /a shorter word than “Pneumonoultramicroscopicsilicovolcanoconiosis” in row 1, column 2, which needs \d+ px at caption size in a column of \d+ px; or fewer columns or a wider box/,
-    )
+    const refusal = compileAgentChange(agentDeck(), add({ kind: "frame", rows }), minter())
+    expect(refusal).toEqual({
+      refused: "limit",
+      field: "rows",
+      fault: "needs",
+      change: "add frame",
+      grid: {
+        cell: { row: 0, col: 1, word: rows[0]![1], needs: expect.any(Number), room: expect.any(Number) },
+        more: 0,
+        style: "caption",
+      },
+    })
+    const { cell } = (refusal as { grid: { cell: { needs: number; room: number } } }).grid
+    expect(Number.isInteger(cell.needs) && Number.isInteger(cell.room) && cell.needs > cell.room).toBe(true)
   })
 
   it("refuses a grid too tall for its box, naming the height it needs and the height it has", () => {
     const rows = Array.from({ length: 30 }, (_, at) => [`Row ${String(at + 1)}`, String(at)])
-    expect(() => build(agentDeck(), add({ kind: "frame", rows, box: { x: 120, y: 200, w: 1200, h: 400 } }))).toThrow(
-      /fewer than 30 rows or a taller box: at caption size they need \d+ px and the box has 400 px/,
-    )
+    const box = { x: 120, y: 200, w: 1200, h: 400 }
+    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows, box }), minter())).toEqual({
+      refused: "limit",
+      field: "rows",
+      fault: "needs",
+      change: "add frame",
+      grid: {
+        rows: 30,
+        needs: expect.toSatisfy((needs: number) => Number.isInteger(needs) && needs > 400),
+        room: 400,
+        style: "caption",
+      },
+    })
   })
 })
 

@@ -1,4 +1,4 @@
-import type { Rect } from "./layout-findings.js"
+import type { Rect } from "./layout-problems.js"
 import { distanceToSegment } from "./preset-geometry.js"
 import type { Point } from "./resolved.js"
 

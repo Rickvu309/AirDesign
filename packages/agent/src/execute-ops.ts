@@ -8,7 +8,7 @@ import { deckMeasure } from "./deck-measure.js"
 import { readAnswer } from "./deck-read.js"
 import { withCatalogFonts } from "./font-names.js"
 import { measuredSteps } from "./land-edit.js"
-import { layoutOf, listed } from "./layout-findings-answer.js"
+import { layoutOf, listed } from "./problems-answer.js"
 import { readPaste } from "./kit-paste.js"
 import { imageNames, imageProblem, pictureSizes, withAssets } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
@@ -386,8 +386,8 @@ async function read(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<
     const laid = query.find === undefined ? await layoutOf(plan.host, plan.view, () => slides) : undefined
     const answered = readAnswer(viewed(plan), query, laid)
     if (!answered.ok) stop(plan, op, verb, answered)
-    const { ok: _ok, findings, ...deck } = answered.fields
-    return { kind: "deck", ...deck, problems: findings ?? [] }
+    const { ok: _ok, problems, ...deck } = answered.fields
+    return { kind: "deck", ...deck, problems: problems ?? [] }
   }
   const node = nodeOf(plan, op, verb, fields.target, "target")
   const slide = node.type === "slide" ? node.id : doom.slideOf(plan.view, node.id)
@@ -409,7 +409,7 @@ async function read(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<
       : lines.filter((line) => inside.has(line.trim().split(" ")[0] as doom.NodeId))
     ).join("\n"),
     problems: listed(
-      laid.findings.filter((found) => found.node === undefined || inside.has(found.node as doom.NodeId)),
+      laid.problems.filter((found) => found.node === undefined || inside.has(found.node as doom.NodeId)),
     ),
     ...(laid.layout === "measured" ? {} : { measured: false }),
   }

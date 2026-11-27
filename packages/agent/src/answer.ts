@@ -103,6 +103,14 @@ function fieldNote(fault: unknown, form: unknown, needs: unknown): string | unde
   return typeof form === "string" && form !== "" ? `${sentence} Accepted form: ${form}` : sentence
 }
 
+export function gridNeeds(grid: doom.GridShortfall): string {
+  if ("rows" in grid)
+    return `fewer than ${String(grid.rows)} rows or a taller box: at ${grid.style} size they need ${String(grid.needs)} px and the box has ${String(grid.room)} px`
+  const { row, col, word, needs, room } = grid.cell
+  const more = grid.more === 0 ? "" : ` (and ${String(grid.more)} more ${grid.more === 1 ? "cell" : "cells"})`
+  return `a shorter word than “${word}” in row ${String(row + 1)}, column ${String(col + 1)}, which needs ${String(needs)} px at ${grid.style} size in a column of ${String(room)} px${more}; or fewer columns or a wider box`
+}
+
 export function refused(code: Refused, more: Where & Readonly<Record<string, unknown>> = {}): Answer {
   const where = whereWords(more)
   const specific =
@@ -129,6 +137,7 @@ export function doomRefused(refusal: doom.AgentRefusal | doom.Refusal, more: Rea
     ...("fault" in refusal && refusal.fault !== undefined ? { fault: refusal.fault } : {}),
     ...("form" in refusal && refusal.form !== undefined ? { form: refusal.form } : {}),
     ...("needs" in refusal && refusal.needs !== undefined ? { needs: refusal.needs } : {}),
+    ...("grid" in refusal && refusal.grid !== undefined ? { needs: gridNeeds(refusal.grid) } : {}),
     ...(refusal.node === undefined ? {} : { node: refusal.node }),
     ...(refusal.prop === undefined ? {} : { prop: refusal.prop }),
     ...more,

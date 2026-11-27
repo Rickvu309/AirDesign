@@ -79,7 +79,7 @@ describe("a raw size and font over the protocol", () => {
     expect(String(read.fields.layers)).not.toContain("Inter ExtraBold")
   })
 
-  it("names no off-font finding for a weight set on the deck's own family", async () => {
+  it("names no off-font problem for a weight set on the deck's own family", async () => {
     const call = agent()
     const { deck, rev, slides } = (await call("execute", { script: "createDeck()" })).fields as {
       deck: string

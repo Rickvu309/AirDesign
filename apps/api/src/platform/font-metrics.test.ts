@@ -72,9 +72,9 @@ it("finds both overflow and a lone last word using the deck's theme fonts", asyn
   const grown = deckIn({ heading: family, body: family })
   const measured = await new FontMetrics(new FontSource(undefined)).measure([grown.doom])
   if (typeof measured === "string") throw new Error(measured)
-  expect(doom.layoutFindings(grown.doom, grown.slides, measured.measure)).toMatchObject([
+  expect(doom.layoutProblems(grown.doom, grown.slides, measured.measure)).toMatchObject([
     { code: "overflow", node: grown.ids.title, room: 100 },
-    { code: "lone-word", node: grown.ids.title, note: expect.stringContaining("widen its box by 13 px") },
+    { code: "lone-word", node: grown.ids.title, extra: 13 },
   ])
 })
 

@@ -3,7 +3,7 @@ import * as doom from "@airdesign/doom"
 import { answered, refused, type Answer } from "./answer.js"
 import { foundLines, readBytes } from "./budget.js"
 import type { Opened } from "./deck-host.js"
-import { type Laid, listed, readFindingsNote } from "./layout-findings-answer.js"
+import { type Laid, listed, readProblemsNote } from "./problems-answer.js"
 
 function themeOf(fold: doom.Doom) {
   const { colors, fonts, textStyles } = doom.deckOf(fold).theme
@@ -79,7 +79,7 @@ export function readAnswer(opened: Opened, query: Query, laid?: Laid): Answer {
   if (!picked.ok) return picked.result
   const { chosen, next } = picked
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
-  const found = laid === undefined || laid.findings.length === 0 ? {} : { findings: listed(laid.findings) }
+  const found = laid === undefined || laid.problems.length === 0 ? {} : { problems: listed(laid.problems) }
   const answer = {
     ok: true,
     deck: opened.deck,
@@ -91,7 +91,7 @@ export function readAnswer(opened: Opened, query: Query, laid?: Laid): Answer {
     ...(doom.deckOf(opened.fold).language === undefined ? {} : { language: doom.deckOf(opened.fold).language }),
     ...found,
   }
-  const note = [lead(opened, slides.length), ...(laid === undefined ? [] : readFindingsNote(laid))].join(" ")
+  const note = [lead(opened, slides.length), ...(laid === undefined ? [] : readProblemsNote(laid))].join(" ")
   return answered(note, {
     ...answer,
     layers: doom.readForAgent(opened.fold, chosen, laid?.boxes, detail),

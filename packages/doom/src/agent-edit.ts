@@ -11,14 +11,14 @@ import { nameFromTitleWrites } from "./deck-name-from-title.js"
 import { isRefusal } from "./refusal.js"
 import type { Author, Edit, Doom, Write } from "./doom.js"
 import { onTop } from "./view-of.js"
-import { type AgentFinding, agentFindings } from "./agent-findings.js"
+import { type ThemeProblem, themeProblems } from "./theme-problems.js"
 
 export type AddedNode = { readonly id: NodeId; readonly change: number; readonly kind: string }
 export type AgentEdit = {
   readonly edit: Edit
   readonly after: Doom
   readonly added: readonly AddedNode[]
-  readonly findings: readonly AgentFinding[]
+  readonly problems: readonly ThemeProblem[]
 }
 export type EditBy = {
   readonly author: Author
@@ -154,7 +154,7 @@ export function agentEditSession(doom: Doom, by: EditBy): AgentSession {
       return [{ id: node.id, change: at, kind: kindOf(node) }]
     })
     const added = [...made, ...filled].sort((one, two) => one.change - two.change)
-    return { edit, after: landed, added, findings: agentFindings(landed, all) }
+    return { edit, after: landed, added, problems: themeProblems(landed, all) }
   }
   return { view: () => view, step, finish }
 }

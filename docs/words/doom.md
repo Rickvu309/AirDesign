@@ -60,7 +60,7 @@ How a frame places its children: none, row, column or grid. Laid-out boxes are c
 _Avoid_: flow, auto layout (in code)
 
 **measure**:
-The function that gives a text its width and height. The canvas and PDF export build it from the fonts on the page (`useDoomSlide`). The agent tools use a measure built from the same font files for layout findings (`servedFontMetrics`, handed in as `host.measure`). A delete that frees a connector end uses that measure, so the stored point is the one that was painted. `measureWith({})` is only an estimate, and a freed end that used it is exact only when the shape's place does not depend on text width.
+The function that gives a text its width and height. The canvas and PDF export build it from the fonts on the page (`useDoomSlide`). The agent tools use a measure built from the same font files for layout problems (`servedFontMetrics`, handed in as `host.measure`). A delete that frees a connector end uses that measure, so the stored point is the one that was painted. `measureWith({})` is only an estimate, and a freed end that used it is exact only when the shape's place does not depend on text width.
 _Avoid_: font metrics, text measurement, fallback width
 
 **fold**:
@@ -95,6 +95,11 @@ _Avoid_: style, traits, fields
 
 **grid of words**:
 A frame added with `rows`, one list of cells per row. The first row is the header, number columns align right, and a final Total row is bold.
+A grid too tight for its box is refused `limit` with `grid`: the first cell whose widest word does not fit, as its row, column, word and widths, or the rows and heights when every word fits but the rows do not. The agent pack words it.
+
+**problem**:
+What `layoutProblems` measures on a slide (`overflow`, `overlap`, `line-crosses-text`, `off-slide`, `small-text`, `lone-word`) or `themeProblems` finds in an edit (`off-scale`, `off-palette`, `off-font`): a code, the layer and its numbers, never words. The agent pack writes each note in `problem-words.ts`.
+_Avoid_: finding, note, warning
 
 **slide start**:
 A designed first state for a new slide, chosen in the New slide menu: title, title and text, grid or blank. The plain plus button adds the title-only slide start. A new deck's first slide is the title start: a title and a subtitle placeholder that an agent's first title and first heading fill.

@@ -2,7 +2,8 @@ import { fallbackFont, servedFontName } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import { hostRefused, refused, type Answer } from "./answer.js"
-import { type Findings, layoutOf } from "./layout-findings-answer.js"
+import { worded } from "./problem-words.js"
+import { type Problems, layoutOf } from "./problems-answer.js"
 import type { DeckHost, Opened } from "./deck-host.js"
 import { deckMeasure } from "./deck-measure.js"
 import { onceIds } from "./once-ids.js"
@@ -19,12 +20,12 @@ function rootsInFold(fold: doom.Doom, client: string): readonly Added[] {
 export type Landed = {
   readonly landed: true
   readonly rev: number
-  readonly findings: Findings
+  readonly problems: Problems
   readonly bakedLayouts: readonly doom.NodeId[]
   readonly unchanged?: true
 }
 
-export type LandedBefore = { readonly rev: number; readonly roots: readonly Added[]; readonly findings: Findings }
+export type LandedBefore = { readonly rev: number; readonly roots: readonly Added[]; readonly problems: Problems }
 
 export async function landedBefore(opened: Opened, once: string, host: DeckHost): Promise<LandedBefore | undefined> {
   const rev = opened.fold.onces.get(once)
@@ -36,7 +37,7 @@ export async function landedBefore(opened: Opened, once: string, host: DeckHost)
       opened.fold,
       roots.map((root) => ({ node: root.id as doom.NodeId, prop: "type" as const })),
     )
-  return { rev, roots, findings: await layoutOf(host, opened.fold, touched) }
+  return { rev, roots, problems: await layoutOf(host, opened.fold, touched) }
 }
 
 export type Agent = { readonly id: string; readonly name?: string | undefined }
@@ -260,7 +261,7 @@ export async function landEdit(
     return {
       landed: true,
       rev: opened.rev,
-      findings: { findings: [], layout: "untouched" },
+      problems: { problems: [], layout: "untouched" },
       bakedLayouts: [],
       unchanged: true,
     }
@@ -284,8 +285,8 @@ export async function landEdit(
   return {
     landed: true,
     rev: landed.rev,
-    findings: {
-      findings: [...compiled.findings, ...laid.findings],
+    problems: {
+      problems: [...worded(compiled.after, compiled.problems), ...laid.problems],
       layout: laid.layout,
       ...(laid.unread === undefined ? {} : { unread: laid.unread }),
     },

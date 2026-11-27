@@ -129,9 +129,9 @@ describe("every piece in every library theme", () => {
           })
           const slide = grown.slides[0]!
           const where = `${each.name} in ${theme}`
-          const findings = doom.layoutFindings(grown.doom, [slide], estimate)
+          const problems = doom.layoutProblems(grown.doom, [slide], estimate)
           expect(
-            findings.filter((finding) => words === "sample" || finding.code !== "lone-word"),
+            problems.filter((problem) => words === "sample" || problem.code !== "lone-word"),
             where,
           ).toEqual([])
           expect(Math.min(...runSizes(doom.resolveSlide(grown.doom, slide, estimate))), where).toBeGreaterThanOrEqual(

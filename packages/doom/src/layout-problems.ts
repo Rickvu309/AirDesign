@@ -15,13 +15,13 @@ import type { Theme } from "./theme.js"
 
 export type Rect = { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
 
-export type LayoutFinding = { readonly node: NodeId; readonly note: string } & (
-  | { readonly code: "overflow"; readonly need: number; readonly room: number }
+export type LayoutProblem = { readonly node: NodeId } & (
+  | { readonly code: "overflow"; readonly need: number; readonly room: number; readonly ellipsis?: "w" | "h" }
   | { readonly code: "overlap"; readonly with: NodeId; readonly area: Rect }
   | { readonly code: "line-crosses-text"; readonly with: NodeId }
-  | { readonly code: "off-slide"; readonly past: number }
+  | { readonly code: "off-slide"; readonly past: number; readonly whole: boolean }
   | { readonly code: "small-text"; readonly size: number; readonly min: number }
-  | { readonly code: "lone-word" }
+  | { readonly code: "lone-word"; readonly extra: number }
 )
 
 const spill = 1
@@ -43,7 +43,7 @@ type Slide = {
   readonly theme: Theme
   readonly measure: Measure
   readonly size: { readonly w: number; readonly h: number }
-  readonly found: LayoutFinding[]
+  readonly found: LayoutProblem[]
   readonly missing: MissingGlyphs
   readonly letters: { readonly id: NodeId; readonly inks: readonly Rect[] }[]
   readonly strokes: { readonly id: NodeId; readonly route: StrokeRoute; readonly attached: ReadonlySet<NodeId> }[]
@@ -180,19 +180,10 @@ function placeStroke(slide: Slide, id: NodeId, node: Resolved, box: Rect, chain:
 }
 
 function judgeStrokes(slide: Slide): void {
-  const name = (id: NodeId) => {
-    const label = propOf(slide.doom.nodes.get(id), "name")
-    return label ? `${label} (${id})` : id
-  }
   for (const { id: line, route, attached } of slide.strokes)
     for (const { id: text, inks } of slide.letters) {
       if (line === text || attached.has(text) || !inks.some((ink) => strokeCrosses(route, ink, crossing))) continue
-      slide.found.push({
-        code: "line-crosses-text",
-        node: text,
-        with: line,
-        note: `Move ${name(line)} so it no longer crosses ${name(text)}.`,
-      })
+      slide.found.push({ code: "line-crosses-text", node: text, with: line })
     }
 }
 
@@ -223,15 +214,8 @@ function judgeLastLine(slide: Slide, id: NodeId, text: Text, lines: readonly Res
   if ([...words.segment(line)].filter((word) => word.isWordLike).length !== 1) return
   const full = slide.measure(text, slide.theme, null).lines.at(-1)
   if (full === undefined) return
-  const extra = Math.ceil(full.x + full.ink + (text.padding?.r ?? 0) - width)
-  slide.found.push({
-    code: "lone-word",
-    node: id,
-    note:
-      extra > 0
-        ? `${id}: Shorten the text or widen its box by ${String(extra)} px to keep the last word with the rest.`
-        : `${id}: Shorten the text to keep the last word with the rest.`,
-  })
+  const extra = Math.max(0, Math.ceil(full.x + full.ink + (text.padding?.r ?? 0) - width))
+  slide.found.push({ code: "lone-word", node: id, extra })
 }
 
 function judgeOwn(slide: Slide, node: Resolved, box: Rect, measured: boolean): void {
@@ -245,26 +229,12 @@ function judgeOwn(slide: Slide, node: Resolved, box: Rect, measured: boolean): v
         const excess = Math.max(0, ...node.text.sourceLines.map((line) => line.ink - line.w))
         const need = Math.ceil(excess > 0 ? area.w + excess : slide.measure(text, slide.theme, area.w).h)
         const room = Math.round(excess > 0 ? area.w : area.h)
-        const resize = excess > 0 ? " or make the box wider" : need > room ? " or make the box taller" : ""
-        slide.found.push({
-          code: "overflow",
-          node: stored.id,
-          need,
-          room,
-          note: `${stored.id}: the label was shortened to fit. Use fewer words${resize}.`,
-        })
+        slide.found.push({ code: "overflow", node: stored.id, need, room, ellipsis: excess > 0 ? "w" : "h" })
       }
     } else {
       const need = Math.ceil(slide.measure(text, slide.theme, area.w).h)
       const room = Math.round(area.h)
-      if (need > room + spill)
-        slide.found.push({
-          code: "overflow",
-          node: stored.id,
-          need,
-          room,
-          note: `${stored.id}: its words need ${String(need)} px of height and its box holds ${String(room)}, so they spill out; make the box at least ${String(need)} tall or cut words.`,
-        })
+      if (need > room + spill) slide.found.push({ code: "overflow", node: stored.id, need, room })
     }
   }
   if (measured && node.text.sourceLines === undefined) {
@@ -276,14 +246,7 @@ function judgeOwn(slide: Slide, node: Resolved, box: Rect, measured: boolean): v
   )
   const min = Math.round((readableAt1080 * slide.size.h) / referenceHeight)
   const size = Math.min(...sizes)
-  if (sizes.length > 0 && size < min)
-    slide.found.push({
-      code: "small-text",
-      node: stored.id,
-      size,
-      min,
-      note: `${stored.id}: text at ${String(size)} px is under the ${String(min)} px a room can read on this slide.`,
-    })
+  if (sizes.length > 0 && size < min) slide.found.push({ code: "small-text", node: stored.id, size, min })
 }
 
 function crossed(back: Placed, front: Placed): Rect | null {
@@ -315,14 +278,7 @@ function judgeKids(slide: Slide, kids: readonly Placed[]): void {
       const area = crossed(back, front)
       if (area === null) continue
       const [node, other] = back.inks.length > 0 ? [back.node.id, front.node.id] : [front.node.id, back.node.id]
-      const shown = rounded(area)
-      slide.found.push({
-        code: "overlap",
-        node: node as NodeId,
-        with: other as NodeId,
-        area: shown,
-        note: `${node}: its words and ${other} overlap over ${String(shown.w)}x${String(shown.h)} px at ${String(shown.x)},${String(shown.y)}; move one clear of the other.`,
-      })
+      slide.found.push({ code: "overlap", node: node as NodeId, with: other as NodeId, area: rounded(area) })
     }
 }
 
@@ -346,24 +302,17 @@ function judgeEdges(slide: Slide, top: Placed): void {
   if (past <= pastEdge) return
   if (coversSlide(slide, top)) return
   const whole = bounds.x >= w || bounds.y >= h || right(bounds) <= 0 || bottom(bounds) <= 0
-  slide.found.push({
-    code: "off-slide",
-    node: top.node.id as NodeId,
-    past,
-    note: whole
-      ? `${top.node.id}: it lies wholly off the slide, where no one sees it.`
-      : `${top.node.id}: it runs ${String(past)} px past the slide's edge, where the slide cuts it off.`,
-  })
+  slide.found.push({ code: "off-slide", node: top.node.id as NodeId, past, whole })
 }
 
-export function layoutFindings(
+export function layoutProblems(
   doom: Doom,
   slides: readonly NodeId[],
   measure: Measure,
   missing: MissingGlyphs = new Map(),
-): readonly LayoutFinding[] {
+): readonly LayoutProblem[] {
   const { theme, size } = deckOf(doom)
-  const found: LayoutFinding[] = []
+  const found: LayoutProblem[] = []
   for (const id of slides) {
     if (doom.nodes.get(id)?.type !== "slide") continue
     const slide: Slide = { doom, theme, measure, size, found, missing, letters: [], strokes: [] }
