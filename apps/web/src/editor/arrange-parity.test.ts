@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { compileIntent, placement, starts } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { geometryOf } from "@/editing/slide-geometry"
-import { ungroupWrites, wrapWrites } from "./group-writes"
+import { ungrouped, wrapped } from "./arrange-intents"
 import { grow, landed, spot } from "./testing/doom-fixtures"
 
 const freeLine = (start: doom.Point, end: doom.Point) => ({
@@ -72,7 +72,7 @@ function sameArrangement(person: doom.Doom, agent: doom.Doom, slide: doom.NodeId
 describe("an agent's wrap and unwrap land the editor's arrangement", () => {
   it("wraps a turned shape and a free line inside a turned frame", () => {
     const { grown, person, agent } = both(
-      ({ view, geometry, ids }) => wrapWrites(view, geometry, [ids.a!, ids.wire!], "group", minter())?.writes,
+      ({ view, geometry, ids }) => wrapped(view, geometry, [ids.a!, ids.wire!], "group", minter())?.writes,
       (ids) => ({ op: "group", targets: [ids.a, ids.wire] }),
     )
     sameArrangement(person, agent, grown.slides[0]!)
@@ -80,7 +80,7 @@ describe("an agent's wrap and unwrap land the editor's arrangement", () => {
 
   it("wraps a turned shape and a free line inside a frame nested in a turned frame", () => {
     const { grown, person, agent } = both(
-      ({ view, geometry, ids }) => wrapWrites(view, geometry, [ids.k!, ids.tie!], "group", minter())?.writes,
+      ({ view, geometry, ids }) => wrapped(view, geometry, [ids.k!, ids.tie!], "group", minter())?.writes,
       (ids) => ({ op: "group", targets: [ids.k, ids.tie] }),
     )
     sameArrangement(person, agent, grown.slides[0]!)
@@ -88,7 +88,7 @@ describe("an agent's wrap and unwrap land the editor's arrangement", () => {
 
   it("unwraps a turned frame nested in a turned frame", () => {
     const { grown, person, agent } = both(
-      ({ view, geometry, ids }) => ungroupWrites(view, geometry, [ids.inner!])?.writes,
+      ({ view, geometry, ids }) => ungrouped(view, geometry, [ids.inner!])?.writes,
       (ids) => ({ op: "ungroup", target: ids.inner }),
     )
     sameArrangement(person, agent, grown.slides[0]!)
@@ -96,7 +96,7 @@ describe("an agent's wrap and unwrap land the editor's arrangement", () => {
 
   it("unwraps a turned frame onto the slide", () => {
     const { grown, person, agent } = both(
-      ({ view, geometry, ids }) => ungroupWrites(view, geometry, [ids.holder!])?.writes,
+      ({ view, geometry, ids }) => ungrouped(view, geometry, [ids.holder!])?.writes,
       (ids) => ({ op: "ungroup", target: ids.holder }),
     )
     sameArrangement(person, agent, grown.slides[0]!)

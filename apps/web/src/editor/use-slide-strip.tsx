@@ -8,13 +8,13 @@ import { slideListCopy } from "@/copy/slide-list-copy"
 import { slideThumbWidth, type SlideStrip } from "@/editor/slide-sidebar"
 import { TypedThumb, type TypingPreview } from "./typing-preview"
 import {
-  addSlideWrites,
-  deleteSlideWrites,
-  duplicateSlideWrites,
-  moveSlideWrites,
+  addSlide,
+  deleteSlides,
+  duplicateSlides,
+  moveSlideGroups,
+  moveSlides,
   neighbourAfterDelete,
-  slideGroupMoveWrites,
-} from "./slide-writes"
+} from "./slide-intents"
 import { skipSaid, skipWrites } from "./slide-skip"
 import type { EditorClient } from "./use-deck"
 import { useLayoutPictures } from "./use-layout-pictures"
@@ -39,13 +39,16 @@ export function useSlideStrip(props: {
   const index = current === undefined ? 0 : Math.max(0, slides.indexOf(current))
   const mint = () => client.mint()
   const pick = (held: readonly number[]) => held.flatMap((at) => slides[at] ?? [])
+  const refused = (refusal: doom.Refusal) => {
+    if (refusal.refused === "limit") toast.refusal(slideListCopy.slideLimit(doom.limits.slides))
+  }
   const landed = (writes: readonly doom.Write[], options?: Parameters<EditorClient["push"]>[1]): boolean => {
     const pushed = client.push(writes, options)
-    if (!pushed.ok && pushed.refused.refused === "limit") toast.refusal(slideListCopy.slideLimit(doom.limits.slides))
+    if (!pushed.ok) refused(pushed.refused)
     return pushed.ok
   }
   const remove = (removed: readonly doom.NodeId[]): "removed" | "last-slide" | "refused" => {
-    const writes = deleteSlideWrites(view, removed)
+    const writes = deleteSlides(view, removed)
     if (writes.length === 0) return "refused"
     const next = neighbourAfterDelete(view, removed)
     const pushed = client.push(writes)
@@ -73,7 +76,7 @@ export function useSlideStrip(props: {
     },
     onAdd: (part, after, side = "same") => {
       const from = after === undefined ? current : slides[after]
-      const made = addSlideWrites(
+      const made = addSlide(
         view,
         from ?? null,
         mint,
@@ -81,6 +84,7 @@ export function useSlideStrip(props: {
         props.measure ?? undefined,
         side,
       )
+      if (doom.isRefusal(made)) return refused(made)
       if (!landed(made.writes, part === "chart" ? { read: view } : undefined)) return
       onCurrent(made.slide)
       const number = doom.slidesOf(client.view()).findIndex((each) => each.id === made.slide) + 1
@@ -89,7 +93,8 @@ export function useSlideStrip(props: {
     onClone: (at) => {
       const slide = slides[at]
       if (slide === undefined) return
-      const made = duplicateSlideWrites(view, [slide], mint)
+      const made = duplicateSlides(view, [slide], mint)
+      if (doom.isRefusal(made)) return refused(made)
       const copy = made.slides[0]
       if (copy === undefined || !landed(made.writes)) return
       onCurrent(copy)
@@ -105,14 +110,14 @@ export function useSlideStrip(props: {
     onMove: (from, to) => {
       const slide = slides[from]
       if (slide === undefined) return
-      client.push(moveSlideWrites(view, [slide], to > from ? to + 1 : to, slides[to]))
+      client.push(moveSlides(view, [slide], to > from ? to + 1 : to, slides[to]))
       onCurrent(slide)
     },
     onMoveMany: (held, at) => {
-      client.push(moveSlideWrites(view, pick(held), at))
+      client.push(moveSlides(view, pick(held), at))
     },
     onMoveGroups: (held, at, side) => {
-      const writes = slideGroupMoveWrites(view, pick(held), at, side, mint)
+      const writes = moveSlideGroups(view, pick(held), at, side, mint)
       if (writes.length === 0 || !client.push(writes).ok) return false
       const first = pick(held)[0]
       if (side !== "keep" && first !== undefined) onCurrent(first)
@@ -133,7 +138,8 @@ export function useSlideStrip(props: {
         if (removed !== "removed") return null
         return { picked: [], order: doom.slidesOf(client.view()).map((each) => each.id) }
       }
-      const made = duplicateSlideWrites(view, pick(held), mint)
+      const made = duplicateSlides(view, pick(held), mint)
+      if (doom.isRefusal(made)) return null
       const copy = made.slides[0]
       if (copy === undefined || !client.push(made.writes).ok) return null
       onCurrent(copy)

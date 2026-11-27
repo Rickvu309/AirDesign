@@ -3,7 +3,7 @@ import { arrowOf, gestureFor, releases } from "@/lib/gestures"
 import { useEffect, useRef } from "react"
 import { zoomKey, type ZoomKey } from "@/editing/canvas-zoom"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
-import { deleteWrites } from "./delete-writes"
+import { intentWrites, removeIntents } from "./editor-intents"
 import { moveWrites } from "./move-writes"
 import { arranged } from "./arrange-keys"
 import { allIn, noSelection, steppedIn, steppedOut, type Selection } from "./selection"
@@ -15,6 +15,7 @@ export type KeyArgs = {
   readonly client: EditorClient
   readonly view: doom.Doom
   readonly geometry: SlideGeometry
+  readonly measure: doom.Measure | null
   readonly selection: Selection
   readonly slide: doom.NodeId
   readonly onSelection: (next: Selection) => void
@@ -133,8 +134,9 @@ export function useCanvasKeys(args: KeyArgs) {
       } else if (gesture === "delete") {
         handled()
         if (a.dragging()) return
-        const writes = deleteWrites(a.view, a.selection.ids)
-        a.client.push(writes)
+        const intents = removeIntents(a.view, a.selection.ids)
+        const made = intents.length === 0 ? null : intentWrites(a.view, intents, { measure: a.measure })
+        if (made !== null) a.client.push(made.writes)
         a.onSelection(noSelection)
       } else if (gesture === "nudge" || gesture === "nudge-far") {
         const step = arrowOf(event.key)

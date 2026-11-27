@@ -1,7 +1,8 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { drawWrites, iconSwapWrites, iconWrites, type Drawing } from "./create-writes"
-import { darkTheme } from "./testing/create-writes-art"
+import { drawIntent, iconIntent, iconSwapIntents, type Drawing } from "./create-intents"
+import { intentWrites } from "./editor-intents"
+import { darkTheme } from "./testing/create-intents-art"
 import { grow, landed } from "./testing/doom-fixtures"
 import { starts, testTheme } from "@airdesign/doom/testing"
 
@@ -25,17 +26,30 @@ const built = grow([])
 const slide = built.slides[0]!
 const id = doom.nodeId("m:1")
 
+function compiled(view: doom.Doom, intents: readonly doom.Intent[], made: doom.NodeId = id): readonly doom.Write[] {
+  const writes = intentWrites(view, intents, { mint: () => made })
+  if (writes === null) throw new Error("Doom refused the change")
+  return writes.writes
+}
+
+const iconWrites = (
+  view: doom.Doom,
+  made: doom.NodeId,
+  name: string,
+  inside: { w: number; h: number },
+  anchor?: Parameters<typeof iconIntent>[4],
+) => compiled(view, [iconIntent(view, slide, name, inside, anchor)], made)
+
 function made(extra: Partial<Drawing> & Pick<Drawing, "kind">) {
   const drawing: Drawing = {
-    id,
-    parent: { id: slide, at: "a1" as never },
+    parent: slide,
     from: { x: 100, y: 100 },
     to: null,
     square: false,
     center: false,
     ...extra,
   }
-  const after = landed(built.view, drawWrites(drawing))
+  const after = landed(built.view, compiled(built.view, [drawIntent(drawing)]))
   return after.nodes.get(id) as Record<string, unknown>
 }
 
@@ -70,6 +84,7 @@ describe("drawing a shape", () => {
     const rectangle = made({ kind: "rectangle" })
     expect(rectangle.fills).toEqual([{ kind: "solid", color: quiet }])
     expect(rectangle.strokes).toBeUndefined()
+    expect(rectangle.radius ?? 0).toBe(0)
     expect(made({ kind: "frame" }).fills).toEqual([{ kind: "solid", color: { var: "background2" } }])
   })
 
@@ -105,10 +120,14 @@ describe("drawing a shape", () => {
 
 describe("inserting", () => {
   const slot = { id: slide, at: "a2" as never }
+  const swapped = (view: doom.Doom, ids: readonly doom.NodeId[], name: string) => {
+    const intents = iconSwapIntents(view, ids, name)
+    return intents === null ? null : compiled(view, intents)
+  }
   const inside = { w: 1920, h: 1080 }
 
   it("centres an icon with a stroke that matches Lucide's weight", () => {
-    const after = landed(built.view, iconWrites(built.view, id, slot, "rocket", inside))
+    const after = landed(built.view, iconWrites(built.view, id, "rocket", inside))
     expect(after.nodes.get(id)).toMatchObject({
       box: { x: 900, y: 480, w: 120, h: 120 },
       geometry: { kind: "icon", name: "lucide/rocket" },
@@ -118,11 +137,11 @@ describe("inserting", () => {
 
   it("swaps the one selected icon in place, keeping its box, colour and weight", () => {
     const icon = landed(built.view, [
-      ...iconWrites(built.view, id, slot, "rocket", inside),
+      ...iconWrites(built.view, id, "rocket", inside),
       { node: id, prop: "box", value: { x: 40, y: 50, w: 300, h: 300, rotation: 15, flipH: false, flipV: false } },
       { node: id, prop: "stroke", value: { weight: 4, align: "center", dash: "solid" } },
     ])
-    const writes = iconSwapWrites(icon, [id], "star")
+    const writes = swapped(icon, [id], "star")
     expect(writes).toEqual([{ node: id, prop: "geometry", value: { kind: "icon", name: "lucide/star" } }])
     const after = landed(icon, writes ?? [])
     expect(after.nodes.get(id)).toMatchObject({
@@ -136,11 +155,11 @@ describe("inserting", () => {
   it("swaps every selected icon, each keeping its own box", () => {
     const two = doom.nodeId("m:2")
     const icons = landed(built.view, [
-      ...iconWrites(built.view, id, slot, "rocket", inside),
-      ...iconWrites(built.view, two, { id: slide, at: "a3" as never }, "heart", inside),
+      ...iconWrites(built.view, id, "rocket", inside),
+      ...iconWrites(built.view, two, "heart", inside),
       { node: two, prop: "box", value: { x: 10, y: 20, w: 64, h: 64, rotation: 0, flipH: false, flipV: false } },
     ])
-    const writes = iconSwapWrites(icons, [id, two], "star")
+    const writes = swapped(icons, [id, two], "star")
     expect(writes).toEqual([
       { node: id, prop: "geometry", value: { kind: "icon", name: "lucide/star" } },
       { node: two, prop: "geometry", value: { kind: "icon", name: "lucide/star" } },
@@ -152,20 +171,25 @@ describe("inserting", () => {
   it("adds a new icon instead when the selection is empty or holds anything but icons", () => {
     const two = doom.nodeId("m:2")
     const icons = landed(built.view, [
-      ...iconWrites(built.view, id, slot, "rocket", inside),
-      ...drawWrites({
-        id: two,
-        parent: { id: slide, at: "a3" as never },
-        from: { x: 0, y: 0 },
-        to: null,
-        square: false,
-        center: false,
-        kind: "rectangle",
-      }),
+      ...iconWrites(built.view, id, "rocket", inside),
+      ...compiled(
+        built.view,
+        [
+          drawIntent({
+            parent: slide,
+            from: { x: 0, y: 0 },
+            to: null,
+            square: false,
+            center: false,
+            kind: "rectangle",
+          }),
+        ],
+        two,
+      ),
     ])
-    expect(iconSwapWrites(icons, [], "star")).toBeNull()
-    expect(iconSwapWrites(icons, [id, two], "star")).toBeNull()
-    expect(iconSwapWrites(icons, [two], "star")).toBeNull()
+    expect(swapped(icons, [], "star")).toBeNull()
+    expect(swapped(icons, [id, two], "star")).toBeNull()
+    expect(swapped(icons, [two], "star")).toBeNull()
   })
 
   it("centres an icon in the content area under a title and a subtitle", () => {
@@ -174,7 +198,7 @@ describe("inserting", () => {
       built.view,
       doom.titleSlideWrites(slide, () => doom.nodeId(`s:${String((next += 1))}`), inside, starts),
     )
-    const after = landed(titled, iconWrites(titled, id, slot, "rocket", inside))
+    const after = landed(titled, iconWrites(titled, id, "rocket", inside))
     expect(after.nodes.get(id)).toMatchObject({ box: { x: 900, y: 808, w: 120, h: 120 } })
   })
 
@@ -191,7 +215,7 @@ describe("inserting", () => {
       { node: block, prop: "box", value: { x: 0, y: 0, w: 1400, h: 1080, rotation: 0, flipH: false, flipV: false } },
       { node: block, prop: "geometry", value: { kind: "rect" } },
     ])
-    const after = landed(occupied, iconWrites(occupied, id, { id: slide, at: "a4" as never }, "rocket", inside))
+    const after = landed(occupied, iconWrites(occupied, id, "rocket", inside))
     const icon = after.nodes.get(id) as { box: { x: number } }
     expect(icon.box.x).toBeGreaterThanOrEqual(1400)
   })
@@ -204,7 +228,7 @@ describe("inserting", () => {
       { node: frame, prop: "box", value: { x: 0, y: 0, w: 1400, h: 1080, rotation: 0, flipH: false, flipV: false } },
       { node: frame, prop: "geometry", value: { kind: "rect" } },
     ])
-    const after = landed(occupied, iconWrites(occupied, id, { id: slide, at: "a4" as never }, "rocket", inside))
+    const after = landed(occupied, iconWrites(occupied, id, "rocket", inside))
     expect(after.nodes.get(id)).toMatchObject({ box: { x: 1535, y: 480, w: 120, h: 120 } })
   })
 
@@ -228,20 +252,20 @@ describe("inserting", () => {
 
   it("puts an icon in the open half of a 50% fill, inside the content margins", () => {
     const { view } = occupied(0.5, "m:20")
-    const after = landed(view, iconWrites(view, id, { id: slide, at: "a4" as never }, "rocket", inside))
+    const after = landed(view, iconWrites(view, id, "rocket", inside))
     expect(after.nodes.get(id)).toMatchObject({ box: { x: 1315, y: 480, w: 120, h: 120 } })
   })
 
   it("keeps a readable size at an 85% fill, on top at the slide centre, instead of the whole slide", () => {
     const { view } = occupied(0.85, "m:21")
-    const after = landed(view, iconWrites(view, id, { id: slide, at: "a4" as never }, "rocket", inside))
+    const after = landed(view, iconWrites(view, id, "rocket", inside))
     expect(after.nodes.get(id)).toMatchObject({ box: { x: 900, y: 480, w: 120, h: 120 } })
   })
 
   it("keeps that size at a 95% fill, and steps it off a selection", () => {
     const { view } = occupied(0.95, "m:22")
     const selected = { x: 100, y: 200, w: 400, h: 300 }
-    const after = landed(view, iconWrites(view, id, { id: slide, at: "a4" as never }, "rocket", inside, selected))
+    const after = landed(view, iconWrites(view, id, "rocket", inside, selected))
     expect(after.nodes.get(id)).toMatchObject({ box: { x: 129, y: 229, w: 120, h: 120 } })
   })
 
@@ -257,7 +281,7 @@ describe("inserting", () => {
       },
       { node: frame, prop: "geometry", value: { kind: "rect" } },
     ])
-    const after = landed(view, iconWrites(view, id, { id: slide, at: "a4" as never }, "rocket", inside))
+    const after = landed(view, iconWrites(view, id, "rocket", inside))
     expect(after.nodes.get(id)).toMatchObject({ box: { x: 900, y: 480, w: 120, h: 120 } })
   })
 })

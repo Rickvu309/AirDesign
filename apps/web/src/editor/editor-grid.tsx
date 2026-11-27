@@ -45,7 +45,6 @@ import { GridSheet } from "@/editor/grid-sheet"
 import { gridGripsShown, gridPaintMargin, gridShown, type GridView } from "@/editor/grid-viewport"
 import { GridSlideMenu } from "@/editor/grid-slide-menu"
 import { useSlideSay, type SlideStrip } from "@/editor/slide-sidebar"
-import { slideGroupsOf } from "@/editor/slide-writes"
 import { useGridCamera } from "@/editor/use-grid-camera"
 import { useGridCarry } from "@/editor/use-grid-carry"
 import { useGridDrag } from "@/editor/use-grid-drag"
@@ -126,7 +125,7 @@ export function EditorGrid({
   const layout = useMemo(
     () =>
       gridLayout(
-        slideGroupsOf(view).map((group) => group.slides),
+        doom.slideGroups(view).map((group) => group.slides),
         { width: size.w, height: size.h },
       ),
     [view, size.w, size.h],
@@ -135,7 +134,8 @@ export function EditorGrid({
   const order = useMemo(() => layout.cards.map((card) => card.id), [layout])
   const shape = useMemo(
     () =>
-      slideGroupsOf(view)
+      doom
+        .slideGroups(view)
         .map((group) => `${group.group}:${group.slides.join(",")}`)
         .join("|"),
     [view],

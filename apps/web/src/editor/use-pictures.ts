@@ -3,7 +3,8 @@ import { flushMedia, keepMedia } from "@airdesign/live"
 import { useCallback, useEffect, useRef, useState, type DragEvent, type RefObject } from "react"
 import { readPicture } from "@/editing/picture-file"
 import type { ThinNotice } from "./thin-notice"
-import { pictureWrites } from "./picture-writes"
+import { intentWrites } from "./editor-intents"
+import { pictureBox } from "./picture-box"
 import type { Point } from "@/editing/slide-geometry"
 import type { EditorClient } from "./use-deck"
 
@@ -54,8 +55,14 @@ export function useDoomPictures(args: {
       keepUrl(asset, picture.bytes)
       const now = latest.current
       const id = now.client.mint()
-      const pushed = now.client.push(pictureWrites(now.client.view(), now.slide, id, asset, picture, at))
-      if (!pushed.ok) return
+      const view = now.client.view()
+      const box = pictureBox(picture, doom.deckOf(view).size, at)
+      const made = intentWrites(
+        view,
+        [{ op: "insert", kind: "picture", parent: now.slide, fill: { image: asset }, box }],
+        { mint: () => id },
+      )
+      if (made === null || !now.client.push(made.writes).ok) return
       now.onPlaced(id)
       void flushMedia(now.deck)
     },

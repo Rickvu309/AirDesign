@@ -2,7 +2,7 @@ import fc from "fast-check"
 import * as doom from "@airdesign/doom"
 import { invert } from "@airdesign/doom/testing"
 import { expect, it } from "vitest"
-import { wrapWrites, ungroupWrites } from "./group-writes"
+import { ungrouped, wrapped } from "./arrange-intents"
 import { moveWrites } from "./move-writes"
 import { geometryOf, type Point, type SlideGeometry } from "@/editing/slide-geometry"
 import { grow, landed, paint, spot } from "./testing/doom-fixtures"
@@ -124,14 +124,14 @@ it("keeps every layer where it showed through wrap, ungroup and their undo and r
         if (op.kind === "wrap") {
           const top = view.children.get(slide) ?? []
           const ids = [...new Set(op.pick.map((index) => top[index % top.length]!))]
-          const made = wrapWrites(view, geometry, ids, op.as, mint)
+          const made = wrapped(view, geometry, ids, op.as, mint)
           if (made === null) continue
           redo.length = 0
           land(made.writes, expected, undo)
         } else if (op.kind === "ungroup") {
           const frames = framesIn(view, slide)
           if (frames.length === 0) continue
-          const made = ungroupWrites(view, geometry, [frames[op.pick % frames.length]!])
+          const made = ungrouped(view, geometry, [frames[op.pick % frames.length]!])
           if (made === null) continue
           redo.length = 0
           land(made.writes, expected, undo)
@@ -189,7 +189,7 @@ it("takes back a group an agent's run made and leaves its layers where they show
   }
   const started = built.view
   let view = land(started, edit(started, [], "start"))
-  const made = wrapWrites(view, geometryIn(view, slide), [shapes[1]!, shapes[3]!], "group", minter())!
+  const made = wrapped(view, geometryIn(view, slide), [shapes[1]!, shapes[3]!], "group", minter())!
   view = land(view, edit(view, made.writes))
   view = land(view, edit(view, [], "stop"))
   const shown = shownOf(geometryIn(view, slide), shapes)

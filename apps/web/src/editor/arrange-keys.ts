@@ -1,8 +1,8 @@
 import * as doom from "@airdesign/doom"
 import type { GestureId } from "@/lib/gestures"
-import { deleteWrites } from "./delete-writes"
-import { flipWrites, toggleWrites } from "./flip-writes"
-import { wrapWrites, ungroupWrites } from "./group-writes"
+import { flipIntents, ungrouped, wrapped } from "./arrange-intents"
+import { intentWrites, removeIntents } from "./editor-intents"
+import { toggleIntents } from "./toggle-intents"
 import { noSelection, type Selection } from "./selection"
 import type { SlideGeometry } from "@/editing/slide-geometry"
 import type { EditorClient } from "./use-deck"
@@ -11,6 +11,7 @@ export type ArrangeContext = {
   readonly client: EditorClient
   readonly view: doom.Doom
   readonly geometry: SlideGeometry
+  readonly measure: doom.Measure | null
   readonly selection: Selection
   readonly slide: doom.NodeId
   readonly onSelection: (next: Selection) => void
@@ -30,8 +31,14 @@ function landed(context: ArrangeContext, writes: readonly doom.Write[], selected
   if (selected !== undefined) context.onSelection({ ids: selected, inside: context.selection.inside })
 }
 
+function compiled(context: ArrangeContext, intents: readonly doom.Intent[]) {
+  if (intents.length === 0) return
+  const made = intentWrites(context.view, intents, { measure: context.measure })
+  if (made !== null) landed(context, made.writes)
+}
+
 export function arranged(gesture: GestureId | null, context: ArrangeContext): boolean {
-  const { client, view, geometry, selection, slide } = context
+  const { client, view, geometry, measure, selection, slide } = context
   const ids = selection.ids
   switch (gesture) {
     case "duplicate": {
@@ -44,7 +51,7 @@ export function arranged(gesture: GestureId | null, context: ArrangeContext): bo
       const roots = ids.filter((id) => view.nodes.has(id))
       if (roots.length > 0) held = { view, roots }
       if (gesture === "cut") {
-        landed(context, deleteWrites(view, roots))
+        compiled(context, removeIntents(view, roots))
         context.onSelection(noSelection)
       }
       return true
@@ -57,12 +64,12 @@ export function arranged(gesture: GestureId | null, context: ArrangeContext): bo
     }
     case "group":
     case "frame": {
-      const made = wrapWrites(view, geometry, ids, gesture === "group" ? "group" : "frame", client.mint)
+      const made = wrapped(view, geometry, ids, gesture === "group" ? "group" : "frame", client.mint, measure)
       if (made !== null) landed(context, made.writes, made.selected)
       return true
     }
     case "ungroup": {
-      const made = ungroupWrites(view, geometry, ids)
+      const made = ungrouped(view, geometry, ids, measure)
       if (made !== null) landed(context, made.writes, made.selected)
       return true
     }
@@ -74,11 +81,11 @@ export function arranged(gesture: GestureId | null, context: ArrangeContext): bo
       return true
     case "flip-horizontal":
     case "flip-vertical":
-      landed(context, flipWrites(view, geometry, ids, gesture === "flip-horizontal" ? "horizontal" : "vertical"))
+      compiled(context, flipIntents(view, geometry, ids, gesture === "flip-horizontal" ? "horizontal" : "vertical"))
       return true
     case "hide":
     case "lock":
-      landed(context, toggleWrites(view, ids, gesture === "hide" ? "hidden" : "locked"))
+      compiled(context, toggleIntents(view, ids, gesture === "hide" ? "hidden" : "locked"))
       return true
     default:
       return false

@@ -1,12 +1,16 @@
 import * as doom from "@airdesign/doom"
 import { useEffect, useRef, useState } from "react"
 import { NotesBar } from "@/editor/notes-bar"
-import { notesOf, notesWrites } from "./deck-writes"
+import { intentWrites } from "./editor-intents"
 import type { EditorClient } from "./use-deck"
 
 const idle = 600
 
 let sessions = 0
+
+function notesOf(view: doom.Doom, slide: doom.NodeId): string {
+  return doom.propOf(view.nodes.get(slide), "notes")?.chars ?? ""
+}
 
 type Draft = { readonly slide: doom.NodeId; readonly text: string }
 
@@ -31,8 +35,10 @@ export function DoomNotes(props: {
     const pending = held.current
     held.current = null
     if (pending === null) return
-    const writes = notesWrites(latest.current.view, pending.slide, pending.text)
-    latest.current.client.push(writes, step.current === null ? {} : { step: step.current })
+    const { view: now, client: deck } = latest.current
+    const changed = now.nodes.get(pending.slide)?.type === "slide" && pending.text !== notesOf(now, pending.slide)
+    const made = changed ? intentWrites(now, [{ op: "update", target: pending.slide, notes: pending.text }]) : null
+    if (made !== null) deck.push(made.writes, step.current === null ? {} : { step: step.current })
     setDraft((now) => (now === pending ? null : now))
   }
 

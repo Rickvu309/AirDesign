@@ -17,7 +17,14 @@ export { type Bounds, type Corners, type PlacedBox, placeBox, placeSlide } from 
 export { pictureFit } from "./picture-fit.js"
 export { coverCrop, cropSides, type ImageCrop } from "./picture-crop.js"
 export { slideKeyText } from "./slide-key.js"
-export { type IntentEdit, type IntentSession, type Bake, intentSession } from "./intent-edit.js"
+export {
+  type IntentEdit,
+  type IntentSession,
+  type IntentWrites,
+  type Bake,
+  intentSession,
+  intentWrites,
+} from "./intent-edit.js"
 export type { ThemeProblem } from "./theme-problems.js"
 export {
   type LayoutProblem,
@@ -104,7 +111,6 @@ export {
   parentOf,
   propOf,
   slideOf,
-  slideRowAt,
   slidesOf,
 } from "./doom-walk.js"
 export { liveRuns } from "./live-runs.js"
@@ -120,8 +126,7 @@ export { type MediaType, mediaSize, mediaTypeOf, mediaTypes, overPixelLimit } fr
 export { type FontFace, type FontWidths, fontFace } from "./line-breaks.js"
 export { familyOf, paintedFace, storedFace } from "./painted-face.js"
 export { type OrderKey, orderKeyBetween } from "./order-key.js"
-export { type Keyed, siblingKeys } from "./sibling-keys.js"
-export { type SlideGroup, slideGroups, slidePlacementWrites } from "./slide-placement.js"
+export { slideGroups } from "./slide-placement.js"
 export { type Clipboard, type Copies, copiedMove, duplicateWrites, pasteWrites } from "./copy-writes.js"
 export { moveToSlide } from "./move-to-slide.js"
 export type { LayerPositions } from "./standing-layers.js"

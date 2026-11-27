@@ -4,10 +4,10 @@ On an open deck, Shift+click adds a layer to the selection, and Ctrl/Cmd+G makes
 
 ## Sub-features
 
-- `group` Ctrl/Cmd+G on layers that share a parent writes one new frame node named `Group` with `sizing: { w: "hug", h: "hug" }`, at the front layer's place in the stack, whose box is the layers' bounds; each layer moves into it with its box in the group's space, so nothing moves on the slide (`wrapWrites` in `apps/web/src/editor/group-writes.ts`). The group is selected.
+- `group` Ctrl/Cmd+G on layers that share a parent writes one new frame node named `Group` with `sizing: { w: "hug", h: "hug" }`, at the front layer's place in the stack, whose box is the layers' bounds; each layer moves into it with its box in the group's space, so nothing moves on the slide (Doom's `group` intent, `wrapped` in `apps/web/src/editor/arrange-intents.ts`). The group is selected.
 - `frame` Ctrl/Cmd+Alt+G wraps the selection the same way in a frame named `Frame` with `clip: true` that covers it.
 - `group-move` a click on any layer of a group selects the group, and a drag moves all its layers; the server stores only the group's new box.
-- `ungroup` Ctrl/Cmd+Shift+G or Ctrl/Cmd+Backspace puts each layer of the selected group back in its parent where it showed, and deletes the group (`ungroupWrites`). Undo after an ungroup brings the group back, and a second undo takes the group away.
+- `ungroup` Ctrl/Cmd+Shift+G or Ctrl/Cmd+Backspace puts each layer of the selected group back in its parent where it showed, and deletes the group (Doom's `ungroup` intent, `ungrouped`). Undo after an ungroup brings the group back, and a second undo takes the group away.
 - `step-in` in nested groups a click picks the top group, each double-click steps one level in, Shift+Enter steps back out to the parent, and Cmd/Ctrl+click picks the layer at once (see `canvas-select.md`).
 - `group-transform` resizing a group scales the layers inside it and leaves it hugging them. A layer picked inside a group moves, resizes and turns where it shows on the slide; its box is stored in its group's space, and the group above it fits its layers again.
 - `group-copy` Ctrl/Cmd+D on a group copies it with its layers, their words painted.

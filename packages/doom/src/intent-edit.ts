@@ -164,6 +164,33 @@ export function intentSession(doom: Doom, by: EditBy): IntentSession {
   return { view: () => view, step, finish }
 }
 
+export type IntentWrites = { readonly writes: readonly Write[]; readonly after: Doom }
+export type WritesBy = Pick<EditBy, "mint" | "placement" | "starts" | "boxes" | "measure">
+
+const compiler: Author = { kind: "person", id: "intent" }
+
+export function intentWrites(doom: Doom, intents: readonly Intent[], by: WritesBy): IntentWrites | IntentRefusal {
+  const reading: Reading = {
+    read: doom,
+    ...(by.boxes === undefined ? {} : { boxes: by.boxes }),
+    ...(by.measure === undefined ? {} : { measure: by.measure }),
+  }
+  const writes: Write[] = []
+  let after = doom
+  for (const [at, intent] of intents.entries()) {
+    const compiled = compileIntent(after, intent, by.mint, by.placement, by.starts, reading)
+    if ("refused" in compiled) return { ...compiled, at }
+    const next = applyStep(after, {
+      ...onTop(after, { once: `intent#${at}`, author: compiler, writes: compiled }),
+      rev: rev(after.rev + 1),
+    })
+    if (isRefusal(next)) return { ...next, change: nameOf(intent), at }
+    writes.push(...compiled)
+    after = next
+  }
+  return { writes, after }
+}
+
 export function* intentSteps(
   doom: Doom,
   intents: readonly Intent[],

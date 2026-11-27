@@ -1,6 +1,6 @@
 # A chart or an icon lands in the content area, and keeps a readable size when that area is too small
 
-`apps/web/src/editor/create-writes.test.ts` places both at a 0%, 50%, 85% and 95% fill, and under a block that covers the top 85%.
+`apps/web/src/editor/create-intents.test.ts` places both at a 0%, 50%, 85% and 95% fill, and under a block that covers the top 85%.
 
 The chart fills the content area when that area is at least 280 by 240: the slide margins and the title's left edge. The icon is 120 by 120 and is centred in that area. Neither one shrinks below that size.
 
