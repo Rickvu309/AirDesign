@@ -24,7 +24,6 @@ describe("guides", () => {
   it("reads every SKILL.md folder as a guide named by its path", () => {
     const all = guides()
     expect(all.map((each) => each.name)).toEqual(guideFoldersIn(filesDir))
-    expect(all.map((each) => each.name)).toContain("execute")
     for (const each of all) {
       const raw = readFileSync(path.join(filesDir, each.name, "SKILL.md"), "utf8")
       expect(raw.startsWith(`---\nname: ${each.name.split("/").at(-1)!}\n`)).toBe(true)
@@ -66,11 +65,11 @@ describe("guides", () => {
   })
 
   it("reads a guide only by its exact name", () => {
-    expect(guide("execute")?.name).toBe("execute")
+    expect(guide("slides")?.name).toBe("slides")
     for (const name of [
       "",
-      "execute.md",
-      " execute",
+      "slides.md",
+      " slides",
       "index",
       "charts",
       "styles",

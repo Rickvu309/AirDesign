@@ -1,10 +1,10 @@
 import { catalog, projectTools, readCreateDeck, toolInputSchema } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
-import { guides } from "@airdesign/taste"
 import ts from "typescript-api"
 import { expect, it } from "vitest"
 
 import { verbFields } from "./execute-ops.js"
+import { guides } from "./guides.js"
 import { callTool, type DeckHost } from "./index.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 

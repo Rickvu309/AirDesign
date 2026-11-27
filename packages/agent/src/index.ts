@@ -1,5 +1,6 @@
 export { callTool, type Session } from "./call-tool.js"
 export { type Answer, refused } from "./answer.js"
+export { guide, guides } from "./guides.js"
 export { type DeckHost, type OpenTab, type SlideShot, type UndoHost } from "./deck-host.js"
 export { type NamedImage } from "./named-image.js"
 export { instructions } from "./instructions.js"
