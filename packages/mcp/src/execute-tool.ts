@@ -27,6 +27,12 @@ function at(line: number | undefined): string {
 }
 
 function stopped(plan: Plan, end: Extract<ScriptEnd, { ok: false }>): ToolResult {
+  if (end.stop === "busy")
+    return told(false, {
+      ok: false,
+      refusal: "busy",
+      note: "Your account's script queue is busy. Wait for an execute call to finish, then try again.",
+    })
   const logs = end.logs.length === 0 ? {} : { logs: end.logs }
   const line = end.line === undefined ? {} : { line: end.line }
   const reached = plan.ops === 0 ? "" : `, after ${String(plan.ops)} operations`
@@ -151,7 +157,11 @@ export async function executeTool(
   const lastRead = await host.agentReads.last(opened.deck, agent.id).catch(() => null)
   if (lastRead === null) return refused("store")
   const plan = newPlan(opened, host, once, agent, input.runId, pendingFonts)
-  const end = await scripts.run(input.script, (verb, fields) => answerOp(plan, verb, fields))
+  const end = await scripts.run({
+    account: host.account,
+    script: input.script,
+    operation: (verb, fields) => answerOp(plan, verb, fields),
+  })
   if (!end.ok) return stopped(plan, end)
   const compiled = plan.changes.length === 0 ? undefined : plan.session.finish()
   if (compiled !== undefined && "refused" in compiled)

@@ -116,3 +116,4 @@ Sizes are pixels on a 1920 by 1080 slide. Name the deck's own colours and text s
 - `person-protected`: a person changed that layer during your run. Leave it.
 - `field`, `dead`, `kind`, `limit`: the note names the operation, its number and line, and what to change. Fix that operation and send the script again.
 - `script`: the script threw, or ran past its time or memory. Nothing landed.
+- `busy`: your account already has a script waiting. Wait for an execute call to finish, then try again.

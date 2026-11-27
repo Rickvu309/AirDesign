@@ -70,6 +70,7 @@ function hosted(world: World) {
   const reads = new Map(world.reads)
   const personRev = world.person ? fold.revs.get(start.x)?.get("text") : undefined
   const host: DeckHost = {
+    account: "replay-account",
     agentReads: {
       last: async (_deck, agent) => reads.get(agent),
       remember: async (_deck, agent, rev) => {
@@ -223,8 +224,13 @@ async function step(world: World, action: string): Promise<readonly World[]> {
   if (action === "AgentReads") return Promise.all(agentNames.map((by) => reads(world, by)))
   if (action === "PersonTypes") return [await types(world)]
   if (action === "AgentStarts") return Promise.all(agentNames.map((by) => edits(world, by)))
-  if (action === "AgentWrites")
-    return Promise.all(agentNames.flatMap((by) => named.map((run) => edits(world, by, run))))
+  if (action === "AgentWrites") {
+    const outcomes: World[] = []
+    for (const by of agentNames) {
+      for (const run of named) outcomes.push(await edits(world, by, run))
+    }
+    return outcomes
+  }
   if (action === "AgentStops") return Promise.all(agentNames.flatMap((by) => named.map((run) => stops(world, by, run))))
   if (action === "Done") return [world]
   throw new Error(`${action} is not connected`)
