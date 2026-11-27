@@ -2,7 +2,7 @@ import type { Answer } from "@airdesign/agent"
 
 export function encode(answer: Answer) {
   const content = [
-    ...answer.pictures.map((data) => ({ type: "image" as const, data, mimeType: "image/jpeg" as const })),
+    ...answer.screenshots.map((data) => ({ type: "image" as const, data, mimeType: "image/jpeg" as const })),
     { type: "text" as const, text: JSON.stringify(answer.fields) },
   ]
   return answer.ok

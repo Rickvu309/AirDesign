@@ -2,8 +2,8 @@ import * as doom from "@airdesign/doom"
 import { DoomSlide, waitForDoomFonts } from "@airdesign/render"
 import { createElement } from "react"
 import { paintedElement, PictureFontError } from "./painted-picture"
-import { jpegOf, pictureFit } from "./slide-pictures"
-import type { SlideCapture } from "./slide-picture-report"
+import { jpegOf, screenshotFit } from "./slide-screenshots"
+import type { SlideCapture } from "./slide-screenshot-report"
 
 export async function captureSlide(
   view: doom.Doom,
@@ -12,7 +12,7 @@ export async function captureSlide(
 ): Promise<SlideCapture> {
   if (!(await waitForDoomFonts(document, view, [slide]))) return { failure: "fonts" }
   const { size } = doom.deckOf(view)
-  const width = Math.min(pictureFit.width, size.w)
+  const width = Math.min(screenshotFit.width, size.w)
   const height = Math.ceil((width * size.h) / size.w)
   try {
     const { image } = await paintedElement(

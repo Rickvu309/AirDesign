@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { picturesWantedMilliseconds } from "@airdesign/catalog"
+import { screenshotsWantedMilliseconds } from "@airdesign/catalog"
 import { describe, expect, it, vi } from "vitest"
 import { createDoomDeck } from "./doom-deck.js"
 import { memoryDoomRemote, type DoomRemote } from "./doom-remote.js"
@@ -12,31 +12,31 @@ const start: doom.Edit = {
   writes: [{ node: deckNode, prop: "type", value: "deck" }],
 }
 
-describe("a deck reports the slide pictures its open tab painted", () => {
-  it("sends the deck, the revision and the pictures to the server and returns the slides it still wants", async () => {
+describe("a deck reports the slide screenshots its open tab painted", () => {
+  it("sends the deck, the revision and the screenshots to the server and returns the slides it still wants", async () => {
     const sent: unknown[] = []
     const remote: DoomRemote = {
       ...memoryDoomRemote(start),
-      pictures: async (body) => {
+      screenshots: async (body) => {
         sent.push(body)
         return { ok: true, deck: body.deck as never, missing: [doom.nodeId("s:3")] }
       },
     }
     const opened = await createDoomDeck(remote, "deck1", { storage: memoryStorage() })
     if (!opened.ok) throw new Error("open")
-    const pictures = { keys: [{ slide: doom.nodeId("s:3"), key: "a".repeat(64) }], images: [] }
-    expect(await opened.deck.reportPictures(1, pictures)).toEqual({ ok: true, deck: "deck1", missing: ["s:3"] })
-    expect(sent).toEqual([{ deck: "deck1", rev: 1, pictures }])
+    const screenshots = { keys: [{ slide: doom.nodeId("s:3"), key: "a".repeat(64) }], images: [] }
+    expect(await opened.deck.reportScreenshots(1, screenshots)).toEqual({ ok: true, deck: "deck1", missing: ["s:3"] })
+    expect(sent).toEqual([{ deck: "deck1", rev: 1, screenshots }])
   })
 
-  it("is refused plainly when the remote takes no pictures", async () => {
+  it("is refused plainly when the remote takes no screenshots", async () => {
     const opened = await createDoomDeck(memoryDoomRemote(start), "deck1", { storage: memoryStorage() })
     if (!opened.ok) throw new Error("open")
-    expect(await opened.deck.reportPictures(1, { keys: [], images: [] })).toEqual({ ok: false, refusal: "server" })
+    expect(await opened.deck.reportScreenshots(1, { keys: [], images: [] })).toEqual({ ok: false, refusal: "server" })
   })
 })
 
-describe("a deck learns that an agent wants pictures from its held catch-up", () => {
+describe("a deck learns that an agent wants screenshots from its held catch-up", () => {
   it("wants none until the server says an agent asked, tells its listeners, and stops wanting after the window", async () => {
     let answers = 0
     const base = memoryDoomRemote(start)
@@ -46,7 +46,7 @@ describe("a deck learns that an agent wants pictures from its held catch-up", ()
         const caught = await base.since({ ...body, wait: false }, signal)
         answers += 1
         if (answers === 1) return caught
-        if (answers === 2 && caught.ok) return { ...caught, pictures: true }
+        if (answers === 2 && caught.ok) return { ...caught, screenshots: true }
         await new Promise<void>((resolve) => signal?.addEventListener("abort", () => resolve(), { once: true }))
         return caught
       },
@@ -56,15 +56,15 @@ describe("a deck learns that an agent wants pictures from its held catch-up", ()
     try {
       const opened = await createDoomDeck(remote, "deck1", { storage: memoryStorage() })
       if (!opened.ok) throw new Error("open")
-      expect(opened.deck.picturesWanted()).toBe(false)
+      expect(opened.deck.screenshotsWanted()).toBe(false)
       let told = 0
       opened.deck.subscribe(() => (told += 1))
       const stop = new AbortController()
       const following = opened.deck.follow(stop.signal)
-      await vi.waitFor(() => expect(opened.deck.picturesWanted()).toBe(true))
+      await vi.waitFor(() => expect(opened.deck.screenshotsWanted()).toBe(true))
       expect(told).toBeGreaterThan(0)
-      now += picturesWantedMilliseconds + 1
-      expect(opened.deck.picturesWanted()).toBe(false)
+      now += screenshotsWantedMilliseconds + 1
+      expect(opened.deck.screenshotsWanted()).toBe(false)
       stop.abort()
       await following
     } finally {
@@ -73,17 +73,17 @@ describe("a deck learns that an agent wants pictures from its held catch-up", ()
   })
 
   it("says it is already painting for an agent in each catch-up until the window ends, so the server does not tell it again", async () => {
-    const bodies: { readonly wait?: boolean; readonly pictures?: boolean }[] = []
+    const bodies: { readonly wait?: boolean; readonly screenshots?: boolean }[] = []
     const base = memoryDoomRemote(start)
     const remote: DoomRemote = {
       ...base,
       since: async (body, signal) => {
         bodies.push({
           ...(body.wait === undefined ? {} : { wait: body.wait }),
-          ...("pictures" in body ? { pictures: body.pictures as boolean } : {}),
+          ...("screenshots" in body ? { screenshots: body.screenshots as boolean } : {}),
         })
         const caught = await base.since({ ...body, wait: false }, signal)
-        if (bodies.length === 2 && caught.ok) return { ...caught, pictures: true }
+        if (bodies.length === 2 && caught.ok) return { ...caught, screenshots: true }
         if (bodies.length >= 4)
           await new Promise<void>((resolve) => signal?.addEventListener("abort", () => resolve(), { once: true }))
         return caught
@@ -99,7 +99,7 @@ describe("a deck learns that an agent wants pictures from its held catch-up", ()
       const following = opened.deck.follow(stop.signal)
       await vi.waitFor(() => expect(bodies.length).toBeGreaterThanOrEqual(before + 4))
       const followed = bodies.slice(before)
-      expect(followed.map((body) => body.pictures === true)).toEqual([false, false, true, true])
+      expect(followed.map((body) => body.screenshots === true)).toEqual([false, false, true, true])
       stop.abort()
       await following
     } finally {

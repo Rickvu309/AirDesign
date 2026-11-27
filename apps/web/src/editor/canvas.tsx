@@ -19,7 +19,7 @@ import type { AssetUrls } from "./use-asset-urls"
 import { useDoomPictures } from "./use-pictures"
 import { cropModeWrites, croppedPaint } from "./crop-drag"
 import { usePictureNatural } from "./use-picture-natural"
-import { useSlidePictures } from "./use-slide-pictures"
+import { useSlideScreenshots } from "./use-slide-screenshots"
 import { anchorOffset, type ZoomAnchor } from "./canvas-anchor"
 import { scaleOf, scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
 import { kept, type Rect, type Selection } from "./selection"
@@ -354,7 +354,7 @@ export function DoomCanvas(props: CanvasProps) {
     [],
   )
 
-  useSlidePictures(client, pictures.assetUrl)
+  useSlideScreenshots(client, pictures.assetUrl)
 
   const { cropping, onCropping } = props
   const [lone] = current.ids

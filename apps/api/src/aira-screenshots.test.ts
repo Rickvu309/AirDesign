@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto"
 
-import { airaTools, countryHeader, pictureTokenCeiling } from "@airdesign/catalog"
+import { airaTools, countryHeader, screenshotTokenCeiling } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/doom"
 import { Client } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
@@ -20,7 +20,7 @@ const read = {
   input: { deck, script: 'screenshot({ target: "s:3" })' },
 }
 const data = "A".repeat(400_000)
-const pictured = {
+const screenshotted = {
   type: "tool_result",
   tool_use_id: read.id,
   content: [
@@ -31,7 +31,7 @@ const pictured = {
 const messages = [
   { role: "user", content: "Look at slide one." },
   { role: "assistant", content: [read] },
-  { role: "user", content: [pictured] },
+  { role: "user", content: [screenshotted] },
 ]
 
 const mails: Mail[] = []
@@ -43,10 +43,10 @@ let close = async () => {}
 
 beforeAll(async () => {
   const info = await postgresInfo()
-  session = openPool(info.session, "aira-pictures-session")
-  const deckPool = openPool(info.deck, "aira-pictures-deck")
+  session = openPool(info.session, "aira-screenshots-session")
+  const deckPool = openPool(info.deck, "aira-screenshots-deck")
   const listen = new DeckListen(info.listen)
-  admin = new Client({ connectionString: info.admin, application_name: "aira-pictures-admin" })
+  admin = new Client({ connectionString: info.admin, application_name: "aira-screenshots-admin" })
   await admin.connect()
   const served = await serve({
     publicOrigin: "https://app.example",
@@ -79,25 +79,25 @@ afterAll(async () => {
   await close()
 })
 
-it("keeps a turn with pictures inside the body cap every route shares", () => {
+it("keeps a turn with screenshots inside the body cap every route shares", () => {
   expect(airaTurnCap).toBeLessThanOrEqual(limits.body)
 })
 
-it("sends a read's picture to the model, holds a picture's token ceiling and not its bytes, and still caps the words", async () => {
-  const email = `airapictures${randomBytes(6).toString("hex")}@example.com`
+it("sends a read's screenshot to the model, holds a screenshot's token ceiling and not its bytes, and still caps the words", async () => {
+  const email = `airascreenshots${randomBytes(6).toString("hex")}@example.com`
   const cookie = await signInByCode(main, mails, email)
   expect(bytesOf(JSON.stringify({ deck, messages }))).toBeGreaterThan(262_144)
   replay.play({ name: "turn.sse" })
   const turn = await ask(main, "POST", "/aira/turn", { deck, messages }, cookie, vietnam)
   expect(turn.status).toBe(200)
   expect(replay.calls.at(-1)?.call).toMatchObject({ messages })
-  const words = bytesOf(JSON.stringify(messages)) - data.length + pictureTokenCeiling
+  const words = bytesOf(JSON.stringify(messages)) - data.length + screenshotTokenCeiling
   const input = bytesOf(airaSystem(deck)) + bytesOf(JSON.stringify(airaTools)) + words + 64
   const held = await admin.query<{ ceiling: string }>("select ceiling from session.aira_turn where email = $1", [email])
   expect(Number(held.rows[0]?.ceiling)).toBe(input * 2_000 + airaMaxTokens * 10_000)
   const long = [
     ...messages.slice(0, -1),
-    { role: "user", content: [{ ...pictured, content: [{ type: "text", text: "x".repeat(270_000) }] }] },
+    { role: "user", content: [{ ...screenshotted, content: [{ type: "text", text: "x".repeat(270_000) }] }] },
   ]
   const calls = replay.calls.length
   const refused = await ask(main, "POST", "/aira/turn", { deck, messages: long }, cookie, vietnam)

@@ -269,7 +269,7 @@ describe("an answer read from structuredContent alone", () => {
   it("carries every word the tool says, as a client that reads only structuredContent needs", async () => {
     const host: DeckHost = {
       ...memoryDecks(started),
-      pictures: async (_deck, _fold, slides) => new Map(slides.map((slide) => [slide, shot])),
+      screenshots: async (_deck, _fold, slides) => new Map(slides.map((slide) => [slide, shot])),
     }
     await withClient(sessionFor(), host, async (client) => {
       const call = (name: string, args: Record<string, unknown>) =>
@@ -295,11 +295,11 @@ describe("an answer read from structuredContent alone", () => {
       for (const result of Object.values(answers))
         expect(textOf(result)).toEqual([{ type: "text", text: JSON.stringify(result.structuredContent) }])
 
-      const seen = read.structuredContent as { note: string; result: string; pictures: string[] }
+      const seen = read.structuredContent as { note: string; result: string; screenshots: string[] }
       expect(seen.note).toContain("only read the deck")
       expect(seen.result.split("\n")[0]).toMatch(new RegExp(`^slide ${first} "Title" group=\\S+$`))
       expect(seen.result).toContain('text="Untitled"')
-      expect(seen.pictures).toEqual([first])
+      expect(seen.screenshots).toEqual([first])
       expect(read.content).toContainEqual({ type: "image", data: shot, mimeType: "image/jpeg" })
       expect((made.structuredContent as { layers: string }).layers).toContain('text="Untitled"')
       expect((edited.structuredContent as { note: string }).note).toMatch(/^Landed at rev \d+ as one undo step\./)
@@ -315,8 +315,8 @@ describe("an answer read from structuredContent alone", () => {
     })
   })
 
-  it("says in structuredContent that no tab is open to paint a picture", async () => {
-    const host: DeckHost = { ...memoryDecks(started), pictures: async () => "unwatched" }
+  it("says in structuredContent that no tab is open to paint a screenshot", async () => {
+    const host: DeckHost = { ...memoryDecks(started), screenshots: async () => "no painter" }
     await withClient(sessionFor(), host, async (client) => {
       const made = await client.callTool({ name: "airdesign_execute", arguments: { script: "createDeck()" } })
       const { deck, slides } = made.structuredContent as { deck: string; slides: string[] }
@@ -324,9 +324,9 @@ describe("an answer read from structuredContent alone", () => {
         name: "airdesign_execute",
         arguments: { deck, script: `screenshot({ target: "${slides[0]!}" })` },
       })
-      const seen = read.structuredContent as { note: string; pictures?: string[] }
+      const seen = read.structuredContent as { note: string; screenshots?: string[] }
       expect(seen.note).toContain("none is open")
-      expect(seen.pictures).toBeUndefined()
+      expect(seen.screenshots).toBeUndefined()
       expect(textOf(read)).toEqual([{ type: "text", text: JSON.stringify(read.structuredContent) }])
     })
   })

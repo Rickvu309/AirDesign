@@ -37,7 +37,7 @@ import { deckListAnswers } from "./doom/deck-list.js"
 import { grantAgentName, readRegistration, registerClient } from "./oauth/clients.js"
 import { approve, describeClient } from "./oauth/consent.js"
 import { agentHost } from "./doom/agent-host.js"
-import { DeckPictures } from "./doom/deck-pictures.js"
+import { DeckScreenshots } from "./doom/deck-screenshots.js"
 import { DeckFollowers } from "./doom/deck-followers.js"
 import { DeckListen } from "./platform/listen.js"
 import { answeredDeckRoutes, type DeckAnswers } from "./platform/deck-answer.js"
@@ -72,7 +72,7 @@ export type ApiOptions = {
   readonly fonts?: FontSource
   readonly recordFontComparison?: (result: LayoutComparison) => void
   readonly imageNet?: ImageNet
-  readonly pictureWait?: number
+  readonly screenshotWait?: number
   readonly aira?: AiraSettings
   readonly closing?: Closing
   readonly forwardSecret?: string
@@ -82,7 +82,7 @@ type ServedOptions = ApiOptions & {
   readonly fonts: FontSource
   readonly closing: Closing
   readonly followers: DeckFollowers
-  readonly pictures: DeckPictures
+  readonly screenshots: DeckScreenshots
 }
 
 type Context = {
@@ -419,8 +419,8 @@ async function mcpRoute(visit: Visit): Promise<void> {
         fonts: options.fonts,
         ...(options.originals === undefined ? {} : { originals: options.originals }),
         ...(options.imageNet === undefined ? {} : { imageNet: options.imageNet }),
-        pictures: options.pictures,
-        ...(options.pictureWait === undefined ? {} : { pictureWait: options.pictureWait }),
+        screenshots: options.screenshots,
+        screenshotWait: options.screenshotWait,
       }),
       admit: (kind) => admitCaller(options.session, called.email, kind, at, called.agentKey),
     },
@@ -543,7 +543,7 @@ export function createApi(given: ApiOptions): Server {
     fonts: given.fonts ?? new FontSource(given.originals),
     closing: given.closing ?? new Closing({ db: given.session, listen: given.listen }),
     followers: new DeckFollowers(given.now ?? Date.now),
-    pictures: new DeckPictures(),
+    screenshots: new DeckScreenshots(),
   }
   if (given.recordFontComparison !== undefined) servedFontMetrics(options.fonts, given.recordFontComparison)
   requireOrigin("publicOrigin", options.publicOrigin)

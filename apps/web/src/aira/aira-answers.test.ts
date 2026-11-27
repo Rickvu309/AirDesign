@@ -1,31 +1,37 @@
-import { airaPictureBytes, airaPictureCap, pictureNotFitted, readTurn, type ResultBlock } from "@airdesign/catalog"
+import {
+  airaScreenshotBytes,
+  airaScreenshotCap,
+  screenshotNotFitted,
+  readTurn,
+  type ResultBlock,
+} from "@airdesign/catalog"
 import { expect, it } from "vitest"
-import { cappedPictures, toolAnswer } from "./aira-answers"
+import { cappedScreenshots, toolAnswer } from "./aira-answers"
 
 const picture = (data = "/9j/"): ResultBlock => ({
   type: "image",
   source: { type: "base64", media_type: "image/jpeg", data },
 })
 const label: ResultBlock = { type: "text", text: "Slide 2 (257) at revision 4:" }
-const note = { type: "text", text: pictureNotFitted }
+const note = { type: "text", text: screenshotNotFitted }
 
-it("keeps ten pictures in one message and puts a note in place of each one past that", () => {
+it("keeps ten screenshots in one message and puts a note in place of each one past that", () => {
   const first = toolAnswer(
     "call_1",
     "read",
     true,
-    Array.from({ length: airaPictureCap - 1 }, () => picture()),
+    Array.from({ length: airaScreenshotCap - 1 }, () => picture()),
   )
   const second = toolAnswer("call_2", "read", true, [label, picture(), picture()])
-  const [kept, capped] = cappedPictures([first, second])
+  const [kept, capped] = cappedScreenshots([first, second])
   expect(kept).toEqual(first)
   expect(capped?.content).toEqual([label, picture(), note])
 })
 
 it("puts a note in place of a picture that would take the turn past its bytes, and the turn still reads", () => {
-  const half = "A".repeat(airaPictureBytes / 2 - 4)
+  const half = "A".repeat(airaScreenshotBytes / 2 - 4)
   const answer = toolAnswer("call_1", "read", true, [label, picture(half), picture(half), picture(half), picture()])
-  const [fitted] = cappedPictures([answer])
+  const [fitted] = cappedScreenshots([answer])
   expect(fitted?.content).toEqual([label, picture(half), picture(half), note, picture()])
   const messages = [
     { role: "user", content: "Look" },

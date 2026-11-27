@@ -65,7 +65,7 @@ it("keeps every guide's tool, operation, input and answer references on the agen
     }).doom
   const host: DeckHost = {
     ...memoryDecks(fold),
-    pictures: async (_deck, _fold, slides) => new Map(slides.map((slide) => [slide, "QUFB"])),
+    screenshots: async (_deck, _fold, slides) => new Map(slides.map((slide) => [slide, "QUFB"])),
   }
   const session = { agent: "guide-drift", mint: () => "create" }
   const created = await callTool("airdesign_execute", { script: "createDeck()" }, session, host)

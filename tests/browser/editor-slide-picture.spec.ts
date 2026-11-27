@@ -46,7 +46,7 @@ async function read(stack: Stack, opened: Opened, more: { readonly slide?: strin
   const json = blocks.find((block) => block.type === "text")?.text ?? "{}"
   return {
     images: blocks.filter((block) => block.type === "image"),
-    answer: JSON.parse(json) as { readonly note?: string; readonly pictures?: readonly string[] },
+    answer: JSON.parse(json) as { readonly note?: string; readonly screenshots?: readonly string[] },
   }
 }
 
@@ -85,14 +85,14 @@ test("an agent reading a Doom deck with picture gets the slide as the open tab p
     })
     .toBe(1)
   expect(jpeg(first.images[0]?.data)).toBe(true)
-  expect(first.answer.pictures).toEqual([opened.slide])
-  await test.info().attach("slide-picture.jpg", {
+  expect(first.answer.screenshots).toEqual([opened.slide])
+  await test.info().attach("slide-screenshot.jpg", {
     body: Buffer.from(first.images[0]?.data ?? "", "base64"),
     contentType: "image/jpeg",
   })
 
   let blocked = true
-  await page.route("**/doom/pictures", async (route) => {
+  await page.route("**/doom/screenshots", async (route) => {
     if (blocked) await route.abort()
     else await route.fallback()
   })
@@ -100,7 +100,7 @@ test("an agent reading a Doom deck with picture gets the slide as the open tab p
   await expect(page.locator("[data-slide-box]").getByText("Costs fell")).toBeVisible()
   const behind = await read(stack, opened, { slide: opened.slide })
   expect(behind.images).toHaveLength(0)
-  expect(behind.answer.note).toContain(`No picture of ${opened.slide} yet`)
+  expect(behind.answer.note).toContain(`No screenshot of ${opened.slide} yet`)
 
   blocked = false
   await expect
@@ -132,7 +132,7 @@ test("a picture whose bytes this device does not hold says it is still uploading
   await expect(label).toHaveText(pictureCopy.uploading)
 })
 
-test("the first agent picture includes text in a freshly loaded font", async ({ page, context, stack }) => {
+test("the first agent screenshot includes text in a freshly loaded font", async ({ page, context, stack }) => {
   const opened = await openEditor(page, context, stack)
   const chars = "lợi nhuận quý".normalize("NFD")
   await landNodes(stack, opened, [
@@ -152,15 +152,15 @@ test("the first agent picture includes text in a freshly loaded font", async ({ 
   let image: string | undefined
   await expect
     .poll(async () => {
-      const picture = await read(stack, opened, { slide: opened.slide })
-      image = picture.images[0]?.data
+      const screenshot = await read(stack, opened, { slide: opened.slide })
+      image = screenshot.images[0]?.data
       return image?.length ?? 0
     })
     .toBeGreaterThan(0)
   const ink = await page.evaluate(async (data) => {
     const picture = await createImageBitmap(await (await fetch(`data:image/jpeg;base64,${data}`)).blob())
     const reader = new OffscreenCanvas(picture.width, picture.height).getContext("2d")
-    if (reader === null) throw new Error("Unable to inspect the slide picture")
+    if (reader === null) throw new Error("Unable to inspect the slide screenshot")
     reader.drawImage(picture, 0, 0)
     const pixels = reader.getImageData(126, 93, 308, 67).data
     return pixels.filter((ink, position) => position % 4 === 0 && ink < 100).length
@@ -203,8 +203,8 @@ test("a font failure is reported only for the requested slide using that font", 
 
   const failed = await read(stack, opened, { slide: other })
   expect(failed.images).toHaveLength(0)
-  expect(failed.answer.note).toContain(`A font could not load for ${other}, so it has no picture.`)
+  expect(failed.answer.note).toContain(`A font could not load for ${other}, so it has no screenshot.`)
   const captured = await read(stack, opened, { slide: opened.slide })
-  expect(captured.answer.pictures).toEqual([opened.slide])
+  expect(captured.answer.screenshots).toEqual([opened.slide])
   expect(jpeg(captured.images[0]?.data)).toBe(true)
 })

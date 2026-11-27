@@ -1,4 +1,4 @@
-import { picturesWantedMilliseconds, type DeckId } from "@airdesign/catalog"
+import { screenshotsWantedMilliseconds, type DeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import type { Followed } from "./doom-deck-types.js"
 import type { DoomRemote } from "./doom-remote.js"
@@ -27,8 +27,8 @@ export function followDoom({ deck, since, revision, leave, resync, apply, tell, 
     held?.abort(selectionChanged)
   }
 
-  let picturesUntil = 0
-  const picturesWanted = () => Date.now() < picturesUntil
+  let screenshotsUntil = 0
+  const screenshotsWanted = () => Date.now() < screenshotsUntil
 
   let caught = revision()
 
@@ -44,7 +44,7 @@ export function followDoom({ deck, since, revision, leave, resync, apply, tell, 
             rev: revision(),
             wait,
             ...(selection === undefined ? {} : { selection }),
-            ...(picturesWanted() ? { pictures: true } : {}),
+            ...(screenshotsWanted() ? { screenshots: true } : {}),
           },
           AbortSignal.any([signal, request.signal]),
         )
@@ -57,8 +57,8 @@ export function followDoom({ deck, since, revision, leave, resync, apply, tell, 
         }
         if (!wait) caught = doom.rev(Math.max(revision(), answer.rev))
         wait = true
-        if (answer.pictures === true) {
-          picturesUntil = Date.now() + picturesWantedMilliseconds
+        if (answer.screenshots === true) {
+          screenshotsUntil = Date.now() + screenshotsWantedMilliseconds
           tell()
         }
         send()
@@ -72,7 +72,7 @@ export function followDoom({ deck, since, revision, leave, resync, apply, tell, 
     return "stopped"
   }
 
-  return { shown: { follow, reportSelection, picturesWanted, caught: () => caught }, wake: () => held?.abort() }
+  return { shown: { follow, reportSelection, screenshotsWanted, caught: () => caught }, wake: () => held?.abort() }
 }
 
 export function foldCaught(

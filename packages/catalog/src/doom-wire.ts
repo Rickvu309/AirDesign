@@ -2,7 +2,7 @@ import { limits } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import * as z from "zod/v4"
 
-import { readSlidePictures, type SlidePictures } from "./slide-pictures-wire.js"
+import { readSlideScreenshots, type SlideScreenshots } from "./slide-screenshots-wire.js"
 import { type DeckId, deckInput, inputRefusal, readCapture, readInput, recordOf, wholeInput } from "./wire.js"
 
 export const doomRefusals = [
@@ -30,12 +30,12 @@ export type DoomRefusal =
 export type DoomResult<Value> = ({ readonly ok: true } & Value) | DoomRefusal
 export type DoomOpened = DoomResult<{ readonly deck: DeckId; readonly rev: number; readonly fold: doom.Doom }>
 export type DoomLanded = DoomResult<{ readonly deck: DeckId; readonly rev: number }>
-export type DoomPictured = DoomResult<{ readonly deck: DeckId; readonly missing: readonly doom.NodeId[] }>
+export type DoomScreenshotsKept = DoomResult<{ readonly deck: DeckId; readonly missing: readonly doom.NodeId[] }>
 export type DoomCaught = DoomResult<{
   readonly deck: DeckId
   readonly rev: number
   readonly edits: readonly unknown[]
-  readonly pictures?: true
+  readonly screenshots?: true
 }>
 
 export type DoomRan = DoomResult<{
@@ -45,7 +45,7 @@ export type DoomRan = DoomResult<{
   readonly replaced: readonly unknown[]
 }>
 
-export const picturesWantedMilliseconds = 120_000
+export const screenshotsWantedMilliseconds = 120_000
 
 export const nodeIdPattern = new RegExp(doom.agentChangesSchema.$defs.id.pattern)
 
@@ -85,7 +85,7 @@ export const readDoomSince = readInput(
     deck: deckInput,
     rev: wholeInput,
     wait: z.boolean().optional(),
-    pictures: z.boolean().optional(),
+    screenshots: z.boolean().optional(),
     selection: selectionInput.optional(),
   }),
   inputRefusal,
@@ -96,13 +96,13 @@ export const readDoomRun = readInput(
   inputRefusal,
 )
 
-export const readDoomPictures = readInput(
+export const readDoomScreenshots = readInput(
   z.strictObject({
     deck: deckInput,
     rev: wholeInput,
-    pictures: z.unknown().transform((raw, ctx): SlidePictures => {
-      const read = readSlidePictures(raw)
-      if (read === undefined) ctx.issues.push({ code: "custom", message: "pictures", input: raw })
+    screenshots: z.unknown().transform((raw, ctx): SlideScreenshots => {
+      const read = readSlideScreenshots(raw)
+      if (read === undefined) ctx.issues.push({ code: "custom", message: "screenshots", input: raw })
       return read ?? { keys: [], images: [] }
     }),
   }),
@@ -156,7 +156,7 @@ const caught = decode((body, deck) =>
         deck,
         rev: body.rev,
         edits: body.edits as unknown[],
-        ...(body.pictures === true ? { pictures: true as const } : {}),
+        ...(body.screenshots === true ? { screenshots: true as const } : {}),
       }
     : undefined,
 )
@@ -170,7 +170,7 @@ const ran = decode((body, deck) =>
     : undefined,
 )
 
-const pictured = decode((body, deck) =>
+const screenshotsKept = decode((body, deck) =>
   Array.isArray(body.missing) && body.missing.every((each) => doom.readNodeId(each) !== undefined)
     ? { deck, missing: body.missing as doom.NodeId[] }
     : undefined,
@@ -181,7 +181,7 @@ export const doomRoutes = {
   open: { path: "/doom/open", read: readDoomOpen, result: opened },
   edit: { path: "/doom/edit", read: readDoomEdit, result: landed },
   since: { path: "/doom/since", read: readDoomSince, result: caught },
-  pictures: { path: "/doom/pictures", read: readDoomPictures, result: pictured },
+  screenshots: { path: "/doom/screenshots", read: readDoomScreenshots, result: screenshotsKept },
   run: { path: "/doom/run", read: readDoomRun, result: ran },
 } as const
 

@@ -1,7 +1,7 @@
-import type { SlidePictures } from "@airdesign/catalog"
+import type { SlideScreenshots } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { reportSlidePictures, slideKey, unresolvedAssets } from "./slide-picture-report"
+import { reportSlideScreenshots, slideKey, unresolvedAssets } from "./slide-screenshot-report"
 
 const asset = "a".repeat(64)
 
@@ -14,11 +14,11 @@ function twoSlides() {
 }
 
 function recorder(missing: (index: number) => readonly doom.NodeId[]) {
-  const sent: { keys: string[]; images: SlidePictures["images"] }[] = []
+  const sent: { keys: string[]; images: SlideScreenshots["images"] }[] = []
   return {
     sent,
-    send: async (pictures: SlidePictures) => {
-      sent.push({ keys: pictures.keys.map((each) => each.slide), images: pictures.images })
+    send: async (screenshots: SlideScreenshots) => {
+      sent.push({ keys: screenshots.keys.map((each) => each.slide), images: screenshots.images })
       return missing(sent.length - 1)
     },
   }
@@ -34,12 +34,12 @@ describe("the key of a slide", () => {
   })
 })
 
-describe("reporting the pictures of a deck's slides", () => {
-  it("sends every slide's key first, then one painted picture for each slide the server still wants", async () => {
+describe("reporting the screenshots of a deck's slides", () => {
+  it("sends every slide's key first, then one screenshot for each slide the server still wants", async () => {
     const { view, slides } = twoSlides()
     const server = recorder((index) => (index === 0 ? slides : index === 1 ? [slides[1]!] : []))
     const painted: string[] = []
-    await reportSlidePictures({
+    await reportSlideScreenshots({
       view,
       send: server.send,
       capture: async (slide) => {
@@ -61,7 +61,7 @@ describe("reporting the pictures of a deck's slides", () => {
     const { view, slides } = twoSlides()
     const server = recorder((index) => (index === 0 ? slides : []))
     const painted: string[] = []
-    await reportSlidePictures({
+    await reportSlideScreenshots({
       view,
       send: server.send,
       capture: async (slide) => {
@@ -74,11 +74,11 @@ describe("reporting the pictures of a deck's slides", () => {
     expect(painted).toEqual([slides[1]])
   })
 
-  it("drops a picture painted after the deck moved on from the revision it is reporting", async () => {
+  it("drops a screenshot painted after the deck moved on from the revision it is reporting", async () => {
     const { view, slides } = twoSlides()
     const server = recorder(() => slides)
     let alive = true
-    await reportSlidePictures({
+    await reportSlideScreenshots({
       view,
       send: server.send,
       capture: async () => {
@@ -94,7 +94,7 @@ describe("reporting the pictures of a deck's slides", () => {
   it("stops when the server cannot be reached, and says so", async () => {
     const { view } = twoSlides()
     const painted: string[] = []
-    const reached = await reportSlidePictures({
+    const reached = await reportSlideScreenshots({
       view,
       send: async () => null,
       capture: async (slide) => {
@@ -111,7 +111,7 @@ describe("reporting the pictures of a deck's slides", () => {
   it("says it reached the server when it ran to the end", async () => {
     const { view } = twoSlides()
     expect(
-      await reportSlidePictures({
+      await reportSlideScreenshots({
         view,
         send: async () => [],
         capture: async () => null,
@@ -121,10 +121,10 @@ describe("reporting the pictures of a deck's slides", () => {
     ).toBe(true)
   })
 
-  it("sends no picture for a slide that could not be painted", async () => {
+  it("sends no screenshot for a slide that could not be painted", async () => {
     const { view, slides } = twoSlides()
     const server = recorder((index) => (index === 0 ? [slides[0]!] : []))
-    await reportSlidePictures({
+    await reportSlideScreenshots({
       view,
       send: server.send,
       capture: async () => null,

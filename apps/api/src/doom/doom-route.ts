@@ -2,13 +2,13 @@ import type { ServerResponse } from "node:http"
 
 import { doomRoutes, type TabSelection } from "@airdesign/catalog"
 
-import type { DeckPictures } from "./deck-pictures.js"
+import type { DeckScreenshots } from "./deck-screenshots.js"
 import type { DeckListen } from "../platform/listen.js"
 import type { Sql } from "../platform/pool.js"
 import { createDoom, editDoom, openDoom, runDoom, doomRev, sinceDoom } from "./doom-deck.js"
 
 type DoomVisit = {
-  readonly options: { readonly deck: Sql; readonly listen: DeckListen; readonly pictures: DeckPictures }
+  readonly options: { readonly deck: Sql; readonly listen: DeckListen; readonly screenshots: DeckScreenshots }
   readonly res: ServerResponse
   readonly body: () => Promise<Buffer | undefined>
 }
@@ -29,15 +29,15 @@ type Route<Visit> = {
 
 const owed = (
   options: DoomVisit["options"],
-  parsed: { readonly deck: string; readonly pictures?: boolean | undefined },
-) => parsed.pictures !== true && options.pictures.wanted(parsed.deck as never)
+  parsed: { readonly deck: string; readonly screenshots?: boolean | undefined },
+) => parsed.screenshots !== true && options.screenshots.wanted(parsed.deck as never)
 
-function withPictures<Caught extends object>(
+function withScreenshots<Caught extends object>(
   options: DoomVisit["options"],
-  parsed: { readonly deck: string; readonly pictures?: boolean | undefined },
+  parsed: { readonly deck: string; readonly screenshots?: boolean | undefined },
   caught: Caught,
 ) {
-  return owed(options, parsed) ? { ...caught, pictures: true as const } : caught
+  return owed(options, parsed) ? { ...caught, screenshots: true as const } : caught
 }
 
 async function heldSince(
@@ -45,7 +45,7 @@ async function heldSince(
   parsed: {
     readonly deck: Parameters<typeof sinceDoom>[1]["deck"]
     readonly rev: number
-    readonly pictures?: boolean | undefined
+    readonly screenshots?: boolean | undefined
     readonly selection?: TabSelection | undefined
   },
   email: string,
@@ -55,17 +55,17 @@ async function heldSince(
     const answered = new AbortController()
     const hold = AbortSignal.any([signal, answered.signal])
     const woken = options.listen.wait(hold, { deck: parsed.deck }).then(() => false)
-    const asked = options.pictures.asked(parsed.deck, hold)
+    const jobs = options.screenshots.lease(parsed.deck, hold)
     try {
       await options.listen.ready()
       if (signal.aborted) return undefined
       const caught = await sinceDoom(options.deck, parsed, email)
       if (!caught.ok) return caught
-      if (caught.edits.length > 0 || owed(options, parsed)) return withPictures(options, parsed, caught)
-      options.pictures.watchTab(email, { deck: parsed.deck, selection: parsed.selection }, hold)
-      const wanted = await Promise.race([woken, asked])
+      if (caught.edits.length > 0 || owed(options, parsed)) return withScreenshots(options, parsed, caught)
+      options.screenshots.watchTab(email, { deck: parsed.deck, selection: parsed.selection }, hold)
+      const wanted = await Promise.race([woken, jobs])
       if (signal.aborted) return undefined
-      if (wanted) return { ...caught, pictures: true as const }
+      if (wanted) return { ...caught, screenshots: true as const }
     } finally {
       answered.abort()
     }
@@ -109,12 +109,12 @@ export function doomRouteList<Visit extends DoomVisit>(http: DoomHttp<Visit>): r
     route(doomRoutes.edit.path, doomRoutes.edit.read, (visit, parsed, email) =>
       editDoom(visit.options.deck, parsed, email),
     ),
-    route(doomRoutes.pictures.path, doomRoutes.pictures.read, async (visit, parsed, email) => {
+    route(doomRoutes.screenshots.path, doomRoutes.screenshots.read, async (visit, parsed, email) => {
       const known = await doomRev(visit.options.deck, parsed.deck, email)
       if (!known.ok) return known
       if (parsed.rev > known.rev) return { ok: false, refusal: "stale" }
-      const missing = visit.options.pictures.keep(parsed.deck, parsed.rev, parsed.pictures)
-      return { ok: true, deck: parsed.deck, missing: visit.options.pictures.wantedAmong(parsed.deck, missing) }
+      const missing = visit.options.screenshots.keep(parsed.deck, parsed.rev, parsed.screenshots)
+      return { ok: true, deck: parsed.deck, missing: visit.options.screenshots.wantedAmong(parsed.deck, missing) }
     }),
     route(doomRoutes.run.path, doomRoutes.run.read, (visit, parsed, email) =>
       runDoom(visit.options.deck, parsed, email),
@@ -122,7 +122,7 @@ export function doomRouteList<Visit extends DoomVisit>(http: DoomHttp<Visit>): r
     route(doomRoutes.since.path, doomRoutes.since.read, async (visit, parsed, email) => {
       if (parsed.wait !== true) {
         const caught = await sinceDoom(visit.options.deck, parsed, email)
-        return caught.ok ? withPictures(visit.options, parsed, caught) : caught
+        return caught.ok ? withScreenshots(visit.options, parsed, caught) : caught
       }
       const signal = http.gone(visit.res)
       const caught = await heldSince(visit.options, parsed, email, signal)

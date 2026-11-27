@@ -115,32 +115,32 @@ describe("screenshot in execute", () => {
   const shot = "/9j/AAAA"
   const shots = (slides: readonly string[]) => slides.map((slide) => `screenshot({ target: "${slide}" })`).join("\n")
 
-  it("adds a picture of each slide that has a current one", async () => {
+  it("adds a screenshot of each slide that has a current one", async () => {
     const by = agent(() => ({
-      pictures: async (_deck, _fold, slides) => new Map(slides.map((slide) => [slide, shot])),
+      screenshots: async (_deck, _fold, slides) => new Map(slides.map((slide) => [slide, shot])),
     }))
     const made = await deckOf(by)
     const read = await by.call("execute", { deck: made.deck, script: shots(made.slides) })
     expect(read.ok).toBe(true)
-    expect(read.pictures).toEqual([shot, shot])
+    expect(read.screenshots).toEqual([shot, shot])
   })
 
-  it("says plainly which slides have no current picture yet", async () => {
+  it("says plainly which slides have no current screenshot yet", async () => {
     const by = agent(() => ({
-      pictures: async (_deck, _fold, slides) => new Map(slides.slice(0, 1).map((slide) => [slide, shot])),
+      screenshots: async (_deck, _fold, slides) => new Map(slides.slice(0, 1).map((slide) => [slide, shot])),
     }))
     const made = await deckOf(by)
     const read = await by.call("execute", { deck: made.deck, script: shots(made.slides) })
-    expect(read.pictures).toEqual([shot])
-    expect(read.fields.pictures).toEqual([made.slides[0]])
-    expect(read.fields.note).toContain(`No picture of ${made.slides[1]!} yet`)
+    expect(read.screenshots).toEqual([shot])
+    expect(read.fields.screenshots).toEqual([made.slides[0]])
+    expect(read.fields.note).toContain(`No screenshot of ${made.slides[1]!} yet`)
     expect(read.fields.note).toContain("open AirDesign tab")
   })
 
-  it("asks for no picture when the script takes none", async () => {
+  it("asks for no screenshot when the script takes none", async () => {
     let asked = 0
     const by = agent(() => ({
-      pictures: async () => {
+      screenshots: async () => {
         asked += 1
         return new Map()
       },
@@ -154,7 +154,7 @@ describe("screenshot in execute", () => {
   it("asks only for the slide named", async () => {
     let wanted: readonly string[] = []
     const by = agent(() => ({
-      pictures: async (_deck, _fold, slides) => {
+      screenshots: async (_deck, _fold, slides) => {
         wanted = slides
         return new Map()
       },

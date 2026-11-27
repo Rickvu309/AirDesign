@@ -4,7 +4,7 @@ import { accent, landNodes, openEditor, spot } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-test("an agent's first picture read reaches a tab that is between two catch-ups and gets the picture", async ({
+test("an agent's first screenshot reaches a tab that is between two catch-ups and gets the screenshot", async ({
   page,
   context,
   stack,
@@ -46,8 +46,8 @@ test("an agent's first picture read reaches a tab that is between two catch-ups 
       async () =>
         (
           await stack.post(
-            doomRoutes.pictures.path,
-            { deck: opened.deck, rev: head.rev, pictures: unseen },
+            doomRoutes.screenshots.path,
+            { deck: opened.deck, rev: head.rev, screenshots: unseen },
             opened.cookie,
           )
         ).json,

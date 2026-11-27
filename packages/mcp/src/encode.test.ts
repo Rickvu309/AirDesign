@@ -27,7 +27,7 @@ async function replies(): Promise<Record<string, string>> {
   const session = { agent: "aira", mint: () => `minted${String((minted += 1))}` }
   const host: DeckHost = {
     ...memoryDecks(started),
-    pictures: async (_deck, _fold, slides) => new Map(slides.map((slide) => [slide, shot])),
+    screenshots: async (_deck, _fold, slides) => new Map(slides.map((slide) => [slide, shot])),
   }
   const server = createServer(session, host)
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
@@ -79,7 +79,7 @@ const pictured = {
   rev: 3,
   runId: "r0dofbxn90nh",
   problems: [],
-  pictures: ["n:3"],
+  screenshots: ["n:3"],
   note: "Landed at rev 3 as one undo step. Send runId r0dofbxn90nh with your next call, and to airdesign_stop_run when you are done.",
 }
 
@@ -96,7 +96,7 @@ const refusal = {
   line: 1,
 }
 
-it("answers a read, an edit with a picture and a refusal in the bytes it answered before one encoder", async () => {
+it("answers a read, an edit with a screenshot and a refusal in the bytes it answered before one encoder", async () => {
   expect(await replies()).toEqual({
     read: reply(2, { content: [text(read)], structuredContent: read }),
     pictured: reply(3, {

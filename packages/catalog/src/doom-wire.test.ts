@@ -15,7 +15,14 @@ const folded = (id: string) => ({
 })
 
 it("names the doom paths the web worker forwards, apart from the deck paths", () => {
-  expect(doomPaths).toEqual(["/doom/create", "/doom/open", "/doom/edit", "/doom/since", "/doom/pictures", "/doom/run"])
+  expect(doomPaths).toEqual([
+    "/doom/create",
+    "/doom/open",
+    "/doom/edit",
+    "/doom/since",
+    "/doom/screenshots",
+    "/doom/run",
+  ])
 })
 
 it("reads a deck, an edit for a deck, and a catch-up cursor, and nothing else", () => {
@@ -31,14 +38,14 @@ it("reads a deck, an edit for a deck, and a catch-up cursor, and nothing else", 
   expect(doomRoutes.edit.read({ deck, edit, once: "o" })).toEqual(field)
   expect(doomRoutes.since.read({ deck, rev: 3 })).toEqual({ ok: true, deck, rev: 3 })
   expect(doomRoutes.since.read({ deck, rev: 3, wait: true })).toEqual({ ok: true, deck, rev: 3, wait: true })
-  expect(doomRoutes.since.read({ deck, rev: 3, wait: true, pictures: true })).toEqual({
+  expect(doomRoutes.since.read({ deck, rev: 3, wait: true, screenshots: true })).toEqual({
     ok: true,
     deck,
     rev: 3,
     wait: true,
-    pictures: true,
+    screenshots: true,
   })
-  expect(doomRoutes.since.read({ deck, rev: 3, pictures: "yes" })).toEqual(field)
+  expect(doomRoutes.since.read({ deck, rev: 3, screenshots: "yes" })).toEqual(field)
   expect(doomRoutes.since.read({ deck, rev: -1 })).toEqual(field)
   expect(doomRoutes.since.read({ deck, rev: 1.5 })).toEqual(field)
   expect(doomRoutes.since.read({ deck, rev: 3, wait: "yes" })).toEqual(field)
@@ -81,14 +88,14 @@ it("decodes a catch-up into the head and the landed edits as sent, left for the 
     rev: 2,
     edits: [edit],
   })
-  expect(doomRoutes.since.result({ ok: true, deck, rev: 2, edits: [], pictures: true })).toEqual({
+  expect(doomRoutes.since.result({ ok: true, deck, rev: 2, edits: [], screenshots: true })).toEqual({
     ok: true,
     deck,
     rev: 2,
     edits: [],
-    pictures: true,
+    screenshots: true,
   })
-  expect(doomRoutes.since.result({ ok: true, deck, rev: 2, edits: [], pictures: "yes" })).toEqual({
+  expect(doomRoutes.since.result({ ok: true, deck, rev: 2, edits: [], screenshots: "yes" })).toEqual({
     ok: true,
     deck,
     rev: 2,
@@ -98,23 +105,28 @@ it("decodes a catch-up into the head and the landed edits as sent, left for the 
   expect(doomRoutes.since.result({ ok: true, deck, edits: [] })).toEqual(payload)
 })
 
-it("reads the slide keys and slide pictures an open tab sends for a doom deck, and the slides still missing", () => {
+it("reads the slide keys and slide screenshots an open tab sends for a doom deck, and the slides still missing", () => {
   const key = "a".repeat(64)
-  const pictures = { keys: [{ slide: "t:3", key }], images: [{ slide: "t:3", key, type: "image/jpeg", data: "QUFB" }] }
-  expect(doomRoutes.pictures.read({ deck, rev: 4, pictures })).toEqual({ ok: true, deck, rev: 4, pictures })
-  expect(doomRoutes.pictures.read({ deck, rev: 4, pictures: { keys: [], images: [] } })).toMatchObject({ ok: true })
-  expect(doomRoutes.pictures.read({ deck, rev: 4 })).toEqual(field)
+  const screenshots = {
+    keys: [{ slide: "t:3", key }],
+    images: [{ slide: "t:3", key, type: "image/jpeg", data: "QUFB" }],
+  }
+  expect(doomRoutes.screenshots.read({ deck, rev: 4, screenshots })).toEqual({ ok: true, deck, rev: 4, screenshots })
+  expect(doomRoutes.screenshots.read({ deck, rev: 4, screenshots: { keys: [], images: [] } })).toMatchObject({
+    ok: true,
+  })
+  expect(doomRoutes.screenshots.read({ deck, rev: 4 })).toEqual(field)
   expect(
-    doomRoutes.pictures.read({ deck, rev: 4, pictures: { ...pictures, keys: [{ slide: "no id", key }] } }),
+    doomRoutes.screenshots.read({ deck, rev: 4, screenshots: { ...screenshots, keys: [{ slide: "no id", key }] } }),
   ).toEqual(field)
-  expect(doomRoutes.pictures.read({ deck, rev: -1, pictures })).toEqual(field)
-  expect(doomRoutes.pictures.result({ ok: true, deck, missing: ["t:3"] })).toEqual({
+  expect(doomRoutes.screenshots.read({ deck, rev: -1, screenshots })).toEqual(field)
+  expect(doomRoutes.screenshots.result({ ok: true, deck, missing: ["t:3"] })).toEqual({
     ok: true,
     deck,
     missing: ["t:3"],
   })
-  expect(doomRoutes.pictures.result({ ok: true, deck, missing: [3] })).toEqual(payload)
-  expect(doomRoutes.pictures.result({ ok: false, refusal: "stale" })).toEqual({ ok: false, refusal: "stale" })
+  expect(doomRoutes.screenshots.result({ ok: true, deck, missing: [3] })).toEqual(payload)
+  expect(doomRoutes.screenshots.result({ ok: false, refusal: "stale" })).toEqual({ ok: false, refusal: "stale" })
 })
 
 it("reads a run's id for a deck, and answers the run's edits with the values each one replaced", () => {

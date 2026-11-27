@@ -2,7 +2,7 @@ import {
   mcpRoutes,
   onceMeta,
   pendingFontsMeta,
-  pictureType,
+  screenshotType,
   type ReplyBlock,
   type ResultBlock,
 } from "@airdesign/catalog"
@@ -26,7 +26,7 @@ export type ToolOutcome = {
   readonly ok: boolean
   readonly text: string
   readonly fields: Readonly<Record<string, unknown>> | undefined
-  readonly pictures?: readonly ResultBlock[]
+  readonly screenshots?: readonly ResultBlock[]
 }
 
 function parsed(text: string): unknown {
@@ -106,11 +106,11 @@ function resultBlock(raw: unknown): ResultBlock | undefined {
   const block = fieldsOf(raw)
   if (block?.type === "text" && typeof block.text === "string" && block.text !== "")
     return { type: "text", text: block.text }
-  if (block?.type !== "image" || block.mimeType !== pictureType || typeof block.data !== "string") return undefined
-  return { type: "image", source: { type: "base64", media_type: pictureType, data: block.data } }
+  if (block?.type !== "image" || block.mimeType !== screenshotType || typeof block.data !== "string") return undefined
+  return { type: "image", source: { type: "base64", media_type: screenshotType, data: block.data } }
 }
 
-function picturedContent(content: unknown): readonly ResultBlock[] | undefined {
+function screenshotContent(content: unknown): readonly ResultBlock[] | undefined {
   if (!Array.isArray(content) || !content.some((block) => fieldsOf(block)?.type === "image")) return undefined
   return content.flatMap((block) => resultBlock(block) ?? [])
 }
@@ -128,12 +128,12 @@ export function toolOutcome(body: string): ToolOutcome {
     if (result !== undefined) {
       const fields = fieldsOf(result.structuredContent)
       const text = answerText(result.content)
-      const pictures = picturedContent(result.content)
+      const screenshots = screenshotContent(result.content)
       return {
         ok: result.isError !== true && fields?.ok !== false,
         text: text === "" ? JSON.stringify(fields ?? {}) : text,
         fields,
-        ...(pictures === undefined ? {} : { pictures }),
+        ...(screenshots === undefined ? {} : { screenshots }),
       }
     }
     const error = fieldsOf(answer?.error)

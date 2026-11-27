@@ -79,22 +79,22 @@ function landRefused(plan: Plan, result: Answer): Answer {
   return told(false, { ...rest, op: change.op, verb: change.verb, note: `Nothing landed. ${note}` })
 }
 
-async function pictures(plan: Plan, host: DeckHost) {
+async function screenshots(plan: Plan, host: DeckHost) {
   const images: string[] = []
   const shown: string[] = []
   const notes: string[] = []
   if (plan.shots.length === 0) return { images, shown, notes }
   const now = await host.open(plan.opened.deck)
-  if (!now.ok || host.pictures === undefined)
-    return { images, shown, notes: ["No pictures: the deck could not be painted."] }
+  if (!now.ok || host.screenshots === undefined)
+    return { images, shown, notes: ["No screenshots: the deck could not be painted."] }
   const wanted = plan.shots.slice(0, shotsPerCall)
-  const shots = await host.pictures(now.deck, now.fold, wanted)
-  if (shots === "unwatched")
+  const shots = await host.screenshots(now.deck, now.fold, wanted)
+  if (shots === "no painter")
     return {
       images,
       shown,
       notes: [
-        "No pictures: pictures come from an AirDesign tab with this deck open, and none is open. Use get for measured boxes and problems, or ask the person to open the deck.",
+        "No screenshots: screenshots come from an AirDesign tab with this deck open, and none is open. Use get for measured boxes and problems, or ask the person to open the deck.",
       ],
     }
   const waiting: string[] = []
@@ -104,14 +104,16 @@ async function pictures(plan: Plan, host: DeckHost) {
       images.push(shot)
       shown.push(slide)
     } else if (shot === undefined) waiting.push(slide)
-    else notes.push(`A font could not load for ${slide}, so it has no picture.`)
+    else notes.push(`A font could not load for ${slide}, so it has no screenshot.`)
   }
   if (waiting.length > 0)
     notes.push(
-      `No picture of ${waiting.join(", ")} yet: the open AirDesign tab did not paint it in time. Use get for measured boxes and problems.`,
+      `No screenshot of ${waiting.join(", ")} yet: the open AirDesign tab did not paint it in time. Use get for measured boxes and problems.`,
     )
   if (plan.shots.length > wanted.length)
-    notes.push(`Pictures of the first ${String(shotsPerCall)} slides asked for only. Ask for the rest in another call.`)
+    notes.push(
+      `Screenshots of the first ${String(shotsPerCall)} slides asked for only. Ask for the rest in another call.`,
+    )
   return { images, shown, notes }
 }
 
@@ -228,7 +230,7 @@ export async function executeTool(
   const sent = compiled === undefined ? undefined : await landEdit(opened, compiled, host, lastRead ?? opened.fold.rev)
   if (sent !== undefined && !("landed" in sent)) return landRefused(plan, sent)
   const landed = sent
-  const shots = await pictures(plan, host)
+  const shots = await screenshots(plan, host)
   const rev = landed?.rev ?? opened.rev
   const runId = landed === undefined || landed.unchanged === true ? input.runId : plan.run
   const kept = resultOf(end)
@@ -253,10 +255,10 @@ export async function executeTool(
       ...(landed === undefined || landed.bakedLayouts.length === 0 ? {} : { bakedLayouts: landed.bakedLayouts }),
       ...(kept.result === undefined ? {} : { result: kept.result }),
       ...(end.logs.length === 0 ? {} : { logs: end.logs }),
-      ...(shots.shown.length === 0 ? {} : { pictures: shots.shown }),
+      ...(shots.shown.length === 0 ? {} : { screenshots: shots.shown }),
     }),
     opened.fold,
     agent.id,
   )
-  return { ...result, pictures: shots.images }
+  return { ...result, screenshots: shots.images }
 }

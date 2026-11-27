@@ -4,10 +4,10 @@ import {
   type DeckId,
   type DoomCaught,
   type DoomLanded,
-  type DoomPictured,
+  type DoomScreenshotsKept,
   type DoomOpened,
   type DoomRan,
-  type SlidePictures,
+  type SlideScreenshots,
   type TabSelection,
 } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
@@ -21,17 +21,17 @@ export type DoomRemote = {
       readonly deck: string
       readonly rev: number
       readonly wait?: boolean
-      readonly pictures?: boolean
+      readonly screenshots?: boolean
       readonly selection?: TabSelection
     },
     signal?: AbortSignal,
   ): Promise<DoomCaught>
   run?(body: { readonly deck: string; readonly run: string }): Promise<DoomRan>
-  pictures?(body: {
+  screenshots?(body: {
     readonly deck: string
     readonly rev: number
-    readonly pictures: SlidePictures
-  }): Promise<DoomPictured>
+    readonly screenshots: SlideScreenshots
+  }): Promise<DoomScreenshotsKept>
 }
 
 export async function post(path: string, body: unknown, signal?: AbortSignal): Promise<unknown> {
@@ -56,7 +56,7 @@ export function httpDoomRemote(): DoomRemote {
     open: async (body) => doomRoutes.open.result(await post(doomRoutes.open.path, body)),
     edit: async (body) => doomRoutes.edit.result(await post(doomRoutes.edit.path, body)),
     since: async (body, signal) => doomRoutes.since.result(await post(doomRoutes.since.path, body, signal)),
-    pictures: async (body) => doomRoutes.pictures.result(await post(doomRoutes.pictures.path, body)),
+    screenshots: async (body) => doomRoutes.screenshots.result(await post(doomRoutes.screenshots.path, body)),
     run: async (body) => doomRoutes.run.result(await post(doomRoutes.run.path, body)),
   }
 }
