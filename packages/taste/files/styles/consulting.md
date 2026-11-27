@@ -19,8 +19,8 @@ The reader is a senior person who has to decide something. The deck reads like t
 - `background`: every slide. Stay on white.
 - `text`: titles, body and table figures.
 - `text2`: secondary words: axis labels, column headers, notes, the source line.
-- `accent2`: the one thing the title talks about: one bar, one row, one figure. One per slide.
-- `accent1`: totals, the base series, and the fill of a single callout with `background` text.
+- `accent1`: the one thing the title talks about: one bar, one row, one figure. One per slide.
+- `accent2`: totals, the base series, and the fill of a single callout with `background` text.
 - `text+75`: every other bar or series, so the highlighted one stands out.
 - `text+85`: hairlines: table rules, axis lines, dividers.
 - `background2`: the fill of a single callout, as tall as its words.
@@ -30,7 +30,7 @@ The reader is a senior person who has to decide something. The deck reads like t
 
 ## Decoration
 
-- Allowed: hairline rules, corners square or radius 4 at most, a number in a small `accent1` square for a numbered recommendation.
+- Allowed: hairline rules, corners square or radius 4 at most, a number in a small `accent2` square for a numbered recommendation.
 - Not allowed: shadows or any `effect`, gradients, icons, mood pictures, tinted slide backgrounds, rounded cards, a box taller than its words, more than one highlight colour on a slide.
 
 ## Hierarchy
@@ -49,5 +49,5 @@ Someone who reads only the title and the coloured element gets the point.
 
 ## Parameters
 
-- `accent`: the colour for the point that matters. Default `accent2`, teal. Use `accent6`, rust, when the point is a problem or a risk.
+- `accent`: the colour for the point that matters. Default `accent1`, blue. Use `accent6`, red, when the point is a problem or a risk.
 - `density`: `standard` (default): `body` text and up to four points. `dense`: `body2`, tables up to ten rows, for detail and appendix slides.

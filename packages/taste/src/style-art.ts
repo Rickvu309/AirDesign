@@ -9,7 +9,7 @@ export const designedThemes = [
     id: "consulting",
     name: "Consulting",
     fonts: { heading: "Source Serif 4", body: "Source Sans 3" },
-    colors: { accent1: "#155d94", accent2: "#00665e", accent6: "#994226" },
+    colors: { accent1: "#2251ff", accent2: "#061f79", accent6: "#d51f31" },
     textStyles: { title: { size: 60 }, caption: { size: 24, lineHeight: 1.3 } },
   },
   {

@@ -41,12 +41,27 @@ describe("built-in styles", () => {
     expect(text.parameters[0]?.description).toMatch(/^the colour for the point that matters\./)
   })
 
+  it("names accent1 as the point colour in every style's token map and default accent parameter", () => {
+    for (const { id } of styles) {
+      const text = styleText(id)!
+      const tokenMap = text.markdown.split("## Token map")[1]!.split("\n## ")[0]!
+      const pointLines = tokenMap
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.endsWith("One per slide."))
+      expect(pointLines, `${id} token map point`).toHaveLength(1)
+      expect(pointLines[0], `${id} token map point`).toMatch(/^- `accent1`: /)
+      const accent = text.parameters.find(({ name }) => name === "accent")
+      expect(accent?.description, `${id} accent parameter`).toContain("Default `accent1`")
+    }
+  })
+
   it("keeps every preset value apart from the Consulting accent and Technical title size", () => {
     const actual = Object.fromEntries(
       styles.map(({ id, theme }) => [id, createHash("sha256").update(JSON.stringify(theme)).digest("hex")]),
     )
     expect(actual).toEqual({
-      consulting: "efb3527b5e1f8e3a8b32c2aa47bef1aeed48ad76bddc06cf043bba6f1ffa78fc",
+      consulting: "86dc328a90748794b044d900353127dc3bf4acac4ef01bc05ec41ce6b21f3835",
       editorial: "9b60e474ef40b369616d07fd2493a40482bd24788ea4755c596cb969a36489d3",
       midnight: "66af9b1a0e36c4ab16de6a2cee83dcd2780c00c95a45db92efe5c29623d8fae3",
       neutral: "b3429917b395d0fb5521e7be117b2640f33728ef73c590af9971acbaa8d214bb",
