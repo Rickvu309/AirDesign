@@ -53,3 +53,24 @@ it("keeps the largest answer of each tool on the eval decks under its stated siz
   expect(Object.keys(largest).sort()).toEqual(Object.keys(statedBytes))
   for (const [tool, stated] of Object.entries(statedBytes)) expect(largest[tool], tool).toBeLessThanOrEqual(stated)
 })
+
+async function executeFieldBytes(): Promise<readonly number[]> {
+  const sizes: number[] = []
+  for (const row of suite) {
+    let calls = 0
+    const session: Session = { agent: "eval", mint: () => `call${String((calls += 1))}` }
+    const start = row.task.deck()
+    const decks = memoryDecks(() => start, new Map([[evalDeckId, start]]))
+    for (const step of row.reference) {
+      const answer = await callTool(step.name, step.raw, session, decks)
+      if (step.name === "airdesign_execute") sizes.push(Buffer.byteLength(JSON.stringify(answer.fields)))
+    }
+  }
+  return sizes
+}
+
+it("keeps the mean execute answer of the eval references 15% under its 340.82 bytes before answers were trimmed", async () => {
+  const sizes = await executeFieldBytes()
+  expect(sizes).toHaveLength(50)
+  expect(sizes.reduce((sum, size) => sum + size, 0) / sizes.length).toBeLessThanOrEqual(340.82 * 0.85)
+})
