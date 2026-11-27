@@ -234,7 +234,7 @@ describe("the advertised schema", () => {
     const described = change.op?.description ?? ""
     expect(described).toContain("into is required with nodes or box")
     expect(described).toContain("names a slide")
-    expect(described).toContain("x, y, w, h")
+    expect(described).toContain("x, y or both")
     expect(described).toContain("w, h do not resize")
   })
 

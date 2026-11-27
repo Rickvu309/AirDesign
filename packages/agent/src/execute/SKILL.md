@@ -84,11 +84,11 @@ get({ target: s }).problems
   - `frame`: holds layers (`layout`, `gap`, `padding`, `clip`). Given `rows`, a list of rows of cell strings with the header first, it is a grid of words.
   - `picture`: `fill: { image }` with an https address or an asset hash from this deck. `icon`: a Lucide name in `icon`, such as `trending-up`.
 - `insert({ kind: "slide", after?, group?, ...look })` adds a slide, last unless `after` names a slide, and returns its id. `group` is a slide group id or `"new"`.
-- `update({ target, ...look })` changes a layer or a slide. `target` is an id, `<slide>.title`, `<slide>.subtitle`, `<slide>.body`, or `*.title` for every slide's title.
+- `update({ target, ...look })` changes a layer or a slide. A `box` with only some of `x`, `y`, `w` and `h` keeps the rest. `target` is an id, `<slide>.title`, `<slide>.subtitle`, `<slide>.body`, or `*.title` for every slide's title.
 - `replace({ target, kind, ...look })` puts a new layer in the place of `target`, in the same parent and order and with its box unless you give one. Returns the new id.
 - `copy({ targets })` copies layers or slides, each right after its source, and returns the new ids.
 - `copy({ from: "kit/<piece>", parent, box? })` copies a kit piece into a slide or frame as plain layers you own and returns its id in a list. The `kit` skill lists the pieces.
-- `move({ target or targets, parent?, after?, box? })` moves layers. `parent` is a frame or a slide, `after` a sibling id or `null` for first, and `box` places them: `x` and `y` move the group, `w` and `h` do not resize. A slide moves with `after` or `before` a slide (`after: null` puts it first) or into a `group`.
+- `move({ target or targets, parent?, after?, box? })` moves layers. `parent` is a frame or a slide, `after` a sibling id or `null` for first, and `box` places them: `x`, `y` or both move the group, and `w` and `h` do not resize. A slide moves with `after` or `before` a slide (`after: null` puts it first) or into a `group`.
 - `remove({ target or targets })` deletes layers or slides. A deck keeps one slide.
 - `group({ targets, layout?, clip?, ...look })` wraps layers in a new frame and returns its id. `ungroup({ target })` dissolves one.
 - `variables({ theme?, colors?, fonts?, name?, nameFollows?, language? })` changes the deck's theme and returns its colours, fonts and text sizes. `theme` is `neutral`, `consulting`, `editorial`, `midnight` or `technical`; after you pick one, read its style with `airdesign_get_style {name: <theme>}`. `colors` maps a theme colour name to `#rrggbb`. `fonts` is `{ heading?, body? }`.

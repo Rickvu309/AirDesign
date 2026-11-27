@@ -11,7 +11,7 @@ import { measureWith } from "./measure.js"
 import { type NodeId, readNodeId } from "./ids.js"
 import type { Geometry } from "./geometry.js"
 import type { Node } from "./doom.js"
-import { descendantsOf, propOf, slideOf, slidesOf } from "./doom-walk.js"
+import { boxOf, descendantsOf, propOf, slideOf, slidesOf } from "./doom-walk.js"
 
 type SetChange = Extract<AgentChange, { op: "set" }>
 
@@ -136,7 +136,7 @@ function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | und
     }
   }
   if (geometry?.kind !== "line") return undefined
-  const box = change.box
+  const box = change.box === undefined ? undefined : { ...boxOf(node, draft.reading.boxes), ...change.box }
   const pointed = "x" in geometry.start && "x" in geometry.end
   if (lined === undefined && !(box !== undefined && pointed)) return undefined
   const placed =
