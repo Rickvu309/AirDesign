@@ -68,7 +68,7 @@ async function outsideAgentToken(kit, cookie, name) {
   return (await exchanged.json()).access_token
 }
 
-export async function connectOutsideAgent(kit, cookie, name) {
+export async function connectOutsideAgent(kit, cookie, name, read = (result) => result.structuredContent) {
   const { origin, mcpRoutes } = kit
   const token = await outsideAgentToken(kit, cookie, name)
   return async (tool, args) => {
@@ -93,7 +93,7 @@ export async function connectOutsideAgent(kit, cookie, name) {
           .split("\n")
           .find((each) => each.startsWith("data: "))
           .slice(6)
-    return JSON.parse(line).result.structuredContent
+    return read(JSON.parse(line).result)
   }
 }
 

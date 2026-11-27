@@ -15,6 +15,7 @@ public:
   - connect-copy.ts
   - credits-copy.ts
   - deck-time-copy.ts
+  - deck-view-copy.ts
   - design-copy.ts
   - editor-copy.ts
   - export-copy.ts

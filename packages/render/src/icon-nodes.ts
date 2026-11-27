@@ -1,11 +1,22 @@
 import { useEffect, useState } from "react"
-import dynamicIconImports from "lucide-react/dynamicIconImports.mjs"
 
 export type IconNode = readonly [string, Readonly<Record<string, unknown>>, (readonly IconNode[])?]
 
 type IconModule = { readonly __iconData?: { readonly node: readonly IconNode[] } }
 
-const loaders: Readonly<Record<string, () => Promise<unknown>>> = dynamicIconImports
+type Loaders = Readonly<Record<string, () => Promise<unknown>>>
+
+let loaders: Promise<Loaders> | undefined
+function iconLoaders(): Promise<Loaders> {
+  loaders ??= import("lucide-react/dynamicIconImports.mjs").then(
+    (module) => module.default as Loaders,
+    (error: unknown) => {
+      loaders = undefined
+      throw error
+    },
+  )
+  return loaders
+}
 const prefix = "lucide/"
 const held = new Map<string, readonly IconNode[] | null>()
 const pending = new Map<string, Promise<void>>()
@@ -21,13 +32,10 @@ export function loadIcon(name: string): Promise<void> {
   if (held.has(key)) return Promise.resolve()
   let load = pending.get(key)
   if (load === undefined) {
-    const loader = Object.hasOwn(loaders, key) ? loaders[key] : undefined
-    load =
-      loader === undefined
-        ? Promise.resolve().then(() => void held.set(key, null))
-        : loader()
-            .then((module) => void held.set(key, (module as IconModule).__iconData?.node ?? null))
-            .catch(() => void held.set(key, null))
+    load = iconLoaders()
+      .then((found) => (Object.hasOwn(found, key) ? found[key]?.() : undefined))
+      .then((module) => void held.set(key, (module as IconModule | undefined)?.__iconData?.node ?? null))
+      .catch(() => void held.set(key, null))
     pending.set(key, load)
   }
   return load

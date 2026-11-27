@@ -5,7 +5,7 @@ import { quietFor, useSlideScreenshots } from "./use-slide-screenshots"
 
 const world = vi.hoisted(() => ({ reported: 0 }))
 
-vi.mock("@/editing/slide-screenshot-report", () => ({
+vi.mock("./slide-screenshot-report", () => ({
   reportSlideScreenshots: async () => {
     world.reported += 1
     return true
@@ -13,7 +13,7 @@ vi.mock("@/editing/slide-screenshot-report", () => ({
   unresolvedAssets: () => [],
 }))
 
-vi.mock("@/editing/slide-capture", () => ({ captureSlide: async () => null }))
+vi.mock("./slide-capture", () => ({ captureSlide: async () => null }))
 
 let root: Root | null = null
 

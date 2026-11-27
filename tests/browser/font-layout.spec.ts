@@ -182,10 +182,12 @@ test("the shipped Node and Chromium engines agree on styled glyphs and line offs
   const hashes = Object.fromEntries([...names].map((name) => [name, manifest[name].sha256]))
   const dist = "apps/web/dist/assets"
   const assets = await readdir(dist)
-  expect(assets.filter((file) => file.endsWith(".js")).length).toBeLessThanOrEqual(2_037)
+  expect(assets.filter((file) => file.endsWith(".js")).length).toBeLessThanOrEqual(2_041)
   const home = await readFile("apps/web/dist/index.html", "utf8")
   expect([...home.matchAll(/(?:src|href)="\/assets\/([^"]+)-[\w-]{8}\.js"/g)].map(([, name]) => name)).toEqual([
     "index",
+    "rolldown-runtime",
+    "dist",
     "createLucideIcon",
     "check",
     "circle-exclamation-point",

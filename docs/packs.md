@@ -18,6 +18,7 @@ flowchart TD
     p_apps_web_src_aira["apps/web/src/aira"]
     p_apps_web_src_connect["apps/web/src/connect"]
     p_apps_web_src_credits["apps/web/src/credits"]
+    p_apps_web_src_deck_view["apps/web/src/deck-view"]
     p_apps_web_src_decks["apps/web/src/decks"]
     p_apps_web_src_editor["apps/web/src/editor"]
     p_apps_web_src_export["apps/web/src/export"]
@@ -85,6 +86,7 @@ flowchart TD
   p_apps_web_src --> p_apps_web_src_connect
   p_apps_web_src --> p_apps_web_src_copy
   p_apps_web_src --> p_apps_web_src_credits
+  p_apps_web_src --> p_apps_web_src_deck_view
   p_apps_web_src --> p_apps_web_src_decks
   p_apps_web_src --> p_apps_web_src_design
   p_apps_web_src --> p_apps_web_src_editing
@@ -112,6 +114,10 @@ flowchart TD
   p_apps_web_src_credits --> p_apps_web_src_copy
   p_apps_web_src_credits --> p_apps_web_src_editor
   p_apps_web_src_credits --> p_apps_web_src_lib
+  p_apps_web_src_deck_view --> p_apps_web_src_components
+  p_apps_web_src_deck_view --> p_apps_web_src_copy
+  p_apps_web_src_deck_view --> p_apps_web_src_editing
+  p_apps_web_src_deck_view --> p_apps_web_src_lib
   p_apps_web_src_decks --> p_apps_web_src_account
   p_apps_web_src_decks --> p_apps_web_src_components
   p_apps_web_src_decks --> p_apps_web_src_copy
@@ -164,16 +170,17 @@ flowchart TD
 | `apps/api/src/oauth` | feature | runtime: apps/api/src/oauth/agent-key.ts, apps/api/src/oauth/clients.ts, apps/api/src/oauth/consent.ts, apps/api/src/oauth/discovery.ts, apps/api/src/oauth/grants.ts, apps/api/src/oauth/tokens.ts; testing: apps/api/src/oauth/testing/gemini-registration.ts | apps/api/src/platform | session.oauth_client, session.oauth_grant, session.oauth_token |
 | `apps/api/src/platform` | platform | runtime: apps/api/src/platform/answer.ts, apps/api/src/platform/deck-answer.ts, apps/api/src/platform/font-metrics.ts, apps/api/src/platform/font-route.ts, apps/api/src/platform/font-source.ts, apps/api/src/platform/forward-secret.ts, apps/api/src/platform/image-fetch.ts, apps/api/src/platform/listen.ts, apps/api/src/platform/local-original-store.ts, apps/api/src/platform/mail.ts, apps/api/src/platform/original-store.ts, apps/api/src/platform/pool.ts, apps/api/src/platform/provision.ts, apps/api/src/platform/r2-original-store.ts, apps/api/src/platform/resource.ts, apps/api/src/platform/schema.ts, apps/api/src/platform/secrets.ts, apps/api/src/platform/start-origins.ts, apps/api/src/platform/start-settings.ts; testing: apps/api/src/platform/testing/migrations.ts | none | none |
 | `apps/api/src/usage` | feature | aira-ledger.ts, credits-route.ts, credits.ts | apps/api/src/account, apps/api/src/platform | session.aira_ledger, session.credits, session.credit_history |
-| `apps/web/src` | app | none | packages/doom, apps/web/src/account, apps/web/src/aira, apps/web/src/components, apps/web/src/connect, apps/web/src/copy, apps/web/src/credits, apps/web/src/decks, apps/web/src/design, apps/web/src/editing, apps/web/src/editor, apps/web/src/export, apps/web/src/lib, apps/web/src/present, apps/web/src/samples, apps/web/src/settings | none |
+| `apps/web/src` | app | none | packages/doom, apps/web/src/account, apps/web/src/aira, apps/web/src/components, apps/web/src/connect, apps/web/src/copy, apps/web/src/credits, apps/web/src/deck-view, apps/web/src/decks, apps/web/src/design, apps/web/src/editing, apps/web/src/editor, apps/web/src/export, apps/web/src/lib, apps/web/src/present, apps/web/src/samples, apps/web/src/settings | none |
 | `apps/web/src/account` | shared | account-load.ts, account-name-page.tsx, account-profile.tsx, name-form.tsx, settings-paths.ts, sign-in-address.ts, sign-out.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |
 | `apps/web/src/aira` | feature | aira-loop.ts, aira-panel.tsx, aira-undo.ts, aira-usage.ts, usage-load.ts | apps/web/src/account, apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |
 | `apps/web/src/components` | platform | ai-elements/chain-of-thought.tsx, ai-elements/conversation-follow.ts, ai-elements/conversation.tsx, ai-elements/message.tsx, ai-elements/prompt-input.tsx, ui/action-pill.tsx, ui/aira-tile.tsx, ui/airdesign-mark.tsx, ui/announcer.tsx, ui/button.tsx, ui/card.tsx, ui/collapsible.tsx, ui/context-menu.tsx, ui/dialog.tsx, ui/dropdown-menu.tsx, ui/editor-icons.tsx, ui/gemini-art.svg, ui/input.tsx, ui/page-notice.tsx, ui/popover.tsx, ui/select.tsx, ui/shadows.ts, ui/skeleton.tsx, ui/sonner.tsx, ui/status-pill.tsx, ui/switch.tsx, ui/toast.tsx | apps/web/src/copy, apps/web/src/lib | none |
 | `apps/web/src/connect` | feature | connect-screens.tsx, oauth-authorize.tsx, oauth-consent-path.ts | apps/web/src/components, apps/web/src/copy | none |
-| `apps/web/src/copy` | platform | account-copy.ts, agent-runs-copy.ts, aira-copy.ts, border-copy.ts, box-copy.ts, color-copy.ts, color-name-copy.ts, connect-agent-copy.ts, connect-copy.ts, credits-copy.ts, deck-time-copy.ts, design-copy.ts, editor-copy.ts, export-copy.ts, fill-copy.ts, format-copy.ts, geometry-copy.ts, link-copy.ts, notes-copy.ts, option-copy.ts, picture-copy.ts, present-copy.ts, product-copy.ts, selection-colors-copy.ts, settings-copy.ts, shape-copy.ts, slide-list-copy.ts, story-ideas-copy.ts, text-copy.ts, undo-copy.ts, usage-copy.ts | packages/doom, apps/web/src/lib | none |
+| `apps/web/src/copy` | platform | account-copy.ts, agent-runs-copy.ts, aira-copy.ts, border-copy.ts, box-copy.ts, color-copy.ts, color-name-copy.ts, connect-agent-copy.ts, connect-copy.ts, credits-copy.ts, deck-time-copy.ts, deck-view-copy.ts, design-copy.ts, editor-copy.ts, export-copy.ts, fill-copy.ts, format-copy.ts, geometry-copy.ts, link-copy.ts, notes-copy.ts, option-copy.ts, picture-copy.ts, present-copy.ts, product-copy.ts, selection-colors-copy.ts, settings-copy.ts, shape-copy.ts, slide-list-copy.ts, story-ideas-copy.ts, text-copy.ts, undo-copy.ts, usage-copy.ts | packages/doom, apps/web/src/lib | none |
 | `apps/web/src/credits` | feature | credits-cards.tsx, credits-screens.tsx, use-credits.ts | apps/web/src/account, apps/web/src/components, apps/web/src/copy, apps/web/src/editor, apps/web/src/lib | none |
+| `apps/web/src/deck-view` | feature | deck-view.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
 | `apps/web/src/decks` | feature | agent-logos.ts, agent-mark.tsx, aira-page.tsx, connect-agent.tsx, connected-agent.ts, danger-dialog.tsx, deck-glyph.tsx, discard-opening.ts, decks-screens.tsx, decks-shell.tsx, delete-account.tsx, home.tsx, not-found-page.tsx | apps/web/src/account, apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |
 | `apps/web/src/design` | shared | color-choices.ts, color-names.ts, color-picker.tsx, control-desc.ts, control-views.ts, controls/color.tsx, controls/union.tsx, design-shown.ts, icon-search.tsx, panel-arrangement.ts, panel-folds.ts, panel-order.ts, panel.ts, preset-icons.ts, shape-grid.tsx, served-faces.ts, shape-marks.tsx | packages/doom, apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
-| `apps/web/src/editing` | shared | canvas-zoom.ts, painted-picture.ts, picture-file.ts, slide-capture.ts, slide-layout.ts, slide-screenshot-report.ts, slide-screenshots.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |
+| `apps/web/src/editing` | shared | canvas-zoom.ts, painted-picture.ts, picture-file.ts, slide-capture.ts, slide-layout.ts, slide-screenshot-report.ts, slide-screenshots.ts, use-asset-urls.ts, use-slide-screenshots.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |
 | `apps/web/src/editor` | feature | editor.tsx, editor-sample.tsx, editor-screens.tsx | packages/doom, apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/decks, apps/web/src/design, apps/web/src/editing, apps/web/src/export, apps/web/src/lib, apps/web/src/present, apps/web/src/samples | none |
 | `apps/web/src/export` | feature | export-control.tsx, export-flow.ts, export-routes.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |
 | `apps/web/src/lib` | platform | class-names.ts, composing.ts, first-request.ts, fields-of.ts, gestures.ts, quiet-focus.ts, slide-numbering.ts | none | none |

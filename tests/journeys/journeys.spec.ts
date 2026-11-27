@@ -51,6 +51,7 @@ for (const name of [
   "deck-list-trash",
   "connected-agents",
   "consulting-mcp",
+  "deck-view",
   "path-paint",
   "path-seams",
   "usage-page",

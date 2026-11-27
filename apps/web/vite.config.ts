@@ -22,6 +22,14 @@ export default defineConfig({
       },
     },
   ],
+  build: {
+    rolldownOptions: {
+      input: {
+        index: path.resolve(import.meta.dirname, "index.html"),
+        "deck-view": path.resolve(import.meta.dirname, "deck-view.html"),
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
