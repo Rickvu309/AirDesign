@@ -38,6 +38,7 @@ for (const [net, prefix] of [
   unreachable.addSubnet(net, prefix, "ipv4")
 for (const [net, prefix] of [
   ["::", 96],
+  ["::ffff:0:0:0", 96],
   ["64:ff9b::", 96],
   ["64:ff9b:1::", 48],
   ["100::", 64],

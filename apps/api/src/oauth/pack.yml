@@ -2,8 +2,8 @@ layer: feature
 dependencies:
   - apps/api/src/platform
 public:
-  runtime: [agent-key.ts, clients.ts, consent.ts, discovery.ts, grants.ts, tokens.ts]
-  testing: [testing/gemini-registration.ts]
+  runtime: [agent-key.ts, cimd.ts, clients.ts, consent.ts, discovery.ts, grants.ts, tokens.ts]
+  testing: [testing/gemini-registration.ts, testing/served-documents.ts]
 owns_tables:
   - session.oauth_client
   - session.oauth_grant

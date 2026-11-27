@@ -22,6 +22,7 @@ export function authorizationMetadata({ publicOrigin }: Settings) {
     token_endpoint_auth_methods_supported: ["none"],
     revocation_endpoint_auth_methods_supported: ["none"],
     code_challenge_methods_supported: ["S256"],
+    client_id_metadata_document_supported: true,
   }
 }
 

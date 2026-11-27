@@ -65,6 +65,16 @@ export function agentNameOf(client: Registered, used: string): string {
   return trimmed.length > 0 ? trimmed : (readUrl(used)?.host ?? "")
 }
 
+export function registeredRedirect(registered: readonly string[], used: string): boolean {
+  if (registered.includes(used)) return true
+  const url = readUrl(used)
+  if (url === undefined || url.protocol !== "http:" || !loopbackHosts.includes(url.hostname) || url.port === "") {
+    return false
+  }
+  url.port = ""
+  return registered.includes(url.href)
+}
+
 function redirectAllowed(address: string): boolean {
   const url = readUrl(address)
   if (url === undefined || url.hash !== "") return false
@@ -105,6 +115,14 @@ export async function registerClient(db: Sql, metadata: Registration): Promise<A
       response_types: ["code"],
     },
   }
+}
+
+export async function saveClient(db: Sql, client: Client): Promise<void> {
+  await db.query(
+    `insert into session.oauth_client (id, name, redirect_uris) values ($1, $2, $3)
+     on conflict (id) do update set name = excluded.name, redirect_uris = excluded.redirect_uris`,
+    [client.id, client.name, client.redirectUris],
+  )
 }
 
 export async function readClient(db: Sql, id: string): Promise<Client | undefined> {
