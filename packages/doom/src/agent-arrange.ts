@@ -47,7 +47,7 @@ function parentIdOf(node: Node): NodeId {
 
 function arrangeableNode(draft: Draft, id: NodeId, field: string): Node {
   const node = living(draft, id, field)
-  return arrangeable(node) ? node : stop("shape", id, field, "form", "A frame or a shape.")
+  return arrangeable(node) ? node : stop("shape", id, field, "form", { code: "layer" })
 }
 
 function sourceBoxes(draft: Draft, ids: readonly NodeId[]): ReadonlyMap<NodeId, Box> | undefined {
@@ -65,10 +65,10 @@ function sourceBoxes(draft: Draft, ids: readonly NodeId[]): ReadonlyMap<NodeId, 
 
 function placeOnSlide(draft: Draft, change: Op<"move">): void {
   if (change.node !== undefined && change.nodes !== undefined)
-    stop("shape", change.node, "nodes", "form", "One layer, or a list of layers.")
+    stop("shape", change.node, "nodes", "form", { code: "layer-or-layers" })
   const ids = change.nodes ?? (change.node === undefined ? undefined : [change.node])
-  if (ids === undefined) stop("shape", undefined, "node", "needs", "A frame or a shape.")
-  if (change.into === undefined) stop("shape", undefined, "into", "needs", "a destination slide id")
+  if (ids === undefined) stop("shape", undefined, "node", "needs", { code: "layer" })
+  if (change.into === undefined) stop("shape", undefined, "into", "needs", { code: "destination-slide" })
   const boxes = sourceBoxes(draft, ids)
   const kept = slidePlace(draft.doom, ids, boxes)
   if (isRefusal(kept)) throw new Stop(kept)
@@ -86,12 +86,12 @@ export function compileMove(draft: Draft, change: Op<"move">): void {
     placeOnSlide(draft, change)
     return
   }
-  if (change.node === undefined) stop("shape", undefined, "node", "needs", "A frame or a shape.")
+  if (change.node === undefined) stop("shape", undefined, "node", "needs", { code: "layer" })
   const node = arrangeableNode(draft, change.node, "node")
   const from = parentIdOf(node)
   const target = change.into === undefined ? living(draft, from, "into") : living(draft, change.into, "into")
   if (target.type !== "slide" && target.type !== "frame")
-    stop("shape", target.id, "into", "form", "A slide or a frame.")
+    stop("shape", target.id, "into", "form", { code: "slide-or-frame" })
   if (target.id === node.id || descendantsOf(draft.doom, node.id).some((inside) => inside.id === target.id))
     stop("cycle", node.id, "into")
   const previous =
@@ -100,8 +100,7 @@ export function compileMove(draft: Draft, change: Op<"move">): void {
           .filter((sibling) => sibling.id !== node.id)
           .at(-1)?.id ?? null)
       : change.after
-  if (previous === node.id)
-    stop("shape", node.id, "after", "form", "Another sibling, or null to put it first. Leave it out to put it last.")
+  if (previous === node.id) stop("shape", node.id, "after", "form", { code: "after-sibling" })
   const [key] = keysAfter(draft, target.id, previous, 1, new Set([node.id]))
   draft.writes.push({ node: node.id, prop: "parent", value: { id: target.id, at: key as OrderKey } })
   if (target.id === from) return
@@ -114,7 +113,7 @@ export function compileWrap(draft: Draft, change: Op<"wrap">): void {
   const nodes = [...new Set(change.nodes)].map((id) => arrangeableNode(draft, id, "nodes"))
   const parent = parentIdOf(nodes[0] as Node)
   for (const node of nodes)
-    if (parentIdOf(node) !== parent) stop("shape", node.id, "nodes", "form", "Layers that share one parent.")
+    if (parentIdOf(node) !== parent) stop("shape", node.id, "nodes", "form", { code: "same-parent" })
   const position = new Map(childrenOf(draft.doom, parent).map((child, at) => [child.id, at]))
   const ordered = [...nodes].sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0))
   const boxes = ordered.map((node) => boxOf(node, draft.reading.boxes))
@@ -155,7 +154,7 @@ export function compileWrap(draft: Draft, change: Op<"wrap">): void {
 
 export function compileUnwrap(draft: Draft, change: Op<"unwrap">): void {
   const frame = living(draft, change.node, "node")
-  if (frame.type !== "frame") stop("shape", frame.id, "node", "form", "A frame.")
+  if (frame.type !== "frame") stop("shape", frame.id, "node", "form", { code: "frame" })
   const parent = parentIdOf(frame)
   const kids = childrenOf(draft.doom, frame.id)
   const keys = keysAfter(draft, parent, frame.id, kids.length)

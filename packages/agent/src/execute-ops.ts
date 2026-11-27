@@ -1,3 +1,5 @@
+import { agentChangesSchema } from "@airdesign/catalog"
+import { readForAgent } from "./agent-read.js"
 import * as doom from "@airdesign/doom"
 import { placementRules, startRules, style, styles } from "@airdesign/taste"
 
@@ -100,7 +102,7 @@ export function newPlan(
 const notLook = new Set(
   "op kind slide into target node nodes after add move delete theme colors fonts nameFollows".split(" "),
 )
-const changeFields = doom.agentChangesSchema.$defs.change.properties
+const changeFields = agentChangesSchema.$defs.change.properties
 const lookFields = Object.keys(changeFields).filter((key) => !notLook.has(key))
 const textFields = new Set(
   "text insert textStyle color size font weight lineHeight letterSpacing case underline strike alignV spaceBefore spaceAfter language".split(
@@ -377,9 +379,7 @@ async function read(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<
   if (slide === undefined) stop(plan, op, verb, refused("dead", { field: "target", node: node.id }))
   const laid = await layoutOf(plan.host, plan.view, () => [slide])
   const inside = new Set([node.id, ...doom.descendantsOf(plan.view, node.id).map((each) => each.id)])
-  const lines = doom
-    .readForAgent(plan.view, [slide], laid.boxes, node.type === "slide" ? undefined : node.id)
-    .split("\n")
+  const lines = readForAgent(plan.view, [slide], laid.boxes, node.type === "slide" ? undefined : node.id).split("\n")
   const box = laid.boxes?.get(node.id) ?? doom.propOf(node, "box")
   return {
     id: node.id,

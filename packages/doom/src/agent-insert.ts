@@ -16,12 +16,10 @@ export const insertField = field(
       text: { type: "string" },
       link: { type: "string" },
     },
-    description:
-      "Insert one line of linked words at a character offset, and leave the other words. at past the end inserts at the end. Send this or text, not both.",
   },
   (raw) => {
     const read = object({ at: integer(0, limits.valueBytes), text: words(limits.valueBytes, 1), link: readLink })(raw)
-    if (read.text.includes("\n")) mismatch("text", "One line.")
+    if (read.text.includes("\n")) mismatch("text", { code: "single-line" })
     return read
   },
 )

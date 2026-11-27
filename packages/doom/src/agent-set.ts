@@ -94,14 +94,9 @@ const roleTarget = /^([a-z0-9]{1,16}:[0-9]{1,12})\.(title|subtitle|body)$/
 function targetNode(draft: Draft, target: string): Node {
   const role = roleTarget.exec(target)
   if (role === null)
-    return living(
-      draft,
-      readNodeId(target) ??
-        stop("shape", undefined, "target", "form", "A node id, a slide role, or every slide's role."),
-      "target",
-    )
+    return living(draft, readNodeId(target) ?? stop("shape", undefined, "target", "form", { code: "target" }), "target")
   const slide = living(draft, role[1] as NodeId, "target")
-  if (slide.type !== "slide") stop("shape", slide.id, "target", "form", "A slide id, then .title, .subtitle or .body.")
+  if (slide.type !== "slide") stop("shape", slide.id, "target", "form", { code: "slide-role" })
   const found = descendantsOf(draft.doom, slide.id).find(
     (node) => node.type === "shape" && propOf(node, "role") === role[2],
   )
@@ -119,15 +114,16 @@ function setEverySlide(draft: Draft, change: SetChange, role: string): void {
 function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | undefined {
   const geometry = propOf(node, "geometry")
   const pathField = change.d !== undefined ? "d" : change.fillStroke !== undefined ? "fillStroke" : undefined
-  if (pathField !== undefined && geometry?.kind !== "path") stop("shape", node.id, pathField, "needs", "a path")
+  if (pathField !== undefined && geometry?.kind !== "path")
+    stop("shape", node.id, pathField, "needs", { code: "needs-path" })
   if (change.icon !== undefined) {
-    if (geometry?.kind !== "icon") stop("shape", node.id, "icon", "needs", "an icon")
+    if (geometry?.kind !== "icon") stop("shape", node.id, "icon", "needs", { code: "needs-icon" })
     return { kind: "icon", name: iconName(change.icon) }
   }
   const lined = (["startArrow", "arrow", "from", "to", "route", "lane"] as const).find(
     (field) => change[field] !== undefined,
   )
-  if (lined !== undefined && geometry?.kind !== "line") stop("shape", node.id, lined, "needs", "a line")
+  if (lined !== undefined && geometry?.kind !== "line") stop("shape", node.id, lined, "needs", { code: "needs-line" })
   if (pathField !== undefined && geometry?.kind === "path") {
     return {
       ...geometry,
@@ -155,23 +151,23 @@ function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | und
 
 export function compileSet(draft: Draft, change: SetChange): void {
   if (change.insert !== undefined && change.target.startsWith("*."))
-    stop("shape", undefined, "insert", "needs", "a text layer")
+    stop("shape", undefined, "insert", "needs", { code: "needs-text" })
   if (change.target.startsWith("*.")) return setEverySlide(draft, change, change.target.slice(2))
   const node = targetNode(draft, change.target)
   if (node.type !== "slide" && node.type !== "frame" && node.type !== "shape")
-    stop("shape", node.id, "target", "form", "A slide, a frame or a shape.")
+    stop("shape", node.id, "target", "form", { code: "copyable-node" })
   for (const field of [...neverOnSet, ...unfit[node.type]])
     if (change[field] !== undefined) stop("shape", node.id, field, "unknown")
   const fitting = change.fit !== undefined || change.crop !== undefined
   if (fitting && !(propOf(node, "fills") ?? []).some((paint) => paint.kind === "image"))
-    stop("shape", node.id, change.crop === undefined ? "fit" : "crop", "needs", "an image fill")
+    stop("shape", node.id, change.crop === undefined ? "fit" : "crop", "needs", { code: "needs-image" })
   if (change.crop !== undefined && change.fit !== undefined && change.fit !== "crop")
-    stop("shape", node.id, "crop", "form", "fit crop, or no fit.")
+    stop("shape", node.id, "crop", "form", { code: "crop-fit" })
   const outline = propOf(node, "geometry")?.kind
   if (change.shape !== undefined && (outline === "line" || outline === "icon" || outline === "path"))
-    stop("shape", node.id, "shape", "needs", "a preset outline")
+    stop("shape", node.id, "shape", "needs", { code: "needs-preset" })
   if (change.link !== undefined && propOf(node, "text") === undefined)
-    stop("shape", node.id, "link", "needs", "a text layer")
+    stop("shape", node.id, "link", "needs", { code: "needs-text" })
   const now = {
     fills: propOf(node, "fills"),
     stroke: propOf(node, "stroke"),
@@ -185,14 +181,15 @@ export function compileSet(draft: Draft, change: SetChange): void {
     geometry?.kind === "line" || geometry?.kind === "icon" || geometry?.kind === "path" ? "center" : "inside"
   const current = now.text
   if (change.insert !== undefined && change.text !== undefined)
-    stop("shape", node.id, "insert", "form", "Insert or text, not both.")
-  if (change.insert !== undefined && current === undefined) stop("shape", node.id, "insert", "needs", "a text layer")
+    stop("shape", node.id, "insert", "form", { code: "insert-or-text" })
+  if (change.insert !== undefined && current === undefined)
+    stop("shape", node.id, "insert", "needs", { code: "needs-text" })
   const held =
     change.insert === undefined || current === undefined
       ? current
       : insertLinkedRun(current, change.insert.at, change.insert.text, change.insert.link)
   if (node.type === "shape" && change.padding !== undefined && held === undefined && change.text === undefined)
-    stop("shape", node.id, "padding", "needs", "a text layer")
+    stop("shape", node.id, "padding", "needs", { code: "needs-text" })
   const worded = node.type === "shape" ? textOfLook(change, held, "body", themeOf(draft)) : undefined
   const written = worded ?? (change.insert === undefined ? undefined : held)
   const text = resizedBy(written ?? now.text, change.box, now.box) ?? written
@@ -201,7 +198,7 @@ export function compileSet(draft: Draft, change: SetChange): void {
   const asked = (["layout", "gap", "padding", "align"] as const).find(
     (field) => node.type === "frame" && change[field] !== undefined,
   )
-  if (asked !== undefined && layout === undefined) stop("shape", node.id, asked, "needs", "a row or column layout")
+  if (asked !== undefined && layout === undefined) stop("shape", node.id, asked, "needs", { code: "needs-layout" })
   const shaped = geometryOf(draft, node, change)
   const values: Values = {
     ...surfaceOf(

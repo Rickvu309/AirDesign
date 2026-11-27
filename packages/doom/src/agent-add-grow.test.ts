@@ -3,18 +3,7 @@ import type { AgentChange } from "./agent-change.js"
 import { agentDeck, build, compiled, lastChild, minter } from "./testing/agent-fixtures.js"
 import { agent, ids, tryLand } from "./sample-deck.js"
 import { propOf } from "./doom-walk.js"
-import {
-  applyEdit,
-  deckOf,
-  readForAgent,
-  invert,
-  isRefusal,
-  measureWith,
-  rev,
-  solveLayout,
-  type Doom,
-  type Landed,
-} from "./index.js"
+import { applyEdit, deckOf, invert, isRefusal, measureWith, rev, solveLayout, type Doom, type Landed } from "./index.js"
 
 const slide = ids.slide
 const text = (more: Record<string, unknown> = {}): AgentChange =>
@@ -73,23 +62,6 @@ describe("an agent's text grows with its words, as Figma's auto height", () => {
       box: { x: 200, y: 80, w: 900, h },
     } as unknown as AgentChange)
     expect(propOf(after.nodes.get(made.id)!, "text")?.resize).toBe("height")
-  })
-
-  it("tells the agent in its read whether a text grows with its words or keeps its box", () => {
-    const before = grown()
-    const made = lastChild(before, slide)
-    expect(readForAgent(before, [slide])).toContain(`${made.id} text:title`)
-    expect(
-      readForAgent(before, [slide])
-        .split("\n")
-        .find((line) => line.includes(made.id)),
-    ).toContain("resize=height")
-    const after = build(before, { op: "set", target: made.id, box: { h: 400 } } as unknown as AgentChange)
-    expect(
-      readForAgent(after, [slide])
-        .split("\n")
-        .find((line) => line.includes(made.id)),
-    ).toContain("resize=fixed")
   })
 
   it("keeps auto height when the agent sets only the width", () => {

@@ -8,8 +8,7 @@ export type AgentEnd =
   | { readonly layer: NodeId; readonly side?: (typeof sideWords)[number]; readonly along?: number }
   | { readonly x: Px; readonly y: Px }
 
-export const endSchema = (description: string) => ({
-  description,
+export const endSchema = {
   anyOf: [
     {
       type: "object",
@@ -17,12 +16,11 @@ export const endSchema = (description: string) => ({
       required: ["layer"],
       properties: {
         layer: { $ref: "#/$defs/id" },
-        side: { enum: sideWords, description: "Left out: the side facing the other end." },
+        side: { enum: sideWords },
         along: {
           type: "number",
           minimum: 0,
           maximum: 1,
-          description: "Where on the side, from 0 at its left or top end to 1. Left out: its middle.",
         },
       },
     },
@@ -33,7 +31,7 @@ export const endSchema = (description: string) => ({
       properties: { x: { type: "number" }, y: { type: "number" } },
     },
   ],
-})
+}
 
 export const readEnd: Reader<AgentEnd> = oneOf<AgentEnd>(
   object({ layer: (raw) => readNodeId(raw) ?? reject() }, { side: literal(sideWords), along: finite(0, 1) }),

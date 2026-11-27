@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { bytesOf, limits } from "./limits.js"
+import { limits } from "./limits.js"
 import { hex } from "./sample-deck.js"
 import { agentChangesSchema, readAgentChange, type AgentChange } from "./agent-change.js"
 import { testTheme } from "./testing/theme.js"
@@ -61,7 +61,7 @@ describe("readAgentChange", () => {
     expect(readAgentChange({ ...change, d: d + "Z" })).toMatchObject({
       refused: expect.any(String),
       field: "d",
-      form: expect.stringContaining("4000"),
+      expect: { code: "path-length", max: 4_000 },
     })
   })
 
@@ -227,18 +227,5 @@ describe("the advertised schema", () => {
 
   it("advertises the change operations", () => {
     expect(change.op?.enum).toEqual(["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck"])
-  })
-
-  it("describes a move as the parser accepts it", () => {
-    const described = change.op?.description ?? ""
-    expect(described).toContain("into is required with nodes or box")
-    expect(described).toContain("names a slide")
-    expect(described).toContain("x, y or both")
-    expect(described).toContain("w, h do not resize")
-  })
-
-  it("fits the budget for the one tool that carries it", () => {
-    const tokens = Math.ceil(bytesOf(JSON.stringify(agentChangesSchema)) / 4)
-    expect(tokens).toBeLessThan(4_500)
   })
 })

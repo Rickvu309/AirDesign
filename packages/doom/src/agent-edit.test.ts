@@ -227,7 +227,7 @@ describe("compileAgentEdit", () => {
       change: "changes",
       field: "changes",
       fault: "missing",
-      form: "One to one hundred changes.",
+      expect: { code: "batch" },
     })
   })
 })

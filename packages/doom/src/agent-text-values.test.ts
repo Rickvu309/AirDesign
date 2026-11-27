@@ -3,7 +3,6 @@ import type { AgentChange } from "./agent-change.js"
 import { readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { agentDeck, build, minter, started } from "./testing/agent-fixtures.js"
-import { readForAgent } from "./agent-read.js"
 import { propOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { ids, land, revOf, sampleDeck, textOf } from "./sample-deck.js"
@@ -15,7 +14,7 @@ const set = (target: string, look: Record<string, unknown>): AgentChange =>
 const textAt = (doom: Doom) => propOf(doom.nodes.get(ids.title)!, "text")!
 
 describe("raw text values: an agent sets what the panel's text controls set", () => {
-  it("writes size, font, line height, letter spacing, case, underline, strike and justify, and reads them back", () => {
+  it("writes size, font, line height, letter spacing, case, underline, strike and justify", () => {
     const doom = build(
       agentDeck(),
       set(ids.title, {
@@ -33,9 +32,6 @@ describe("raw text values: an agent sets what the panel's text controls set", ()
       { end: 7, size: 72, font: "Montserrat", tracking: -1, case: "upper", underline: true, strike: true },
     ])
     expect(textAt(doom).paras).toEqual([{ align: "justify", lineHeight: 1.1 }])
-    expect(readForAgent(doom, [ids.slide])).toContain(
-      'align=justify size=72 font="Montserrat" letterSpacing=-1 case=upper underline strike lineHeight=1.1',
-    )
   })
 
   it("lets a text style clear the size, font, spacing and case, as the panel's style picker does", () => {
@@ -46,38 +42,24 @@ describe("raw text values: an agent sets what the panel's text controls set", ()
     expect(textAt(cased).spans).toEqual([{ end: 7, underline: true }])
   })
 
-  it("reads a named face as the family's weight, and sets that weight back", () => {
+  it("sets the weight on a named face", () => {
     const before = sampleDeck()
     const held = { ...textOf("Revenue"), spans: [{ end: 7, font: "Inter SemiBold", bold: false as const }] }
     const seeded = started(
       land(before, [{ node: ids.title, prop: "text", value: held, base: revOf(before, ids.title, "text")! }]),
     )
-    const read = readForAgent(seeded, [ids.slide])
-    expect(read).toContain('font="Inter"')
-    expect(read).toContain("weight=SemiBold")
-    expect(read).not.toContain("Inter SemiBold")
     const bold = build(seeded, set(ids.title, { weight: "Bold" }))
     expect(textAt(bold).spans[0]).toMatchObject({ bold: true })
     expect(textAt(bold).spans[0]?.font).toBeUndefined()
-    expect(readForAgent(bold, [ids.slide])).toContain("weight=Bold")
-    expect(readForAgent(bold, [ids.slide])).not.toContain("weight=SemiBold")
     const again = build(bold, set(ids.title, { weight: "SemiBold" }))
     expect(textAt(again).spans).toEqual([{ end: 7, font: "Inter SemiBold", bold: false }])
-    const flagged = { ...held, spans: [{ end: 7, font: "Inter SemiBold", bold: true as const }] }
-    const overlaid = started(
-      land(before, [{ node: ids.title, prop: "text", value: flagged, base: revOf(before, ids.title, "text")! }]),
-    )
-    expect(readForAgent(overlaid, [ids.slide])).toContain("weight=Bold")
-    expect(readForAgent(overlaid, [ids.slide])).not.toContain("SemiBold")
   })
 
-  it("reads weight=Regular when an agent sets Regular on a style that rests bold", () => {
+  it("sets Regular on a style that rests bold", () => {
     let doom = build(agentDeck(), set(ids.title, { textStyle: "title" }))
     doom = build(doom, set(ids.title, { weight: "Bold" }))
-    expect(readForAgent(doom, [ids.slide])).toContain("weight=Bold")
     doom = build(doom, set(ids.title, { weight: "Regular" }))
     expect(textAt(doom).spans[0]).toMatchObject({ bold: false })
-    expect(readForAgent(doom, [ids.slide])).toContain("weight=Regular")
   })
 
   it("refuses a value past what the panel takes, before anything compiles", () => {

@@ -3,7 +3,6 @@ import type { AgentChange } from "./agent-change.js"
 import { readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { agentDeck, apply, build, lastChild, minter } from "./testing/agent-fixtures.js"
-import { readForAgent } from "./agent-read.js"
 import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { ids, theme } from "./sample-deck.js"
@@ -19,7 +18,6 @@ describe("rotation and flips land on the box the canvas's rotate and flip write"
   it("turns and mirrors a layer and reads it back", () => {
     let doom = build(agentDeck(), set(ids.card, { rotation: 15, flip: "h" }))
     expect(propOf(at(doom, ids.card), "box")).toMatchObject({ x: 100, rotation: 15, flipH: true, flipV: false })
-    expect(readForAgent(doom, [ids.slide])).toContain("r=15 flip=h")
     doom = build(doom, set(ids.card, { flip: "none" }))
     expect(propOf(at(doom, ids.card), "box")).toMatchObject({ rotation: 15, flipH: false, flipV: false })
   })
@@ -141,7 +139,6 @@ describe("presenter notes and the deck's name and theme", () => {
   it("writes a slide's notes as the notes bar holds them, plain words, and reads them back", () => {
     const doom = build(agentDeck(), set(ids.slide, { notes: "Open with the number.\nThen the why." }))
     expect(propOf(at(doom, ids.slide), "notes")).toMatchObject({ chars: "Open with the number.\nThen the why." })
-    expect(readForAgent(doom, [ids.slide])).toContain('notes="Open with the number.\\nThen the why."')
     expect(compileAgentChange(agentDeck(), set(ids.card, { notes: "x" }), minter(), placement, starts)).toMatchObject({
       refused: "shape",
     })

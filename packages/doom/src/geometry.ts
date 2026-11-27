@@ -20,11 +20,10 @@ export type End =
 export const lineArrowheads = ["none", "arrow", "triangle", "circle"] as const
 export type Arrow = (typeof lineArrowheads)[number]
 export const pathLimit = 4_000
-export const readPathData: Reader<string> = matching(
-  /^[MmLlHhVvCcSsQqTtAaZz0-9eE.,+\- ]+$/,
-  pathLimit,
-  `SVG path data, up to ${pathLimit} characters.`,
-)
+export const readPathData: Reader<string> = matching(/^[MmLlHhVvCcSsQqTtAaZz0-9eE.,+\- ]+$/, pathLimit, {
+  code: "path-length",
+  max: pathLimit,
+})
 
 export type Channel = { readonly axis: "x" | "y"; readonly at: Px }
 export const readChannel: Reader<Channel> = object({ axis: literal(["x", "y"]), at: px() })

@@ -1,13 +1,5 @@
 import { describe, expect, it } from "vitest"
-import {
-  type Layout,
-  applyMatrix,
-  boxMatrix,
-  contentMatrix,
-  identityMatrix,
-  readForAgent,
-  solveLayout,
-} from "./index.js"
+import { type Layout, applyMatrix, boxMatrix, contentMatrix, identityMatrix, solveLayout } from "./index.js"
 import type { Track } from "./layout.js"
 import {
   advance,
@@ -64,7 +56,7 @@ describe("solveLayout in a free-layout group", () => {
   })
 
   it("gives an auto-layout parent the fitted width and height", () => {
-    const { at, boxes, doom, slides } = solved([
+    const { at } = solved([
       rowOf([group(0), block("next", 100, 20)], { gap: 12 }, spot(0, 0, 1, 1), {
         sizing: { w: "hug", h: "hug" },
       }),
@@ -73,7 +65,6 @@ describe("solveLayout in a free-layout group", () => {
     expect(at("next").x).toBeCloseTo(52)
     expect(at("row").w).toBeCloseTo(152)
     expect(at("row").h).toBeCloseTo(160)
-    expect(readForAgent(doom, slides, boxes)).toContain("40x160")
   })
 })
 

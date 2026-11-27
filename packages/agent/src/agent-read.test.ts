@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { apply, build } from "./testing/agent-fixtures.js"
-import { more, richDeck } from "./testing/rich-deck.js"
+import { type AgentChange, bytesOf, descendantsOf } from "@airdesign/doom"
+import { agentReadFixture, board } from "@airdesign/doom/testing"
 import { readForAgent } from "./agent-read.js"
-import { hex, ids } from "./sample-deck.js"
-import type { AgentChange } from "./agent-change.js"
 
+const { apply, build, hex, ids, more, richDeck } = agentReadFixture
 const change = (value: Record<string, unknown>) => value as AgentChange
 const lines = (text: string) => text.split("\n")
 
@@ -165,5 +164,108 @@ describe("readForAgent of a line", () => {
     const line = lines(readForAgent(doom, "all")).find((each) => each.includes(more.line))
     expect(line).toContain("startArrow=circle")
     expect(line).toContain("arrow=triangle")
+  })
+})
+
+describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s", (mode) => {
+  it("reads back in under 3,000 tokens, every node on a line of its own", () => {
+    const { doom, slides } = board(mode)
+    const read = readForAgent(doom, "all")
+    expect(Math.ceil(bytesOf(read) / 4)).toBeLessThan(3_000)
+    const count = slides.reduce((sum, slide) => sum + 1 + descendantsOf(doom, slide).length, 0)
+    expect(read.split("\n")).toHaveLength(count)
+  })
+})
+
+describe("readForAgent reports the saved look", () => {
+  it("words picture crops, paint and effects", () => {
+    const asset = "a".repeat(64)
+    const picture = build(
+      apply(richDeck(), [{ node: ids.caption, prop: "fills", value: [{ kind: "image", asset, fit: "fill" }] }]),
+      change({
+        op: "set",
+        target: ids.caption,
+        crop: { left: 10, top: 0, right: 30, bottom: 25 },
+        stroke: "text-25",
+        dash: "dot",
+        mask: true,
+        rotation: 15,
+        flip: "h",
+        blur: 8,
+        innerShadow: { color: "accent1", x: 0, y: 2, blur: 4, spread: 0 },
+      }),
+    )
+    const line = lines(readForAgent(picture, [ids.slide])).find((line) => line.includes(ids.caption))
+    expect(line).toContain("r=15 flip=h")
+    expect(line).toContain(`fill=image:${asset}/crop(10,0,30,25)`)
+    expect(line).toContain("stroke=text-25")
+    expect(line).toContain("dash=dot")
+    expect(line).toContain("mask")
+    expect(line).toContain("blur=8")
+    expect(line).toContain("innerShadow=accent1,0,2,4,0")
+
+    const tinted = build(
+      picture,
+      change({ op: "set", target: ids.caption, fill: { gradient: ["accent1", "accent2+40"], angle: 90 } }),
+    )
+    expect(readForAgent(tinted, [ids.slide])).toContain("fill=gradient(accent1>accent2+40@90)")
+    const radial = build(
+      picture,
+      change({ op: "set", target: ids.caption, fill: { gradient: ["accent1", "background"], radial: true } }),
+    )
+    expect(readForAgent(radial, [ids.slide])).toContain("fill=radial(accent1>background)")
+  })
+
+  it("words a skipped slide, its transition and its notes", () => {
+    const deck = build(
+      richDeck(),
+      change({
+        op: "set",
+        target: ids.slide,
+        skipped: true,
+        transition: { kind: "fade", ms: 400 },
+        notes: "Open with the number.\nThen the why.",
+      }),
+    )
+    expect(lines(readForAgent(deck, [ids.slide]))[0]).toContain(
+      'skipped transition=fade/400 notes="Open with the number.\\nThen the why."',
+    )
+    const shown = build(deck, change({ op: "set", target: ids.slide, skipped: false }))
+    expect(lines(readForAgent(shown, [ids.slide]))[0]).not.toContain("skipped")
+  })
+
+  it("words text overrides, including fractions without binary rounding noise", () => {
+    const deck = build(
+      richDeck(),
+      change({
+        op: "set",
+        target: ids.title,
+        align: "justify",
+        alignV: "bottom",
+        color: "accent1+40",
+        size: 72,
+        weight: "SemiBold",
+        font: "Inter",
+        lineHeight: 1.15,
+        letterSpacing: -0.25,
+        opacity: 0.25,
+        spaceBefore: 0.1 + 0.2,
+        spaceAfter: 0.125,
+        case: "upper",
+        underline: true,
+        strike: true,
+        box: { h: 400 },
+      }),
+    )
+    const line = lines(readForAgent(deck, [ids.slide])).find((line) => line.includes(ids.title))
+    expect(line).toContain("opacity=0.25")
+    expect(line).toContain('resize=fixed align=justify color=accent1+40 size=72 font="Inter" weight=SemiBold')
+    expect(line).toContain(
+      "letterSpacing=-0.25 case=upper underline strike lineHeight=1.15 alignV=bottom spaceBefore=0.3 spaceAfter=0.125",
+    )
+    const bold = build(deck, change({ op: "set", target: ids.title, weight: "Bold" }))
+    expect(readForAgent(bold, [ids.slide])).toContain("weight=Bold")
+    const regular = build(deck, change({ op: "set", target: ids.title, weight: "Regular" }))
+    expect(readForAgent(regular, [ids.slide])).toContain("weight=Regular")
   })
 })

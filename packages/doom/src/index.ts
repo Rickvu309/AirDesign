@@ -12,7 +12,7 @@ export {
   unfittedBox,
 } from "./matrix.js"
 export { pictureFit } from "./picture-fit.js"
-export { coverCrop, type ImageCrop } from "./picture-crop.js"
+export { coverCrop, cropSides, type ImageCrop } from "./picture-crop.js"
 export { slideKeyText } from "./slide-key.js"
 export { type AgentEdit, type AgentSession, type Bake, agentEditSession } from "./agent-edit.js"
 export type { ThemeProblem } from "./theme-problems.js"
@@ -25,7 +25,8 @@ export {
   touchedSlides,
   unmeasuredTexts,
 } from "./layout-problems.js"
-export { kindOf as agentKind, readForAgent } from "./agent-read.js"
+export { kindOf as agentKind } from "./layer-kind.js"
+export { uniformAlign, uniformColor } from "./agent-look.js"
 export { applyEdit, countsOf, hasDeck, landEdit } from "./apply-edit.js"
 export { readFold, readLanded, readRuns, readStoredNode, revsToJson, runsToJson } from "./fold-json.js"
 export { type End, type Geometry, lineArrowheads } from "./geometry.js"
@@ -36,12 +37,12 @@ export { invert } from "./invert.js"
 export { onStandingLayers } from "./standing-layers.js"
 export { type Replaced, type RunEdit, type Undone, invertRun, readRunEdit, replacedBy } from "./invert-run.js"
 export type { Align9, Layout } from "./layout.js"
-export type { Color, ColorVar, Hex, ImagePaint, Paint, StrokeStyle } from "./paint.js"
+export type { Color, ColorVar, Hex, ImagePaint, Paint, Sides, StrokeStyle } from "./paint.js"
 export { paletteColorVars } from "./paint.js"
 export { type NodeType, type PropName, type Props, type WriteKey, props } from "./props.js"
-export { textFromMarkdown } from "./markdown.js"
+export { textFromMarkdown, textToMarkdown } from "./markdown.js"
 export { readEdit } from "./read-write.js"
-export { type GridShortfall, type Refusal, isRefusal } from "./refusal.js"
+export { type Expectation, type GridShortfall, type Refusal, isRefusal } from "./refusal.js"
 export {
   type Author,
   type Edit,
@@ -96,6 +97,8 @@ export {
   descendantsOf,
   flows,
   holdsText,
+  isLaidOut,
+  isLive,
   lockedIn,
   onDeck,
   parentOf,

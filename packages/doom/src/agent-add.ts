@@ -77,7 +77,7 @@ function checkFields(change: Add): void {
   const allowed = new Set<string>(["op", "kind", "slide", "into", ...takes[change.kind]])
   for (const [key, value] of Object.entries(change))
     if (value !== undefined && !allowed.has(key))
-      stop("shape", undefined, key, "unknown", `One of ${[...allowed].join(", ")}.`)
+      stop("shape", undefined, key, "unknown", { code: "one-of", options: [...allowed] })
 }
 
 function emptyPlaceholderOf(
@@ -114,13 +114,14 @@ function addWords(
   kind: "text" | "shape" | "path",
   starts: StartRules,
 ): void {
-  if (kind === "text" && change.text === undefined) stop("shape", undefined, "text", "missing", "A non-empty string.")
+  if (kind === "text" && change.text === undefined)
+    stop("shape", undefined, "text", "missing", { code: "nonempty-string" })
   const labelled = kind !== "text"
   const geometry =
     kind === "path"
       ? {
           kind: "path" as const,
-          d: change.d ?? stop("shape", undefined, "d", "missing", "SVG path data."),
+          d: change.d ?? stop("shape", undefined, "d", "missing", { code: "path-data" }),
           ...(change.fillStroke === undefined ? {} : { fillStroke: change.fillStroke }),
         }
       : shapeGeometry(change.shape ?? "rect")
@@ -131,7 +132,7 @@ function addWords(
       : change
   const made = textOfLook(look, undefined, "body", themeOf(draft))
   if (change.link !== undefined && change.link !== "none" && made === undefined)
-    stop("shape", undefined, "link", "needs", "a text layer")
+    stop("shape", undefined, "link", "needs", { code: "needs-text" })
   if (kind === "text" && made !== undefined && change.box === undefined && isLaidOut(parent)) {
     create(draft, "shape", parent.id, {
       ...surfaced(draft, change),
@@ -235,7 +236,7 @@ function addLine(draft: Draft, parent: Node, change: Add): void {
 
 function addFrame(draft: Draft, parent: Node, change: Add): void {
   if (change.rows !== undefined) return addGrid(draft, parent, change)
-  if (change.align === "justify") stop("shape", undefined, "align", "form", "left, center or right.")
+  if (change.align === "justify") stop("shape", undefined, "align", "form", { code: "horizontal-align" })
   const area = areaFor(draft, parent, change.box)
   const layout = layoutOf(change, undefined, gapFor(slideSize(draft).w, draft.placement))
   create(draft, "frame", parent.id, {
@@ -253,7 +254,7 @@ const centred = (area: Area, size: { readonly w: number; readonly h: number }) =
 
 function addPicture(draft: Draft, parent: Node, change: Add): void {
   if (typeof change.fill !== "object" || !("image" in change.fill))
-    stop("shape", undefined, "fill", "form", "An object with image: an https address, or an asset read from the deck.")
+    stop("shape", undefined, "fill", "form", { code: "picture-fill" })
   const area = areaFor(draft, parent, change.box)
   const natural = draft.reading.pictures?.get(change.fill.image)
   const fitted =
@@ -266,8 +267,7 @@ function addPicture(draft: Draft, parent: Node, change: Add): void {
 }
 
 function addIcon(draft: Draft, parent: Node, change: Add): void {
-  if (change.icon === undefined)
-    stop("shape", undefined, "icon", "missing", "An icon name such as star, arrow-right or trending-up.")
+  if (change.icon === undefined) stop("shape", undefined, "icon", "missing", { code: "named-icon" })
   const area = areaFor(draft, parent, change.box)
   const side = Math.min(draft.placement.iconSide, area.w, area.h)
   const box = givenBox(change, { ...area, w: side }, side)
@@ -286,7 +286,7 @@ function addIcon(draft: Draft, parent: Node, change: Add): void {
 
 export function compileAdd(draft: Draft, change: Add, starts: StartRules): void {
   const slide = living(draft, change.slide, "slide")
-  if (slide.type !== "slide") stop("shape", slide.id, "slide", "form", "A slide id.")
+  if (slide.type !== "slide") stop("shape", slide.id, "slide", "form", { code: "slide-id" })
   const parent = change.into === undefined ? slide : living(draft, change.into, "into")
   if (change.into !== undefined && (parent.type !== "frame" || slideOf(draft.doom, parent.id) !== slide.id))
     stop("missing", parent.id, "into")

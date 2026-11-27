@@ -25,7 +25,6 @@ export const innerShadowFields = (readColor: Reader<AgentColor>) => {
   return {
     innerShadow: field(
       {
-        description: "An inner shadow, or none to clear inner shadows.",
         anyOf: [
           { const: "none" },
           {

@@ -81,7 +81,7 @@ describe("add text", () => {
       refused: "shape",
       field: "text",
       fault: "missing",
-      form: "A non-empty string.",
+      expect: { code: "nonempty-string" },
       change: "add text",
     })
   })

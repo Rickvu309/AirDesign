@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { bytesOf } from "./limits.js"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentEdit } from "./agent-edit.js"
+import { board } from "./testing/compiled-board.js"
 import { boardDeckChanges } from "./testing/board-deck.js"
 import { agentDeck, apply, minter, runName } from "./testing/agent-fixtures.js"
-import { readForAgent } from "./agent-read.js"
 import { type NodeId, applyEdit, isRefusal, rev } from "./index.js"
 import { agent, ids } from "./sample-deck.js"
 import { childrenOf, descendantsOf, propOf, slidesOf } from "./doom-walk.js"
@@ -12,33 +11,6 @@ import { textStyleNames } from "./text.js"
 import { placement } from "./testing/placement-rules.js"
 import { starts } from "./testing/start-rules.js"
 import { testTheme } from "./testing/theme.js"
-
-function board(mode: "together" | "per-slide") {
-  const mint = minter("b")
-  let doom = agentDeck()
-  const batches: (readonly AgentChange[])[] = []
-  const send = (changes: readonly AgentChange[]): readonly NodeId[] => {
-    batches.push(changes)
-    const result = compileAgentEdit(doom, changes, {
-      placement,
-      starts,
-      author: agent(runName),
-      once: `board-${batches.length}`,
-      mint,
-    })
-    if ("refused" in result) throw new Error(`batch ${batches.length}: ${JSON.stringify(result)}`)
-    const landed = applyEdit(doom, { ...result.edit, rev: rev(doom.rev + 1) })
-    if (isRefusal(landed)) throw new Error(JSON.stringify(landed))
-    doom = landed
-    return result.added.map((each) => each.id)
-  }
-  const added = send(Array.from({ length: 4 }, () => ({ op: "slide", add: {} })))
-  const slides = [ids.slide, ...added]
-  const parts = boardDeckChanges(slides)
-  if (mode === "together") send(parts.flat())
-  else for (const part of parts) send(part)
-  return { doom, batches, slides }
-}
 
 const overlaps = (a: { x: number; y: number; w: number; h: number }, b: typeof a) =>
   a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
@@ -99,13 +71,6 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
           if (span.font !== undefined) expect(span.font).toBe(testTheme.fonts.body)
         }
       }
-  })
-
-  it("reads back in under 3,000 tokens, every node on a line of its own", () => {
-    const read = readForAgent(doom, "all")
-    expect(Math.ceil(bytesOf(read) / 4)).toBeLessThan(3_000)
-    const count = slides.reduce((sum, slide) => sum + 1 + descendantsOf(doom, slide).length, 0)
-    expect(read.split("\n")).toHaveLength(count)
   })
 })
 

@@ -1,19 +1,19 @@
 import type { AgentChange } from "./agent-change.js"
-import { slideForm, type SlideAdd, type SlideMove } from "./agent-slide-fields.js"
+import { type SlideAdd, type SlideMove } from "./agent-slide-fields.js"
 import { type Draft, living, put, stop } from "./agent-draft.js"
 import type { NodeId } from "./ids.js"
 import type { Node } from "./doom.js"
 import { childrenOf, deckOf, isLive, parentOf, rowsOf, slideRowAt, slidesOf } from "./doom-walk.js"
 import { slideGroups, slidePlacementWrites } from "./slide-placement.js"
 
-const groupNeeds = "a slide group id from get, where a slide line ends with group=<id>"
-const inGroupNeeds = "a slide id in that group, or null to put these first"
+const groupNeeds = { code: "read-slide-group" } as const
+const inGroupNeeds = { code: "group-slide-or-null" } as const
 
 function deckSlide(draft: Draft, id: NodeId, field: string): Node {
   const node = living(draft, id, field)
   return node.type === "slide" && slidesOf(draft.doom).some((slide) => slide.id === id)
     ? node
-    : stop("shape", id, field, "form", "A slide id from get.")
+    : stop("shape", id, field, "form", { code: "read-slide-id" })
 }
 
 function requireGroup(draft: Draft, id: NodeId, field: string): NodeId {
@@ -27,12 +27,12 @@ function groupAnchor(draft: Draft, id: NodeId | null, field: string): NodeId | n
   requireGroup(draft, id, field)
   return slideGroups(draft.doom).some((group) => group.group === id)
     ? id
-    : stop("shape", id, field, "needs", "a slide group with at least one slide from get")
+    : stop("shape", id, field, "needs", { code: "populated-slide-group" })
 }
 
 function addSlide(draft: Draft, { group, after }: SlideAdd): void {
   const { doom } = draft
-  if (group === undefined && after === null) stop("shape", undefined, "after", "form", slideForm.addFirst)
+  if (group === undefined && after === null) stop("shape", undefined, "after", "form", { code: "first-in-group" })
   if (deckOf(doom) === undefined) stop("missing")
   const slide = draft.mint()
   draft.writes.push({ node: slide, prop: "type", value: "slide" })
@@ -75,23 +75,23 @@ function addSlide(draft: Draft, { group, after }: SlideAdd): void {
 
 function moveSlide(draft: Draft, { slide, slides, group, after, before }: SlideMove): void {
   const { doom } = draft
-  if (slide !== undefined && slides !== undefined) stop("shape", undefined, "move", "form", slideForm.notBoth)
-  if (slides?.length === 0) stop("shape", undefined, "slides", "needs", "at least one slide id")
+  if (slide !== undefined && slides !== undefined) stop("shape", undefined, "move", "form", { code: "slide-or-slides" })
+  if (slides?.length === 0) stop("shape", undefined, "slides", "needs", { code: "slide-ids" })
   const ids = [...new Set(slides ?? (slide === undefined ? [] : [slide]))]
   if (ids.length === 0) {
-    if (group === "new") stop("shape", undefined, "group", "form", slideForm.newSlides)
-    if (group === undefined) stop("shape", undefined, "move", "form", slideForm.moveWhat)
+    if (group === "new") stop("shape", undefined, "group", "form", { code: "new-slide-group" })
+    if (group === undefined) stop("shape", undefined, "move", "form", { code: "slide-or-group" })
     if (before === undefined ? after === undefined : after !== undefined)
-      stop("shape", undefined, "after", "form", slideForm.followGroup)
+      stop("shape", undefined, "after", "form", { code: "before-or-after-group" })
     const source = requireGroup(draft, group, "group")
     const field = before === undefined ? "after" : "before"
     const anchor = groupAnchor(draft, before ?? after ?? null, field)
-    if (anchor === source) stop("shape", source, field, "form", "Use a different slide group.")
+    if (anchor === source) stop("shape", source, field, "form", { code: "other-slide-group" })
     draft.writes.push(...slidePlacementWrites(doom, { kind: "moveGroup", group: source, anchor, side: field }))
     return
   }
-  if (before !== undefined) stop("shape", undefined, "before", "form", slideForm.beforeGroup)
-  if (after === undefined) stop("shape", undefined, "after", "missing", slideForm.followSlide)
+  if (before !== undefined) stop("shape", undefined, "before", "form", { code: "before-group-only" })
+  if (after === undefined) stop("shape", undefined, "after", "missing", { code: "after-slide" })
   for (const id of ids) deckSlide(draft, id, slides === undefined ? "move" : "slides")
   if (group === "new") {
     const anchor = groupAnchor(draft, after, "after")
@@ -100,8 +100,7 @@ function moveSlide(draft: Draft, { slide, slides, group, after, before }: SlideM
     )
     return
   }
-  if (after !== null && ids.includes(after))
-    stop("shape", after, "after", "form", "Use a different slide, or null to put these first.")
+  if (after !== null && ids.includes(after)) stop("shape", after, "after", "form", { code: "other-slide-or-null" })
   const previous = after === null ? undefined : deckSlide(draft, after, "after")
   const row =
     group === undefined ? (parentOf(previous)?.id ?? slideRowAt(doom, "first")) : requireGroup(draft, group, "group")
@@ -113,7 +112,7 @@ function moveSlide(draft: Draft, { slide, slides, group, after, before }: SlideM
 
 export function compileSlide(draft: Draft, change: Extract<AgentChange, { op: "slide" }>): void {
   const given = [change.add, change.move, change.delete].filter((part) => part !== undefined)
-  if (given.length !== 1) stop("shape", undefined, "slide", "form", "Exactly one of add, move or delete.")
+  if (given.length !== 1) stop("shape", undefined, "slide", "form", { code: "slide-operation" })
   if (change.add !== undefined) return addSlide(draft, change.add)
   if (change.move !== undefined) return moveSlide(draft, change.move)
   if (change.delete !== undefined)

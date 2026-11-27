@@ -1,5 +1,5 @@
+import { readForAgent } from "../agent-read.js"
 import * as doom from "@airdesign/doom"
-import { textToMarkdown } from "@airdesign/doom/testing"
 
 import { blank, blankDeck, evalDeck, named, slides } from "./eval-deck.js"
 import { onceIds } from "../once-ids.js"
@@ -33,7 +33,7 @@ const chart = (slide: string) =>
   }))
 const hasChart = (end: doom.Doom) => bars.every(({ name }) => has(end, `name="${name}"`))
 
-const lines = (end: doom.Doom) => doom.readForAgent(end, "all")
+const lines = (end: doom.Doom) => readForAgent(end, "all")
 const has = (end: doom.Doom, fragment: string) => lines(end).includes(fragment)
 const lineOf = (end: doom.Doom, id: string) =>
   lines(end)
@@ -41,7 +41,7 @@ const lineOf = (end: doom.Doom, id: string) =>
     .find((line) => line.trimStart().startsWith(`${id} `)) ?? ""
 const textOf = (end: doom.Doom, id: string): string | undefined => {
   const words = (end.nodes.get(id as never) as { text?: doom.Text } | undefined)?.text
-  return words === undefined ? undefined : textToMarkdown(words)
+  return words === undefined ? undefined : doom.textToMarkdown(words)
 }
 const slideIds = (end: doom.Doom) => doom.slidesOf(end).map((slide) => slide.id as string)
 const childrenOf = (end: doom.Doom, id: string) => (end.children.get(id as never) ?? []) as readonly string[]

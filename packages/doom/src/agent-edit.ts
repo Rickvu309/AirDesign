@@ -6,7 +6,7 @@ import type { PlacementRules } from "./placement-rules.js"
 import type { StartRules } from "./start-rules.js"
 import type { NodeId } from "./ids.js"
 import { rev } from "./ids.js"
-import { kindOf } from "./agent-read.js"
+import { kindOf } from "./layer-kind.js"
 import { applyStep, countsOf } from "./apply-edit.js"
 import { changingWrites } from "./changing-writes.js"
 import { land } from "./land.js"
@@ -122,7 +122,7 @@ export function agentEditSession(doom: Doom, by: EditBy): AgentSession {
         change: "changes",
         field: "changes",
         fault: "missing",
-        form: "One to one hundred changes.",
+        expect: { code: "batch" },
       }
     const landing = land(doom, writes, {
       author: by.author,

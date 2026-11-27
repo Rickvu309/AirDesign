@@ -83,18 +83,10 @@ function numberColumn(plain: readonly (readonly string[])[], col: number): boole
 }
 
 export function addGrid(draft: Draft, parent: Node, change: Add): void {
-  const rows =
-    change.rows ??
-    stop(
-      "shape",
-      undefined,
-      "rows",
-      "missing",
-      "One row or more, each with one cell or more. An empty string leaves a cell empty.",
-    )
+  const rows = change.rows ?? stop("shape", undefined, "rows", "missing", { code: "nonempty-grid" })
   if (rows.length === 0 || rows.some((row) => row.length === 0))
-    stop("shape", undefined, "rows", "form", "One row or more, each with one cell or more.")
-  if (change.layout !== undefined) stop("shape", undefined, "layout", "needs", "rows to place the grid")
+    stop("shape", undefined, "rows", "form", { code: "grid-rows" })
+  if (change.layout !== undefined) stop("shape", undefined, "layout", "needs", { code: "needs-rows" })
   const area = gridArea(draft, parent, change.box)
   const theme = themeOf(draft)
   const gap = gapFor(slideSize(draft).w, draft.placement)
