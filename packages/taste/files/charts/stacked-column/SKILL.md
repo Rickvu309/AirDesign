@@ -120,7 +120,6 @@ periods.forEach((period, i) => {
     textStyle: "body2",
     text: shown(totals[i]),
     align: "center",
-    alignV: "bottom",
     box: { x: left, y: cells[i].at(-1).y - 8 - lineH, w, h: lineH },
   })
   insert({
@@ -151,7 +150,6 @@ stack
       textStyle: "body2",
       text: name === accent ? `**${name}**` : name,
       align: "left",
-      alignV: "center",
       box: { x: lastRight + 24, y: at, w: box.w - lastRight - 24, h: lineH },
     })
   })

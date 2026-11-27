@@ -78,7 +78,7 @@ get({ target: s }).problems
 ## Operations
 
 - `insert({ parent, kind, ...look })` adds a layer to a slide or a frame and returns its id. Leave `box` out and the layer takes the largest free area of the slide, or its place in a frame with a layout. `kind`:
-  - `text`: words in markdown. A slide's first layer with `textStyle: "title"` becomes its title.
+  - `text`: words in markdown. A slide's first layer with `textStyle: "title"` becomes its title. Its height follows its words from the top of its `box`; with `alignV: "center"` or `"bottom"` it keeps the box's height while the words fit, so a badge or cell centres on its row.
   - `shape`: a preset `shape` that can hold text: `rect`, `roundRect`, `ellipse`, `triangle`, `diamond`, `chevron`, `homePlate`, `rightArrow`, `star5` and more.
   - `line`: a line or connector with `from`, `to`, `route`, `arrow`. `path`: SVG commands in `d`, from 0 to 1 across the box.
   - `frame`: holds layers (`layout`, `gap`, `padding`, `clip`). Given `rows`, a list of rows of cell strings with the header first, it is a grid of words.
