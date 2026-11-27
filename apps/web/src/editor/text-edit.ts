@@ -7,7 +7,7 @@ export type Base = { readonly font: string; readonly weight: number }
 
 export function baseOf(text: doom.Text, theme: doom.Theme): Base {
   const style = theme.textStyles[text.style]
-  return { font: theme.fonts[style.font], weight: style.weight }
+  return { font: doom.textFont(text, theme), weight: style.weight }
 }
 
 const lit = (look: Look, mark: Mark, base: Base): boolean =>

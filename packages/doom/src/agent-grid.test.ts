@@ -7,6 +7,7 @@ import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import { ladderOf } from "./agent-block.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { type Doom, type NodeId } from "./index.js"
+import { measureWith } from "./measure.js"
 import { widestWord } from "./text-estimate.js"
 import { ids, land } from "./sample-deck.js"
 
@@ -73,21 +74,39 @@ describe("a grid of words fills the band with its text size", () => {
 
 describe("a grid sets its values in the body face and keeps every word whole", () => {
   const namedWeight = { ...defaultTheme, fonts: { heading: "Inter SemiBold", body: "Inter" } }
+  const rows = [
+    ["", "Q1", "Q2"],
+    ["Revenue", "3.0", "3.4"],
+  ]
+  const measure = measureWith({})
 
   it("paints every cell in the body font when the heading font is a single named weight", () => {
     const themed = land(agentDeck(), [{ node: ids.deck, prop: "theme", value: namedWeight }])
-    const rows = [
-      ["", "Q1", "Q2"],
-      ["Revenue", "3.0", "3.4"],
-    ]
     const doom = build(themed, add({ kind: "frame", rows }))
     const cells = childrenOf(doom, made(doom).id).flatMap((cell) => propOf(cell, "text") ?? [])
-    expect(cells.length).toBeGreaterThan(0)
+    expect(cells).toHaveLength(5)
     for (const text of cells)
-      expect(
-        text.spans.every((span) => span.font === namedWeight.fonts.body),
-        text.chars,
-      ).toBe(true)
+      expect(measure(text, namedWeight, null).lines[0]?.runs[0]?.font, text.chars).toBe(namedWeight.fonts.body)
+  })
+
+  it("resolves both header and body cells against the replacement deck theme", () => {
+    const themed = land(agentDeck(), [{ node: ids.deck, prop: "theme", value: namedWeight }])
+    const inserted = build(themed, add({ kind: "frame", rows }))
+    const replacement = {
+      ...namedWeight,
+      fonts: { heading: "Source Serif 4", body: "Source Sans 3" },
+      colors: { ...namedWeight.colors, text: namedWeight.colors.accent1, text2: namedWeight.colors.accent2 },
+    }
+    const changed = land(inserted, [{ node: ids.deck, prop: "theme", value: replacement }])
+    const theme = propOf(changed.nodes.get(ids.deck), "theme")!
+    const cells = childrenOf(changed, made(changed).id).filter((cell) => propOf(cell, "text") !== undefined)
+    expect(cells).toHaveLength(5)
+    for (const cell of cells) {
+      const text = propOf(cell, "text")!
+      const color = propOf(cell, "cell")!.row === 0 ? theme.colors.text2 : theme.colors.text
+      const runs = measure(text, theme, null).lines.flatMap((line) => line.runs)
+      expect(runs, text.chars).toEqual([expect.objectContaining({ font: replacement.fonts.body, color })])
+    }
   })
 
   const longWords = [

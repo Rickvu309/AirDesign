@@ -24,7 +24,6 @@ type Add = Extract<AgentChange, { op: "add" }>
 
 type CellLook = {
   readonly bold: boolean
-  readonly font: string
   readonly right: boolean
   readonly tabular: boolean
   readonly padding: Sides
@@ -35,10 +34,10 @@ function cellText(part: Part, look: CellLook): Part {
   const open = spans.length === 0 ? [{ end: chars.length }] : spans
   const text: Text = {
     ...part.text,
+    fontRole: "body",
     spans: open.map((span) => ({
       ...span,
       bold: span.bold ?? look.bold,
-      font: span.font ?? look.font,
       ...(look.tabular ? { figures: "tabular" as const } : {}),
     })),
     paras: look.right ? paras.map((para) => ({ ...para, align: "right" as const })) : paras,
@@ -133,7 +132,6 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
           ? undefined
           : cellText(partOf(cell, style, at === 0 ? "text2" : "text"), {
               bold: bold(at, col),
-              font: theme.fonts.body,
               right: numbers[col] === true,
               tabular: numbers[col] === true && at > 0 && numberValue(plain[at]?.[col] ?? "") !== undefined,
               padding: paddingAt(at, col),
@@ -200,7 +198,6 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
               : heightIn(
                   cellText(partOf(cell, style), {
                     bold: bold(at, col),
-                    font: theme.fonts.body,
                     right: false,
                     tabular: false,
                     padding: paddingAt(at, col),

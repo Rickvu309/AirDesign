@@ -6,7 +6,7 @@ import type { Px } from "./paint.js"
 import type { ResolvedFace, ResolvedLine, ResolvedRun } from "./resolved.js"
 import type { Para, Span, Text } from "./text.js"
 import { estimateAdvance } from "./text-estimate.js"
-import type { Theme } from "./theme.js"
+import { type Theme, textFont } from "./theme.js"
 
 type WordFit = { readonly w: Px; readonly h: Px }
 export type Measured = {
@@ -72,7 +72,7 @@ type Base = CasedLook & { readonly lineHeight: number; readonly styleWeight: num
 
 const baseLook = (text: Text, theme: Theme): Base => {
   const style = theme.textStyles[text.style]
-  const painted = paintedFace(theme.fonts[style.font], style.weight, undefined)
+  const painted = paintedFace(textFont(text, theme), style.weight, undefined)
   return {
     size: style.size,
     font: painted.font,
