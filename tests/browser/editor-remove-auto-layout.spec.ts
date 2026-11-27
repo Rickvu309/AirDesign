@@ -98,7 +98,7 @@ async function bakeBoth(page: Page, stack: Stack, opened: Opened, count: number)
   await expect.poll(async () => (await saved(stack, opened, "p:1")).layout?.mode).toBe("none")
   const [said] = await stack.toolBlocks(
     "airdesign_execute",
-    { deck: opened.deck, script: scriptOf([{ op: "set", target: "a:1", layout: "none" }]) },
+    { deck: opened.deck, script: scriptOf([{ op: "update", target: "a:1", layout: "none" }]) },
     opened.cookie,
   )
   const answer = JSON.parse(said?.text ?? "{}") as Record<string, unknown>

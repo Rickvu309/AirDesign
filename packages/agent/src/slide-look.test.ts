@@ -36,8 +36,17 @@ describe("skip, transition, word spacing and blur over the protocol", () => {
     const edited = await call("execute", {
       deck: made.deck,
       script: scriptOf([
-        { op: "set", target: slide, skipped: true, transition: { kind: "push", ms: 500 } },
-        { op: "add", kind: "text", slide, text: "Hello", alignV: "bottom", spaceBefore: 12, spaceAfter: 8, blur: 6 },
+        { op: "update", target: slide, skipped: true, transition: { kind: "push", ms: 500 } },
+        {
+          op: "insert",
+          kind: "text",
+          parent: slide,
+          text: "Hello",
+          alignV: "bottom",
+          spaceBefore: 12,
+          spaceAfter: 8,
+          blur: 6,
+        },
       ]),
     })
     expect(edited).toMatchObject({ ok: true })
@@ -50,7 +59,7 @@ describe("skip, transition, word spacing and blur over the protocol", () => {
     expect(layers).toContain("blur=6")
     const bad = await call("execute", {
       deck: made.deck,
-      script: scriptOf([{ op: "set", target: slide, alignV: "middle" }]),
+      script: scriptOf([{ op: "update", target: slide, alignV: "middle" }]),
     })
     expect(bad).toMatchObject({ ok: false, field: "alignV" })
   })

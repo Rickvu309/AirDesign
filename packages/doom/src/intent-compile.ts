@@ -1,10 +1,12 @@
-import { compileAdd } from "./intent-add.js"
-import { compileDelete, compileMove, compileUnwrap, compileWrap } from "./intent-arrange.js"
+import { compileInsertLayer } from "./intent-add.js"
+import { compileGroup, compileMove, compileRemove, compileUngroup } from "./intent-arrange.js"
 import { compileSet } from "./intent-set.js"
-import { compileSlide } from "./intent-slide.js"
-import { compileDeck, compileDuplicate, compilePaste } from "./intent-copy.js"
+import { compileInsertSlide } from "./intent-slide.js"
+import { compileCopy, compilePaste, compileVariables } from "./intent-copy.js"
+import { compileReorder } from "./intent-reorder.js"
+import { compileReplace } from "./intent-replace.js"
 import type { Intent, IntentRefusal } from "./intent-read.js"
-import { type Reading, Stop, draftOf } from "./intent-draft.js"
+import { type Draft, type Reading, Stop, draftOf } from "./intent-draft.js"
 import type { NodeId } from "./ids.js"
 import type { Write } from "./doom.js"
 import type { Doom } from "./doom.js"
@@ -15,28 +17,53 @@ import type { StartRules } from "./start-rules.js"
 
 const estimate = measureWith({})
 
+const listed = (ids: readonly NodeId[]) => `${ids[0] ?? ""}${ids.length > 1 ? `+${ids.length - 1}` : ""}`
+
 export function nameOf(intent: Intent): string {
   switch (intent.op) {
-    case "add":
-      return `add ${intent.kind}`
-    case "set":
+    case "insert":
+      return `insert ${intent.kind}`
+    case "update":
+    case "replace":
+    case "ungroup":
       return `${intent.op} ${intent.target}`
-    case "move": {
-      const ids = intent.nodes ?? (intent.node === undefined ? [] : [intent.node])
-      return `move ${ids[0] ?? ""}${ids.length > 1 ? `+${ids.length - 1}` : ""}`
-    }
-    case "unwrap":
-      return `${intent.op} ${intent.node}`
-    case "wrap":
-    case "delete":
-    case "duplicate":
-      return `${intent.op} ${intent.nodes[0] ?? ""}${intent.nodes.length > 1 ? `+${intent.nodes.length - 1}` : ""}`
-    case "slide":
-      return `slide ${intent.add !== undefined ? "add" : intent.move !== undefined ? "move" : intent.delete !== undefined ? "delete" : ""}`.trim()
+    case "copy":
+    case "move":
+    case "reorder":
+    case "remove":
+    case "group":
+      return `${intent.op} ${listed(intent.targets)}`
     case "paste":
       return `paste ${intent.piece.name ?? intent.piece.type}`
-    case "deck":
-      return "deck"
+    case "variables":
+      return "variables"
+  }
+}
+
+function compileOne(draft: Draft, intent: Intent, starts: StartRules): void {
+  switch (intent.op) {
+    case "insert":
+      return intent.kind === "slide" ? compileInsertSlide(draft, intent) : compileInsertLayer(draft, intent, starts)
+    case "update":
+      return compileSet(draft, intent)
+    case "replace":
+      return compileReplace(draft, intent)
+    case "copy":
+      return compileCopy(draft, intent)
+    case "paste":
+      return compilePaste(draft, intent)
+    case "move":
+      return compileMove(draft, intent)
+    case "reorder":
+      return compileReorder(draft, intent)
+    case "remove":
+      return compileRemove(draft, intent)
+    case "group":
+      return compileGroup(draft, intent)
+    case "ungroup":
+      return compileUngroup(draft, intent)
+    case "variables":
+      return compileVariables(draft, intent)
   }
 }
 
@@ -50,16 +77,7 @@ export function compileIntent(
 ): readonly Write[] | IntentRefusal {
   const draft = draftOf(doom, mint, placement, reading)
   try {
-    if (intent.op === "add") compileAdd(draft, intent, starts)
-    if (intent.op === "set") compileSet(draft, intent)
-    if (intent.op === "move") compileMove(draft, intent)
-    if (intent.op === "wrap") compileWrap(draft, intent)
-    if (intent.op === "unwrap") compileUnwrap(draft, intent)
-    if (intent.op === "duplicate") compileDuplicate(draft, intent)
-    if (intent.op === "paste") compilePaste(draft, intent)
-    if (intent.op === "deck") compileDeck(draft, intent)
-    if (intent.op === "delete") compileDelete(draft, intent)
-    if (intent.op === "slide") compileSlide(draft, intent)
+    compileOne(draft, intent, starts)
     return freeLineEnds(doom, draft.writes, reading.measure ?? estimate)
   } catch (thrown) {
     if (thrown instanceof Stop) return { ...thrown.refusal, change: nameOf(intent) }

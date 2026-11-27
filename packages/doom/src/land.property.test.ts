@@ -219,9 +219,9 @@ it("lands an agent's compiled writes as its session composed them", () => {
     {
       numRuns: 300,
       examples: [
-        [2, [[{ op: "set", target: `${titled.on}.title`, text: "Board update" }]]],
-        [3, [[{ op: "delete", nodes: [linked.ids.t] }]]],
-        [0, [[{ op: "slide", delete: ids.slide }]]],
+        [2, [[{ op: "update", target: `${titled.on}.title`, text: "Board update" }]]],
+        [3, [[{ op: "remove", targets: [linked.ids.t] }]]],
+        [0, [[{ op: "remove", targets: [ids.slide] }]]],
       ],
     },
   )

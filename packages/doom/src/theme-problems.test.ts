@@ -26,8 +26,8 @@ const edited = (changes: readonly Record<string, unknown>[]) => {
 describe("value problems: the edit lands, and the answer names the nearest named choice", () => {
   it("names a hex that is not a theme colour, in a fill, an outline or the words, and lands it", () => {
     const edit = edited([
-      { op: "set", target: ids.title, color: red },
-      { op: "set", target: ids.card, fill: nearRed, stroke: "accent2" },
+      { op: "update", target: ids.title, color: red },
+      { op: "update", target: ids.card, fill: nearRed, stroke: "accent2" },
     ])
     expect(edit.edit.writes.some((write) => write.prop === "fills")).toBe(true)
     expect(edit.problems).toHaveLength(2)
@@ -73,7 +73,7 @@ describe("value problems: the edit lands, and the answer names the nearest named
       spans: [{ end: 7, size: theme().textStyles.title.size, font: theme().fonts.body }],
     }
     expect(themeProblems(sampleDeck(), [{ node: ids.title, prop: "text", value: own }])).toEqual([])
-    expect(edited([{ op: "set", target: ids.title, textStyle: "title", color: "accent1" }]).problems).toEqual([])
-    expect(edited([{ op: "set", target: ids.card, fill: theme().colors.accent2 }]).problems).toEqual([])
+    expect(edited([{ op: "update", target: ids.title, textStyle: "title", color: "accent1" }]).problems).toEqual([])
+    expect(edited([{ op: "update", target: ids.card, fill: theme().colors.accent2 }]).problems).toEqual([])
   })
 })

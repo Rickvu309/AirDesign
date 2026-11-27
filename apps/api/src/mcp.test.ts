@@ -200,13 +200,8 @@ describe("mcp route", () => {
       const landed = await tool(client, "execute", {
         deck: first.deck,
         script: scriptOf([
-          { op: "add", kind: "text", slide: first.slides[0], text: "Q3 **board** update", textStyle: "heading" },
-          {
-            op: "add",
-            kind: "frame",
-            slide: first.slides[0],
-            rows: [["Revenue", "$4.2M"]],
-          },
+          { op: "insert", kind: "text", parent: first.slides[0], text: "Q3 **board** update", textStyle: "heading" },
+          { op: "insert", kind: "frame", parent: first.slides[0], rows: [["Revenue", "$4.2M"]] },
         ]),
       })
       expect(landed.isError).not.toBe(true)
@@ -225,7 +220,7 @@ describe("mcp route", () => {
       const fenced = await tool(client, "execute", {
         deck: first.deck,
         runId: landed.answer.runId,
-        script: scriptOf([{ op: "add", kind: "text", slide: first.slides[0], text: "late" }]),
+        script: scriptOf([{ op: "insert", kind: "text", parent: first.slides[0], text: "late" }]),
       })
       expect(fenced.answer).toMatchObject({ ok: false, refusal: "run-fenced" })
       expect(readFold((await stored(first.deck))!.fold)!.rev).toBe(first.rev + 2)
@@ -239,7 +234,7 @@ describe("mcp route", () => {
       expect((await tool(client, "get_app_state", {})).answer.decks).toHaveLength(1)
       const args = {
         deck: created.deck,
-        script: scriptOf([{ op: "add", kind: "shape", slide: created.slides[0], text: "A" }]),
+        script: scriptOf([{ op: "insert", kind: "shape", parent: created.slides[0], text: "A" }]),
       }
       const first = await tool(client, "execute", args, "edit-1")
       const second = await tool(client, "execute", args, "edit-1")
@@ -260,7 +255,7 @@ describe("mcp route", () => {
       expect(read.answer).toMatchObject({ ok: false, refusal: "owner" })
       const edit = await tool(client, "execute", {
         deck: owned.deck,
-        script: scriptOf([{ op: "add", kind: "text", slide: owned.slides[0], text: "mine now" }]),
+        script: scriptOf([{ op: "insert", kind: "text", parent: owned.slides[0], text: "mine now" }]),
       })
       expect(edit.answer).toMatchObject({ ok: false, refusal: "owner" })
       expect((await tool(client, "stop_run", { deck: owned.deck, runId: "run" })).answer).toMatchObject({
@@ -287,7 +282,7 @@ describe("mcp route", () => {
       const first = await made(client)
       const landed = await tool(client, "execute", {
         deck: first.deck,
-        script: scriptOf([{ op: "add", kind: "frame", slide: first.slides[0] }]),
+        script: scriptOf([{ op: "insert", kind: "frame", parent: first.slides[0] }]),
       })
       const added = landed.answer.result as string
       const typed = await ask(
@@ -308,12 +303,12 @@ describe("mcp route", () => {
       const closed = await tool(client, "execute", {
         deck: first.deck,
         runId: landed.answer.runId,
-        script: scriptOf([{ op: "set", target: added, name: "Agent" }]),
+        script: scriptOf([{ op: "update", target: added, name: "Agent" }]),
       })
       expect(closed.answer).toMatchObject({ ok: false, refusal: "person-protected", refused: "person", node: added })
       const reopened = await tool(client, "execute", {
         deck: first.deck,
-        script: scriptOf([{ op: "set", target: added, name: "Agent" }]),
+        script: scriptOf([{ op: "update", target: added, name: "Agent" }]),
       })
       expect(reopened.answer).toMatchObject({ ok: true })
       const read = await tool(client, "execute", { deck: first.deck, script: "get().layers" })
@@ -327,8 +322,8 @@ describe("mcp route", () => {
       const refused = await tool(client, "execute", {
         deck: first.deck,
         script: scriptOf([
-          { op: "add", kind: "text", slide: first.slides[0], text: "A" },
-          { op: "set", target: "z:9", text: "B" },
+          { op: "insert", kind: "text", parent: first.slides[0], text: "A" },
+          { op: "update", target: "z:9", text: "B" },
         ]),
       })
       expect(refused.isError).toBe(true)

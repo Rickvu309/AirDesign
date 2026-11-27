@@ -28,10 +28,28 @@ const order = (doom: Doom) => slidesOf(doom).map((slide) => slide.id)
 const refusal = (doom: Doom, value: Record<string, unknown>) =>
   compileIntent(doom, change(value), minter(), placement, starts)
 
+describe("a styled slide", () => {
+  it("adds a slide with its background and notes in one change", () => {
+    const doom = build(richDeck(), change({ op: "insert", kind: "slide", fill: "background2", notes: "Say it" }))
+    const made = order(doom).at(-1)!
+    expect(order(doom)).toHaveLength(order(richDeck()).length + 1)
+    expect(propOf(doom.nodes.get(made)!, "fills")).toEqual([{ kind: "solid", color: { var: "background2" } }])
+    expect(propOf(doom.nodes.get(made)!, "notes")).toMatchObject({ chars: "Say it" })
+  })
+
+  it("adds no slide when its look is refused", () => {
+    expect(refusal(richDeck(), { op: "insert", kind: "slide", fill: "background2", radius: 4 })).toMatchObject({
+      refused: "shape",
+      field: "radius",
+      kind: "slide",
+    })
+  })
+})
+
 describe("slide add", () => {
   it("adds a slide in the last group that has a slide, leaving empty groups empty", () => {
     const { doom, slides, empties } = deckWithEmptyGroups()
-    const added = build(started(doom), change({ op: "slide", add: {} }))
+    const added = build(started(doom), change({ op: "insert", kind: "slide" }))
     const made = slidesOf(added).at(-1)!
     expect(parentOf(made)?.id).toBe(parentOf(added.nodes.get(slides[3]!))?.id)
     for (const empty of empties) expect(childrenOf(added, empty)).toEqual([])
@@ -40,19 +58,19 @@ describe("slide add", () => {
   it("adds the first slide on the deck's only empty row", () => {
     const bare = doomFromTree({ theme: testTheme, slides: [] }).doom
     const row = [...bare.nodes.values()].find((node) => node.type === "slideRow")!
-    const added = build(started(bare), change({ op: "slide", add: {} }))
+    const added = build(started(bare), change({ op: "insert", kind: "slide" }))
     expect(parentOf(slidesOf(added)[0])?.id).toBe(row.id)
   })
 
   it("adds a slide after the last one, in the same group, named by its place", () => {
-    const doom = build(richDeck(), change({ op: "slide", add: {} }))
+    const doom = build(richDeck(), change({ op: "insert", kind: "slide" }))
     const slides = slidesOf(doom)
     expect(slides.map((slide) => propOf(slide, "name"))).toEqual(["Slide 1", "Slide 2", "Slide 3"])
     expect(parentOf(slides[2]!)?.id).toBe(ids.row)
   })
 
   it("adds a slide after the one named", () => {
-    const doom = build(richDeck(), change({ op: "slide", add: { after: ids.slide } }))
+    const doom = build(richDeck(), change({ op: "insert", kind: "slide", after: ids.slide }))
     expect(order(doom)[0]).toBe(ids.slide)
     expect(order(doom)[2]).toBe(more.slide2)
     expect(propOf(slidesOf(doom)[1]!, "name")).toBe("Slide 3")
@@ -66,16 +84,16 @@ describe("slide add", () => {
         { node: ids.deck, prop: "size", value: { w: 1920, h: 1080 } },
       ]),
     )
-    const doom = build(bare, change({ op: "slide", add: {} }))
+    const doom = build(bare, change({ op: "insert", kind: "slide" }))
     expect(slidesOf(doom)).toHaveLength(1)
   })
 
   it("refuses a slide that is a layout or not there", () => {
-    expect(refusal(richDeck(), { op: "slide", add: { after: more.layout } })).toMatchObject({
+    expect(refusal(richDeck(), { op: "insert", kind: "slide", after: more.layout })).toMatchObject({
       refused: "shape",
       field: "after",
     })
-    expect(refusal(richDeck(), { op: "slide", add: { after: "z:9" } })).toMatchObject({
+    expect(refusal(richDeck(), { op: "insert", kind: "slide", after: "z:9" })).toMatchObject({
       refused: "missing",
       field: "after",
     })
@@ -83,7 +101,7 @@ describe("slide add", () => {
 
   it("lands as an edit the doom accepts, and the 51st slide is refused as a limit", () => {
     let doom = richDeck()
-    const ask = change({ op: "slide", add: {} })
+    const ask = change({ op: "insert", kind: "slide" })
     for (let count = 2; count < 50; count += 1) doom = build(doom, ask, minter(`m${count}`))
     expect(slidesOf(doom)).toHaveLength(50)
     const writes = compiled(doom, ask, minter("last"))
@@ -97,20 +115,20 @@ describe("slide move and delete", () => {
     const { doom, slides, empties } = deckWithEmptyGroups()
     const base = started(doom)
     const last = slides[3]!
-    const moved = build(base, change({ op: "slide", move: { slide: last, after: null } }))
+    const moved = build(base, change({ op: "move", targets: [last], after: null }))
     expect(groups(moved)).toEqual([[last, slides[0]!, slides[1]!], [slides[2]!]])
     for (const empty of empties) expect(childrenOf(moved, empty)).toEqual([])
   })
 
   it("moves a slide to the front, or after another", () => {
-    const base = build(richDeck(), change({ op: "slide", add: {} }), minter("a"))
+    const base = build(richDeck(), change({ op: "insert", kind: "slide" }), minter("a"))
     const third = slidesOf(base)[2]!.id
-    expect(order(build(base, change({ op: "slide", move: { slide: third, after: null } })))).toEqual([
+    expect(order(build(base, change({ op: "move", targets: [third], after: null })))).toEqual([
       third,
       ids.slide,
       more.slide2,
     ])
-    expect(order(build(base, change({ op: "slide", move: { slide: ids.slide, after: more.slide2 } })))).toEqual([
+    expect(order(build(base, change({ op: "move", targets: [ids.slide], after: more.slide2 })))).toEqual([
       more.slide2,
       ids.slide,
       third,
@@ -118,34 +136,19 @@ describe("slide move and delete", () => {
   })
 
   it("deletes a slide by clearing its parent", () => {
-    const doom = build(richDeck(), change({ op: "slide", delete: more.slide2 }))
+    const doom = build(richDeck(), change({ op: "remove", targets: [more.slide2] }))
     expect(order(doom)).toEqual([ids.slide])
     expect(parentOf(doom.nodes.get(more.slide2)!)).toBeNull()
   })
 
-  it("refuses moving a slide after itself and a node that is no slide", () => {
-    expect(refusal(richDeck(), { op: "slide", move: { slide: ids.slide, after: ids.slide } })).toMatchObject({
+  it("refuses moving a slide after itself and a slide that is not there", () => {
+    expect(refusal(richDeck(), { op: "move", targets: [ids.slide], after: ids.slide })).toMatchObject({
       refused: "shape",
       field: "after",
     })
-    expect(refusal(richDeck(), { op: "slide", delete: ids.card })).toMatchObject({ refused: "shape", field: "delete" })
-    expect(refusal(richDeck(), { op: "slide", move: { slide: "z:9", after: null } })).toMatchObject({
+    expect(refusal(richDeck(), { op: "move", targets: ["z:9"], after: null })).toMatchObject({
       refused: "missing",
-      field: "move",
-    })
-  })
-
-  it("wants exactly one of add, move and delete", () => {
-    expect(refusal(richDeck(), { op: "slide" })).toEqual({
-      refused: "shape",
-      field: "slide",
-      fault: "form",
-      expect: { code: "slide-operation" },
-      change: "slide",
-    })
-    expect(refusal(richDeck(), { op: "slide", add: {}, delete: ids.slide })).toMatchObject({
-      refused: "shape",
-      field: "slide",
+      field: "targets",
     })
   })
 })

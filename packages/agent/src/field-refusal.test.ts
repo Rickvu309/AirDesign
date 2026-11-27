@@ -25,9 +25,9 @@ function agent() {
 }
 
 const hiddenCaption = {
-  op: "add",
+  op: "insert",
   kind: "text",
-  slide: "m1jx7i64jma5:5",
+  parent: "m1jx7i64jma5:5",
   textStyle: "caption",
   text: "",
   box: { x: 0, y: 0, w: 10, h: 10 },
@@ -39,7 +39,7 @@ describe("an agent reads the field a refusal names", () => {
     const by = agent()
     const made = await by.call("execute", { script: "createDeck()" })
     const { deck, slides } = made.fields as { deck: string; slides: string[] }
-    const refused = await by.call("execute", { deck, script: scriptOf([{ ...hiddenCaption, slide: slides[0] }]) })
+    const refused = await by.call("execute", { deck, script: scriptOf([{ ...hiddenCaption, parent: slides[0] }]) })
     expect(refused.fields).toMatchObject({
       ok: false,
       refusal: "field",
@@ -85,13 +85,13 @@ describe("an agent reads the field a refusal names", () => {
     expect(deckless.fields).toMatchObject({ refusal: "field" })
     const added = await by.call("execute", {
       deck,
-      script: scriptOf([{ op: "add", kind: "text", slide: slides[0], text: "Hi" }]),
+      script: scriptOf([{ op: "insert", kind: "text", parent: slides[0], text: "Hi" }]),
     })
     const id = added.fields.result as string
-    const arrow = await by.call("execute", { deck, script: scriptOf([{ op: "set", target: id, arrow: true }]) })
-    expect(arrow.fields).toMatchObject({ field: "arrow", fault: "needs", needs: "a line" })
+    const arrow = await by.call("execute", { deck, script: scriptOf([{ op: "update", target: id, arrow: true }]) })
+    expect(arrow.fields).toMatchObject({ field: "arrow", fault: "unknown", kind: "text" })
     expect(arrow.fields).not.toHaveProperty("form")
-    expect(String(arrow.fields.note)).toContain("Needs a line.")
+    expect(String(arrow.fields.note)).toContain(`${id} is a text, which takes no arrow.`)
     expect(String(arrow.fields.note)).not.toContain("Accepted form")
   })
 })

@@ -20,7 +20,7 @@ describe("words a deck holds are words: no control characters or lone surrogates
   })
 
   it("refuses an agent's words with a control character or a lone surrogate", () => {
-    expect(readIntent({ op: "set", target: ids.title, text: "a\u0000b" })).toMatchObject({ refused: "shape" })
-    expect(readIntent({ op: "set", target: ids.title, name: "a\ud800" })).toMatchObject({ refused: "shape" })
+    expect(readIntent({ op: "update", target: ids.title, text: "a\u0000b" })).toMatchObject({ refused: "shape" })
+    expect(readIntent({ op: "update", target: ids.title, name: "a\ud800" })).toMatchObject({ refused: "shape" })
   })
 })

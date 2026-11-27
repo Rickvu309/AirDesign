@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest"
 import { flipWrites, toggleWrites } from "./flip-writes"
 import { moveWrites } from "./move-writes"
 import { wrapWrites, ungroupWrites } from "./group-writes"
-import { orderWrites } from "./order-writes"
 import { geometryOf } from "@/editing/slide-geometry"
 import { grow, landed, paint, spot } from "./testing/doom-fixtures"
 
@@ -199,8 +198,8 @@ describe("group, frame and ungroup", () => {
 
 describe("layer order", () => {
   const built = grow(tree)
-  const run = (ids: readonly doom.NodeId[], how: Parameters<typeof orderWrites>[2]) =>
-    childrenOf(landed(built.view, orderWrites(built.view, ids, how)), built.slides[0]!)
+  const run = (ids: readonly doom.NodeId[], how: doom.Direction) =>
+    childrenOf(landed(built.view, doom.reorderWrites(built.view, ids, how)), built.slides[0]!)
 
   it("moves to the front and to the back", () => {
     const { a, b, c } = built.ids
@@ -222,23 +221,23 @@ describe("layer order", () => {
 
   it("writes nothing when the layer is already there", () => {
     const { a, c } = built.ids
-    expect(orderWrites(built.view, [c!], "front")).toEqual([])
-    expect(orderWrites(built.view, [a!], "back")).toEqual([])
-    expect(orderWrites(built.view, [c!], "forward")).toEqual([])
+    expect(doom.reorderWrites(built.view, [c!], "front")).toEqual([])
+    expect(doom.reorderWrites(built.view, [a!], "back")).toEqual([])
+    expect(doom.reorderWrites(built.view, [c!], "forward")).toEqual([])
   })
 
   it("places a layer between two siblings that share an order key", () => {
     const { a, b, c } = built.ids
     const place = doom.parentOf(built.view.nodes.get(b!))!
     const tied = landed(built.view, [{ node: c!, prop: "parent", value: { id: place.id, at: place.at } }])
-    const after = landed(tied, orderWrites(tied, [a!], "forward"))
+    const after = landed(tied, doom.reorderWrites(tied, [a!], "forward"))
     expect(childrenOf(after, built.slides[0]!)).toEqual([b, a, c])
     const keys = childrenOf(after, built.slides[0]!).map((id) => doom.parentOf(after.nodes.get(id))!.at)
     expect(keys[0]! < keys[1]! && keys[1]! < keys[2]!).toBe(true)
   })
   it("steps separated layers forward past different siblings", () => {
     const { view, ids, slides } = grow(Array.from("abcde", (name) => ({ type: "shape", name })))
-    const after = landed(view, orderWrites(view, [ids.a!, ids.c!], "forward"))
+    const after = landed(view, doom.reorderWrites(view, [ids.a!, ids.c!], "forward"))
     expect(childrenOf(after, slides[0]!)).toEqual([ids.b, ids.a, ids.d, ids.c, ids.e])
   })
 })

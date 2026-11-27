@@ -168,7 +168,13 @@ function agentProps(name: string): ReadonlySet<string> {
   const mint = () => doom.nodeId(`m:${String((next += 1))}`)
   const found = new Set<string>()
   for (const look of looks) {
-    const writes = compileIntent(view, { op: "set", target: id(name), ...look } as doom.Intent, mint, placement, starts)
+    const writes = compileIntent(
+      view,
+      { op: "update", target: id(name), ...look } as doom.Intent,
+      mint,
+      placement,
+      starts,
+    )
     if (!doom.isRefusal(writes)) for (const write of writes) if (write.node === id(name)) found.add(write.prop)
   }
   return found

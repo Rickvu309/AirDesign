@@ -8,7 +8,7 @@ import { ids, theme } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
 import { starts } from "./testing/start-rules.js"
 
-const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "set", target, ...look }) as Intent
+const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "update", target, ...look }) as Intent
 
 const shadow = { color: "accent1", x: 0, y: 2, blur: 4, spread: 0 }
 
@@ -29,12 +29,12 @@ describe("an inner shadow", () => {
     expect(compileIntent(deck, set(ids.slide, { innerShadow: shadow }), minter(), placement, starts)).toMatchObject({
       field: "innerShadow",
     })
-    expect(readIntent({ op: "set", target: ids.card, innerShadow: { ...shadow, color: "nope" } })).toMatchObject({
+    expect(readIntent({ op: "update", target: ids.card, innerShadow: { ...shadow, color: "nope" } })).toMatchObject({
       field: "innerShadow.color",
     })
-    expect(readIntent({ op: "set", target: ids.card, innerShadow: { ...shadow, blur: -1 } })).toMatchObject({
+    expect(readIntent({ op: "update", target: ids.card, innerShadow: { ...shadow, blur: -1 } })).toMatchObject({
       field: "innerShadow.blur",
     })
-    expect(readIntent({ op: "set", target: ids.card, innerShadow: 4 })).toMatchObject({ field: "innerShadow" })
+    expect(readIntent({ op: "update", target: ids.card, innerShadow: 4 })).toMatchObject({ field: "innerShadow" })
   })
 })

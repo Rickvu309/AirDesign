@@ -61,12 +61,12 @@ it("restores a connector's original free point when undoing one agent run", asyn
     const end = { x: 100, y: 350 }
     const madeLine = await call("execute", {
       deck: id,
-      script: scriptOf([{ op: "add", kind: "line", slide, from: original, to: end, route: "straight" }]),
+      script: scriptOf([{ op: "insert", kind: "line", parent: slide, from: original, to: end, route: "straight" }]),
     })
     const line = addedId(madeLine.result)
     const madeFrame = await call("execute", {
       deck: id,
-      script: scriptOf([{ op: "add", kind: "frame", slide, box: { x: 400, y: 200, w: 200, h: 100 } }]),
+      script: scriptOf([{ op: "insert", kind: "frame", parent: slide, box: { x: 400, y: 200, w: 200, h: 100 } }]),
     })
     const target = addedId(madeFrame.result)
     const runId = madeFrame.runId
@@ -74,7 +74,7 @@ it("restores a connector's original free point when undoing one agent run", asyn
     await call("execute", {
       deck: id,
       runId,
-      script: scriptOf([{ op: "set", target: line, from: { layer: target, side: "right" } }]),
+      script: scriptOf([{ op: "update", target: line, from: { layer: target, side: "right" } }]),
     })
     expect((await fold()).nodes.get(line)).toMatchObject({ geometry: { start: { node: target, site: "r" }, end } })
     await call("undo_run", { deck: id, runId })

@@ -37,19 +37,18 @@ it("saves and refuses slide group edits through the existing tool, using its ans
     expect(saved).toMatchObject({ ok: true })
     return saved.result as { rev: number; layers: string }
   }
-  const edit = async (body: Record<string, unknown>) =>
-    call("execute", { deck, script: scriptOf([{ op: "slide", ...body }]) })
+  const edit = async (change: Record<string, unknown>) => call("execute", { deck, script: scriptOf([change]) })
   const groups = async () => slideGroupsIn((await read()).layers)
 
   const [first] = await groups()
   expect(first?.group).toMatch(/\w+:\d+/)
-  expect(await edit({ add: { group: "new", after: first!.group } })).toMatchObject({ ok: true })
+  expect(await edit({ op: "insert", kind: "slide", group: "new", after: first!.group })).toMatchObject({ ok: true })
   const second = (await groups())[1]!
-  expect(await edit({ add: { group: "new", after: second.group } })).toMatchObject({ ok: true })
+  expect(await edit({ op: "insert", kind: "slide", group: "new", after: second.group })).toMatchObject({ ok: true })
   const third = (await groups())[2]!
-  expect(await edit({ move: { group: third.group, before: first!.group } })).toMatchObject({ ok: true })
+  expect(await edit({ op: "move", targets: [third.group], before: first!.group })).toMatchObject({ ok: true })
   expect(await groups()).toEqual([third, first, second])
-  expect(await edit({ move: { slide: first!.slides[0], group: second.group, after: null } })).toMatchObject({
+  expect(await edit({ op: "move", targets: [first!.slides[0]], group: second.group, after: null })).toMatchObject({
     ok: true,
   })
   expect(await groups()).toEqual([third, { ...second, slides: [...first!.slides, ...second.slides] }])
@@ -58,10 +57,10 @@ it("saves and refuses slide group edits through the existing tool, using its ans
   expect(doom.parentOf(fold.nodes.get(doom.nodeId(first!.group)))).toMatchObject({ id: expect.any(String) })
 
   const before = await read()
-  expect(await edit({ move: { group: "missing:1", before: second.group } })).toMatchObject({
+  expect(await edit({ op: "move", targets: ["missing:1"], before: second.group })).toMatchObject({
     ok: false,
     refusal: "dead",
-    field: "target",
+    field: "targets",
     node: "missing:1",
     note: expect.stringContaining("get() lists the ids"),
   })

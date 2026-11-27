@@ -43,14 +43,10 @@ const storedAsset = /^[0-9a-f]{64}$/
 
 const usable = (name: string) => webImage(name) || storedAsset.test(name)
 
-function imageOf(intent: doom.Intent): string | undefined {
-  if (!("op" in intent) || (intent.op !== "add" && intent.op !== "set")) return undefined
-  const fill = intent.fill
-  return typeof fill === "object" && "image" in fill ? fill.image : undefined
-}
-
-export function imageNames(intents: readonly doom.Intent[]): readonly string[] {
-  return [...new Set(intents.flatMap((intent) => imageOf(intent) ?? []).filter(usable))]
+export function imageName(intent: doom.Intent): string | undefined {
+  const fill = "fill" in intent ? intent.fill : undefined
+  const name = typeof fill === "object" && "image" in fill ? fill.image : undefined
+  return name === undefined || !usable(name) ? undefined : name
 }
 
 export function pictureSizes(
@@ -65,26 +61,29 @@ export function pictureSizes(
   )
 }
 
-export function withAssets(intents: readonly doom.Intent[], images: NamedImages): readonly doom.Intent[] {
-  return intents.map((intent) => {
-    const address = imageOf(intent)
-    const found = address === undefined ? undefined : images.get(address)
-    return found?.ok === true && "fill" in intent ? { ...intent, fill: { image: found.asset } } : intent
-  })
+export function withAsset(intent: doom.Intent, images: NamedImages): doom.Intent {
+  const fill = "fill" in intent ? intent.fill : undefined
+  const found = typeof fill === "object" && "image" in fill ? images.get(fill.image) : undefined
+  return found?.ok === true ? ({ ...intent, fill: { image: found.asset } } as doom.Intent) : intent
 }
 
-export function imageProblem(intents: readonly doom.Intent[], images: NamedImages | undefined): Answer | undefined {
-  const lines = intents.flatMap((intent, at) => {
-    const address = imageOf(intent)
-    if (address === undefined) return []
-    if (!usable(address))
-      return [`Change ${String(at + 1)}: ${JSON.stringify(address)} was not used because ${imageReasons.unknown}`]
-    if (images === undefined) return []
-    const found = images.get(address)
-    if (found?.ok === true) return []
-    const reason = found === undefined ? "it was not fetched." : imageReasons[found.refusal]
-    return [`Change ${String(at + 1)}: ${JSON.stringify(address)} was not used because ${reason}`]
+export function imageProblem(intent: doom.Intent, images: NamedImages | undefined): Answer | undefined {
+  const fill = "fill" in intent ? intent.fill : undefined
+  const address = typeof fill === "object" && "image" in fill ? fill.image : undefined
+  if (address === undefined) return undefined
+  const found = images?.get(address)
+  const reason = !usable(address)
+    ? imageReasons.unknown
+    : images === undefined || found?.ok === true
+      ? undefined
+      : found === undefined
+        ? "it was not fetched."
+        : imageReasons[found.refusal]
+  if (reason === undefined) return undefined
+  return told(false, {
+    ok: false,
+    refusal: "field",
+    field: "fill",
+    note: `${JSON.stringify(address)} was not used because ${reason}`,
   })
-  if (lines.length === 0) return undefined
-  return told(false, { ok: false, refusal: "field", field: "fill", note: lines.join("\n") })
 }

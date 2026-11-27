@@ -52,7 +52,7 @@ async function replies(): Promise<Record<string, string>> {
     const read = await reply({ deck, script: "get().layers" })
     const pictured = await reply({
       deck,
-      script: `${scriptOf([{ op: "add", kind: "text", slide, text: "Plan" }])}; screenshot({ target: "${slide}" })`,
+      script: `${scriptOf([{ op: "insert", kind: "text", parent: slide, text: "Plan" }])}; screenshot({ target: "${slide}" })`,
     })
     const refusal = await reply({ deck, script: 'update({ target: "z:9", fill: 3 })' })
     return { read: read.bytes, pictured: pictured.bytes, refusal: refusal.bytes }

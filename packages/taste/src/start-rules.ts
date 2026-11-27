@@ -12,10 +12,10 @@ export const startRules: StartRules = {
   titleTopShare: 2 / 27,
   titleOnlyHighShare: 1 / 9,
   content: {
-    text: [{ op: "add", kind: "text", textStyle: "body", text: "- First point\n- Second point\n- Third point" }],
+    text: [{ op: "insert", kind: "text", textStyle: "body", text: "- First point\n- Second point\n- Third point" }],
     grid: [
       {
-        op: "add",
+        op: "insert",
         kind: "frame",
         rows: [
           ["", "Column one", "Column two", "Column three"],

@@ -352,8 +352,8 @@ test("the filmstrip and canvas use Japanese for a Han-only title when another sl
   }
   const titleRole = `${opened.slide}.title`
   await edit([
-    { op: "set", target: titleRole, text: "市場" },
-    { op: "slide", add: {} },
+    { op: "update", target: titleRole, text: "市場" },
+    { op: "insert", kind: "slide" },
   ])
   const changed = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
   const fold = readFold(changed.json.fold)
@@ -393,7 +393,7 @@ test("the filmstrip and canvas use Japanese for a Han-only title when another sl
   const [id] = await selectedIds(page)
   if (id === undefined) throw new Error("No selected text layer")
   await expect(languagePicker).toHaveCount(0)
-  await edit([{ op: "set", target: titleRole, language: "ko" }])
+  await edit([{ op: "update", target: titleRole, language: "ko" }])
   await expect(title).toHaveAttribute("style", /Noto%2520Sans%2520KR/i)
   await expect(thumb).toHaveAttribute("style", /Noto%2520Sans%2520KR/i)
   await expect.poll(async () => (await savedNode(stack, opened, id))?.text).toMatchObject({ language: "ko" })

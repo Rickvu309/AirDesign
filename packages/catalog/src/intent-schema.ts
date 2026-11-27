@@ -7,23 +7,18 @@ const descriptions: Readonly<Record<string, string>> = {
   "$defs.color":
     "A theme colour name, lighter or darker by a percent (accent1+40, text-20), or #rrggbb. Prefer names: a template recolours them.",
   "$defs.change.properties.op":
-    "add: kind, slide, into?, look. set: target, look. move: node, or nodes. into is required with nodes or box and then names a slide; one node may name a frame. after?. box? places the union by x, y or both; w, h do not resize. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. Group ids are in get as group=<id>. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
+    "insert: kind, parent, look; or kind slide, after?, group?, and the slide's look. update: target, look. replace: target, kind, look; the new layer takes the old one's place and box. copy: targets, layers or slides, each copied right after itself. move: targets. For layers, parent?, after? or before?, and box? places them together by x, y or both; w, h do not resize. With several targets or a box, parent names a slide. For slides, after is a slide id or null for first, and group? a group id or new. For one slide group, before or after names another group. reorder: targets, direction. remove: targets, layers or slides. group: targets, layout?, and the group's look. ungroup: target. variables: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided. Group ids are in get as group=<id>.",
   "$defs.change.properties.kind":
-    "text and shape hold words. line. path: d. frame groups children, or rows makes a grid. picture: fill {image}. icon.",
-  "$defs.change.properties.slide": "The slide to add to.",
-  "$defs.change.properties.into": "A frame on that slide to add into.",
+    "slide adds a slide. text and shape hold words. line. path: d. frame groups children, or rows makes a grid. picture: fill {image}. icon.",
+  "$defs.change.properties.parent": "The slide or frame to insert into or move into.",
   "$defs.change.properties.target":
     "A node id; '<slide>.title', '<slide>.subtitle' or '<slide>.body', the node with that role; '*.title' and the like, that role on every slide.",
-  "$defs.change.properties.node": "The node.",
-  "$defs.change.properties.nodes": "Node ids.",
-  "$defs.change.properties.after": "Place after this sibling. null puts it first. Left out puts it last.",
-  "$defs.change.properties.add.properties.after":
-    "Slide to follow. With group new, group to follow. Omit for last, or name a group and use null for first.",
-  "$defs.change.properties.add.properties.group": "A group id, or new.",
-  "$defs.change.properties.add": "Add a slide.",
-  "$defs.change.properties.move":
-    'Move slide or slides, with after a slide id or null for first, and optional destination group. With group "new", after names a group or null. Move a whole group by sending only group and either before or after a group id (after null puts it first).',
-  "$defs.change.properties.delete": "A slide to delete.",
+  "$defs.change.properties.targets": "Node ids.",
+  "$defs.change.properties.after":
+    "Place after this sibling or slide. null puts it first. Left out puts it last. With group new, the group to follow.",
+  "$defs.change.properties.before": "Place before this sibling, or a moved slide group before this group.",
+  "$defs.change.properties.group": "A slide group id, or new.",
+  "$defs.change.properties.direction": "front and back go to the ends; forward and backward step one place.",
   "$defs.change.properties.theme": "Replace the deck theme with these colours, fonts, text styles and effect styles.",
   "$defs.change.properties.colors": "Theme colours by name, as #rrggbb. Every layer that names one follows.",
   "$defs.change.properties.fonts": "The theme's heading and body font families.",
@@ -70,10 +65,10 @@ const descriptions: Readonly<Record<string, string>> = {
   "$defs.change.properties.lane":
     "Where an elbow line's middle leg runs: a y when its start leaves a top or bottom side, else an x.",
   "$defs.change.properties.rows":
-    "Add with kind frame. Words in a grid, one array for each row, the first row the header. Markdown works in a cell. An empty string leaves the cell empty.",
+    "Insert with kind frame. Words in a grid, one array for each row, the first row the header. Markdown works in a cell. An empty string leaves the cell empty.",
   "$defs.change.properties.box":
-    "x, y, w, h in pixels on the slide, or inside the frame you add into. set and move keep what you leave out. add takes all four, or none for the largest free area.",
-  "$defs.change.properties.name": "Layer name, or with op deck the deck's name. Never empty.",
+    "x, y, w, h in pixels on the slide, or inside the frame you add into. update, replace and move keep what you leave out. insert takes all four, or none for the largest free area.",
+  "$defs.change.properties.name": "Layer name, or with variables the deck's name. Never empty.",
   "$defs.change.properties.hidden": "Hide the layer.",
   "$defs.change.properties.locked": "Lock the layer against selection and moves.",
   "$defs.change.properties.size": "Text size in pixels.",
@@ -88,7 +83,7 @@ const descriptions: Readonly<Record<string, string>> = {
   "$defs.change.properties.fit": "How a picture sits in its layer.",
   "$defs.change.properties.crop":
     "Crop a picture: the percent cut from each side, 0 to 99. The layer keeps its size, so set box too to resize it. Sets fit crop.",
-  "$defs.change.properties.shape": "A shape's outline. Lines and connectors are not shapes: add kind line.",
+  "$defs.change.properties.shape": "A shape's outline. Lines and connectors are not shapes: insert kind line.",
   "$defs.change.properties.rotation": "Degrees clockwise. Wraps past a full turn.",
   "$defs.change.properties.flip": "Mirror across, down, or both.",
   "$defs.change.properties.notes": "Presenter notes.",

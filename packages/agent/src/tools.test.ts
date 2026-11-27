@@ -136,7 +136,7 @@ describe("get in execute", () => {
       "execute",
       edit(
         deck,
-        Array.from({ length: 12 }, () => ({ op: "slide", add: {} })),
+        Array.from({ length: 12 }, () => ({ op: "insert", kind: "slide" })),
       ),
     )
     const slides = (await read(by, deck)).fields.slides as string[]
@@ -144,7 +144,13 @@ describe("get in execute", () => {
       "execute",
       edit(
         deck,
-        slides.map((slide) => ({ op: "add", kind: "text", slide, text: words, box: { x: 0, y: 0, w: 1920, h: 900 } })),
+        slides.map((slide) => ({
+          op: "insert",
+          kind: "text",
+          parent: slide,
+          text: words,
+          box: { x: 0, y: 0, w: 1920, h: 900 },
+        })),
       ),
     )
     expect(filled.ok).toBe(true)
@@ -168,7 +174,7 @@ describe("changes in execute", () => {
     const { deck, rev, slides } = await created(by)
     const landed = await by.call(
       "execute",
-      edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "Hello **there**", textStyle: "heading" }]),
+      edit(deck, [{ op: "insert", kind: "text", parent: slides[0], text: "Hello **there**", textStyle: "heading" }]),
     )
     expect(landed.fields).toMatchObject({
       ok: true,
@@ -187,7 +193,7 @@ describe("changes in execute", () => {
     const { deck, slides } = await created(by)
     const landed = await by.call(
       "execute",
-      edit(deck, [{ op: "set", target: `${slides[0]!}.title`, text: "Sales grew", color: offTheme }]),
+      edit(deck, [{ op: "update", target: `${slides[0]!}.title`, text: "Sales grew", color: offTheme }]),
     )
     const answer = landed.fields as { note: string; problems: { code: string; note: string }[] }
     expect(landed.ok).toBe(true)
@@ -200,7 +206,7 @@ describe("changes in execute", () => {
       "execute",
       edit(
         deck,
-        [{ op: "set", target: `${slides[0]!}.title`, color: "accent1" }],
+        [{ op: "update", target: `${slides[0]!}.title`, color: "accent1" }],
         (landed.fields as { runId: string }).runId,
       ),
     )
@@ -214,9 +220,9 @@ describe("changes in execute", () => {
       "execute",
       edit(deck, [
         {
-          op: "add",
+          op: "insert",
           kind: "frame",
-          slide: slides[0],
+          parent: slides[0],
           rows: [
             ["Revenue", "$4M"],
             ["Margin", "31%"],
@@ -232,21 +238,21 @@ describe("changes in execute", () => {
   it("lands a second call in the same run, and a call with no runId in a new one", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
-    const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
+    const first = await by.call("execute", edit(deck, [{ op: "insert", kind: "text", parent: slides[0], text: "A" }]))
     const { runId } = first.fields as { runId: string }
     const second = await by.call(
       "execute",
-      edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "B" }], runId),
+      edit(deck, [{ op: "insert", kind: "text", parent: slides[0], text: "B" }], runId),
     )
     expect(second.fields).toMatchObject({ ok: true, rev: rev + 2, runId })
-    const third = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "C" }]))
+    const third = await by.call("execute", edit(deck, [{ op: "insert", kind: "text", parent: slides[0], text: "C" }]))
     expect((third.fields as { runId: string }).runId).not.toBe(runId)
   })
 
   it("lands nothing and answers unchanged for a call that sets only values the deck already holds", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
-    const set = [{ op: "set", target: `${slides[0]!}.title`, text: "Same" }]
+    const set = [{ op: "update", target: `${slides[0]!}.title`, text: "Same" }]
     const first = await by.call("execute", edit(deck, set))
     const { runId } = first.fields as { runId: string }
     const runs = by.decks.decks.get(deck as never)!.runs.size
@@ -266,8 +272,8 @@ describe("changes in execute", () => {
     const refused = await by.call(
       "execute",
       edit(deck, [
-        { op: "add", kind: "text", slide: slides[0], text: "A" },
-        { op: "set", target: "z:9", text: "B" },
+        { op: "insert", kind: "text", parent: slides[0], text: "A" },
+        { op: "update", target: "z:9", text: "B" },
       ]),
     )
     expect(refused.ok).toBe(false)
@@ -291,8 +297,8 @@ describe("changes in execute", () => {
     const refused = await by.call(
       "execute",
       edit(deck, [
-        { op: "add", kind: "text", slide: slides[0], text: "A" },
-        { op: "add", kind: "line", slide: slides[0], text: "no" },
+        { op: "insert", kind: "text", parent: slides[0], text: "A" },
+        { op: "insert", kind: "line", parent: slides[0], text: "no" },
       ]),
     )
     expect(refused.fields).toMatchObject({ ok: false, refusal: "field", refused: "shape", op: 2, field: "text" })
@@ -301,14 +307,14 @@ describe("changes in execute", () => {
   it("names the operation whose form cannot be read", async () => {
     const by = agent()
     const { deck } = await created(by)
-    const refused = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: "bad id" }]))
-    expect(refused.fields).toMatchObject({ ok: false, refusal: "dead", op: 1, field: "parent" })
+    const refused = await by.call("execute", edit(deck, [{ op: "insert", kind: "text", parent: "bad id" }]))
+    expect(refused.fields).toMatchObject({ ok: false, refusal: "field", op: 1, field: "parent", fault: "form" })
   })
 
   it("refuses a call over 100 changes at the operation that passes it, an empty script and an unknown field", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
-    const change = { op: "add", kind: "text", slide: slides[0], text: "A", box: { x: 0, y: 0, w: 100, h: 50 } }
+    const change = { op: "insert", kind: "text", parent: slides[0], text: "A", box: { x: 0, y: 0, w: 100, h: 50 } }
     const many = await by.call(
       "execute",
       edit(
@@ -331,9 +337,9 @@ describe("changes in execute", () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
     const args = edit(deck, [
-      { op: "set", target: `${slides[0]}.title`, text: "A" },
-      { op: "add", kind: "shape", slide: slides[0], box: { x: 0, y: 0, w: 10, h: 10 } },
-      { op: "slide", add: {} },
+      { op: "update", target: `${slides[0]}.title`, text: "A" },
+      { op: "insert", kind: "shape", parent: slides[0], box: { x: 0, y: 0, w: 10, h: 10 } },
+      { op: "insert", kind: "slide" },
     ])
     const first = await by.call("execute", args, "again")
     const again = await by.call("execute", args, "again")
@@ -344,23 +350,23 @@ describe("changes in execute", () => {
   it("refuses a slide add that names a layout, since a deck has none to list", async () => {
     const by = agent()
     const { deck } = await created(by)
-    const refused = await by.call("execute", edit(deck, [{ op: "slide", add: { layout: "Blank" } }]))
+    const refused = await by.call("execute", edit(deck, [{ op: "insert", kind: "slide", layout: "Blank" }]))
     expect(refused.fields).toMatchObject({ ok: false, refusal: "field" })
   })
 
   it("closes a layer to the run once a person changes it, and opens it again in a new run", async () => {
     const by = agent()
     const { deck, slides } = await created(by)
-    const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
+    const first = await by.call("execute", edit(deck, [{ op: "insert", kind: "text", parent: slides[0], text: "A" }]))
     const { runId, result: added } = first.fields as { runId: string; result: string }
     await by.decks.edit(deck as never, {
       once: "typed",
       author: person,
       writes: [{ node: added as never, prop: "name", value: "Mine" }],
     })
-    const closed = await by.call("execute", edit(deck, [{ op: "set", target: added, name: "Agent" }], runId))
+    const closed = await by.call("execute", edit(deck, [{ op: "update", target: added, name: "Agent" }], runId))
     expect(closed.fields).toMatchObject({ ok: false, refusal: "person-protected", refused: "person", node: added })
-    const reopened = await by.call("execute", edit(deck, [{ op: "set", target: added, name: "Agent" }]))
+    const reopened = await by.call("execute", edit(deck, [{ op: "update", target: added, name: "Agent" }]))
     expect(reopened.ok).toBe(true)
   })
 })
@@ -369,13 +375,13 @@ describe("stop_run", () => {
   it("stops the run, so the next call in it is refused run-fenced", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
-    const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
+    const first = await by.call("execute", edit(deck, [{ op: "insert", kind: "text", parent: slides[0], text: "A" }]))
     const { runId } = first.fields as { runId: string }
     const stopped = await by.call("stop_run", { deck, runId })
     expect(stopped.fields).toMatchObject({ ok: true, runId, rev: rev + 2 })
     const fenced = await by.call(
       "execute",
-      edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "B" }], runId),
+      edit(deck, [{ op: "insert", kind: "text", parent: slides[0], text: "B" }], runId),
     )
     expect(fenced.fields).toMatchObject({ ok: false, refusal: "run-fenced" })
   })
@@ -383,7 +389,7 @@ describe("stop_run", () => {
   it("answers a second stop ok and lands nothing", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
-    const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
+    const first = await by.call("execute", edit(deck, [{ op: "insert", kind: "text", parent: slides[0], text: "A" }]))
     const { runId } = first.fields as { runId: string }
     await by.call("stop_run", { deck, runId })
     const again = await by.call("stop_run", { deck, runId })
@@ -395,7 +401,7 @@ describe("stop_run", () => {
     const by = agent()
     const other = agent(by.decks, "claude")
     const { deck, slides } = await created(by)
-    const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
+    const first = await by.call("execute", edit(deck, [{ op: "insert", kind: "text", parent: slides[0], text: "A" }]))
     const { runId } = first.fields as { runId: string }
     expect((await other.call("stop_run", { deck, runId }, "other-stop")).fields).toMatchObject({
       ok: false,
@@ -403,11 +409,14 @@ describe("stop_run", () => {
     })
     const intruded = await other.call(
       "execute",
-      edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "B" }], runId),
+      edit(deck, [{ op: "insert", kind: "text", parent: slides[0], text: "B" }], runId),
       "other-edit",
     )
     expect(intruded.fields).toMatchObject({ ok: false, refusal: "run-fenced" })
-    const more = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "C" }], runId))
+    const more = await by.call(
+      "execute",
+      edit(deck, [{ op: "insert", kind: "text", parent: slides[0], text: "C" }], runId),
+    )
     expect(more.ok).toBe(true)
   })
 

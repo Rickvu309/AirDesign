@@ -1,4 +1,6 @@
-export { type Intent, type IntentRefusal, intentsSchema, readIntent } from "./intent-read.js"
+export { type Direction, type Intent, type IntentRefusal, intentsSchema, lookNames, readIntent } from "./intent-read.js"
+export { type NodeKind, lookFieldsOf, nodeKinds } from "./kind-fields.js"
+export { reorderWrites } from "./intent-reorder.js"
 export { wrapDegrees, wrapRotation } from "./angle.js"
 export {
   type Matrix,

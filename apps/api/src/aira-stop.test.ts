@@ -390,7 +390,7 @@ describe("a stop that names the edit call it cut", () => {
         "airdesign_execute",
         {
           deck: created.deck,
-          script: scriptOf([{ op: "add", kind: "text", slide: created.slides[0], text: "Aira" }]),
+          script: scriptOf([{ op: "insert", kind: "text", parent: created.slides[0], text: "Aira" }]),
         },
         once,
       ),
@@ -412,7 +412,10 @@ describe("a stop that names the edit call it cut", () => {
         method: "tools/call",
         params: {
           name: "airdesign_execute",
-          arguments: { deck: deckName, script: scriptOf([{ op: "add", kind: "text", slide, text: "Late" }]) },
+          arguments: {
+            deck: deckName,
+            script: scriptOf([{ op: "insert", kind: "text", parent: slide, text: "Late" }]),
+          },
           _meta: { "app.airdesign/once": once },
         },
       },

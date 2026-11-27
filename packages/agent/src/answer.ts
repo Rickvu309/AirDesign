@@ -135,6 +135,7 @@ export function doomRefused(refusal: doom.IntentRefusal | doom.Refusal, more: Re
     ...("at" in refusal && refusal.at !== undefined ? { at: refusal.at } : {}),
     ...("field" in refusal && refusal.field !== undefined ? { field: refusal.field } : {}),
     ...("fault" in refusal && refusal.fault !== undefined ? { fault: refusal.fault } : {}),
+    ...("kind" in refusal && refusal.kind !== undefined ? { kind: refusal.kind } : {}),
     ...refusalCopy(refusal),
     ...("grid" in refusal && refusal.grid !== undefined ? { needs: gridNeeds(refusal.grid) } : {}),
     ...(refusal.node === undefined ? {} : { node: refusal.node }),

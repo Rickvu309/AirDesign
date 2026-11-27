@@ -147,8 +147,8 @@ describe("a connector whose place depends on text width", () => {
     expect(seen.x).not.toBe(startOf(grown.doom, slide, line).x)
     const gone = detach([grown.ids.t!])
     const person = step(grown.doom, "person", freeLineEnds(grown.doom, gone, wide)).after
-    const agentWrites = compiled(grown.doom, { op: "delete", nodes: [grown.ids.t!] }, minter(), { measure: wide })
-    const edited = compileIntents(started(grown.doom), [{ op: "delete", nodes: [grown.ids.t!] }], {
+    const agentWrites = compiled(grown.doom, { op: "remove", targets: [grown.ids.t!] }, minter(), { measure: wide })
+    const edited = compileIntents(started(grown.doom), [{ op: "remove", targets: [grown.ids.t!] }], {
       placement,
       starts,
       author: agent(runName),
@@ -340,10 +340,7 @@ describe("deleting the shape a line is attached to", () => {
   it("frees the same point when the agent deletes the shape", () => {
     const grown = deck()
     const seen = startOf(grown.doom, grown.slides[0]!, grown.ids.l!)
-    const writes = compiled(grown.doom, {
-      op: "delete",
-      nodes: [grown.ids.t!],
-    })
+    const writes = compiled(grown.doom, { op: "remove", targets: [grown.ids.t!] })
     expect(writes.map((write) => write.prop)).toEqual(["parent", "geometry"])
     const deleted = step(grown.doom, "agent", writes).after
     const personDelete = drop(grown.doom, "person", [grown.ids.t!]).after
@@ -354,10 +351,7 @@ describe("deleting the shape a line is attached to", () => {
   it("frees a line outside a deleted frame and leaves a line inside it attached", () => {
     const grown = nested()
     const seen = startOf(grown.doom, grown.slides[0]!, grown.ids.l!)
-    const writes = compiled(grown.doom, {
-      op: "delete",
-      nodes: [grown.ids.nest!],
-    })
+    const writes = compiled(grown.doom, { op: "remove", targets: [grown.ids.nest!] })
     expect(writes.map((write) => write.node)).toEqual([grown.ids.nest, grown.ids.l])
     const deleted = step(grown.doom, "frame", writes).after
     expect(startOf(deleted, grown.slides[0]!, grown.ids.l!)).toEqual(seen)

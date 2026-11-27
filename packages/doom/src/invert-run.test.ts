@@ -69,7 +69,7 @@ describe("undoing a run, edit by edit from the values each write replaced", () =
   })
 
   it("keeps a group the person moved after the run made it, with the layers in it (T8)", () => {
-    let world = run(opened(), runA, compiled(sampleDeck(), { op: "wrap", nodes: [ids.card, ids.side] }, minter("g")))
+    let world = run(opened(), runA, compiled(sampleDeck(), { op: "group", targets: [ids.card, ids.side] }, minter("g")))
     const group = nodeId("g:1")
     world = run(world, runA, [{ node: ids.slide, prop: "name", value: "Agent's name" }])
     const moved = { ...(nodeOf(world, group).box as object), x: 900 }

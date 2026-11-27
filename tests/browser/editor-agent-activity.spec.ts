@@ -16,9 +16,9 @@ async function ask(page: Page, text: string) {
 }
 
 const note = (slide: string, text: string, y: number) => ({
-  op: "add",
+  op: "insert",
   kind: "text",
-  slide,
+  parent: slide,
   text,
   box: { x: 160, y, w: 800, h: 80 },
 })

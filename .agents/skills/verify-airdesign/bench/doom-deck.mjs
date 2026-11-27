@@ -36,7 +36,7 @@ export async function boardDeck(kit, cookie, slideCount, deck) {
     kit,
     deck,
     cookie,
-    Array.from({ length: slideCount - 1 }, () => ({ op: "slide", add: {} })),
+    Array.from({ length: slideCount - 1 }, () => ({ op: "insert", kind: "slide" })),
     "bench-slides",
     counter,
     "start",

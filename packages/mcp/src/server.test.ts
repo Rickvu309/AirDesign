@@ -92,8 +92,8 @@ describe("createServer", () => {
       const made = await call("execute", { script: 'createDeck({ name: "Replace" })' })
       const deck = made.deck as string
       const [first] = made.slides as string[]
-      const add = { op: "slide", add: {} }
-      const gone = { op: "slide", delete: first }
+      const add = { op: "insert", kind: "slide" }
+      const gone = { op: "remove", targets: [first] }
       const none = await call("execute", { deck, script: scriptOf([gone]) })
       expect(none).toMatchObject({ ok: false, refusal: "last-slide", op: 1, verb: "remove" })
       const deleteFirst = await call("execute", { deck, script: scriptOf([gone, add]) })
@@ -101,7 +101,7 @@ describe("createServer", () => {
       const slidesOf = async () => (await call("execute", { deck, script: "get().slides" })).result as string[]
       const [second] = await slidesOf()
       expect(await slidesOf()).toHaveLength(1)
-      const addFirst = await call("execute", { deck, script: scriptOf([add, { op: "slide", delete: second }]) })
+      const addFirst = await call("execute", { deck, script: scriptOf([add, { op: "remove", targets: [second] }]) })
       expect(addFirst).toMatchObject({ ok: true })
       expect(await slidesOf()).toHaveLength(1)
     })
@@ -185,9 +185,9 @@ describe("a gradient angle past a full turn", () => {
         deck: made.deck,
         script: scriptOf([
           {
-            op: "add",
+            op: "insert",
             kind: "shape",
-            slide: made.slides[0],
+            parent: made.slides[0],
             fill: { gradient: ["accent1", "accent2"], angle: 400 },
           },
         ]),
@@ -211,7 +211,7 @@ describe("link addresses over the protocol", () => {
         slides: string[]
       }
       const target = `${made.slides[0]!}.title`
-      const set = (text: string) => ({ deck: made.deck, script: scriptOf([{ op: "set", target, text }]) })
+      const set = (text: string) => ({ deck: made.deck, script: scriptOf([{ op: "update", target, text }]) })
       for (const link of ["mailto:a@b.c", "mailto:a@b.c?subject=x"]) {
         const landed = await call("execute", set(`[contact](${link})`))
         expect(landed.isError).not.toBe(true)
@@ -239,7 +239,7 @@ describe("a rotation past a full turn", () => {
       const made = await call("execute", { script: 'createDeck({ name: "Turn" })' })
       const edited = await call("execute", {
         deck: made.deck,
-        script: scriptOf([{ op: "add", kind: "shape", slide: made.slides[0], rotation: -90 }]),
+        script: scriptOf([{ op: "insert", kind: "shape", parent: made.slides[0], rotation: -90 }]),
       })
       expect(edited).toMatchObject({ ok: true })
       expect((await call("execute", { deck: made.deck, script: "get().layers" })).result).toContain("r=270")
@@ -254,7 +254,7 @@ describe("a rotation past a full turn", () => {
       const edited = await call("execute", {
         deck: made.deck,
         script: scriptOf([
-          { op: "add", kind: "text", slide: made.slides[0], text: "Turned", textStyle: "title", rotation: -90 },
+          { op: "insert", kind: "text", parent: made.slides[0], text: "Turned", textStyle: "title", rotation: -90 },
         ]),
       })
       expect(edited).toMatchObject({ ok: true })
@@ -282,7 +282,7 @@ describe("an answer read from structuredContent alone", () => {
       const read = await call("execute", { deck, script: `screenshot({ target: "${first}" }); get().layers` })
       const edited = await call("execute", {
         deck,
-        script: scriptOf([{ op: "add", kind: "text", slide: first, text: "Plan" }]),
+        script: scriptOf([{ op: "insert", kind: "text", parent: first, text: "Plan" }]),
       })
       const runId = (edited.structuredContent as { runId: string }).runId
       const answers = {

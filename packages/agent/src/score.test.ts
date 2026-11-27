@@ -16,7 +16,7 @@ const task: Task = {
     landed: () => true,
   },
 }
-const set = (target: string) => [edit([{ op: "set", target, text: "A" }])]
+const set = (target: string) => [edit([{ op: "update", target, text: "A" }])]
 
 describe("score", () => {
   it("passes an attempt that makes the calls the task wants and changes only what it names", async () => {
@@ -30,7 +30,7 @@ describe("score", () => {
   })
 
   it("fails an attempt whose answers are not the steps the task wants", async () => {
-    const result = await score(task, [edit([{ op: "set", target: "z:9", text: "A" }])])
+    const result = await score(task, [edit([{ op: "update", target: "z:9", text: "A" }])])
     expect(result).toMatchObject({ pass: false, reason: "tool", answers: [{ outcome: "dead" }] })
   })
 

@@ -14,7 +14,7 @@ export const starts: StartRules = {
   content: {
     text: [
       {
-        op: "add",
+        op: "insert",
         kind: "text",
         textStyle: "body",
         text: ["First point", "Second point", "Third point"].map((point) => `- ${point}`).join("\n"),
@@ -22,7 +22,7 @@ export const starts: StartRules = {
     ],
     grid: [
       {
-        op: "add",
+        op: "insert",
         kind: "frame",
         rows: [
           ["", "Column one", "Column two", "Column three"],

@@ -28,9 +28,9 @@ async function made(agent: Agent): Promise<Made> {
 }
 
 const text = (slide: string, words: string) => ({
-  op: "add",
+  op: "insert",
   kind: "text",
-  slide,
+  parent: slide,
   text: words,
   box: { x: 160, y: 800, w: 600, h: 80 },
 })
@@ -146,7 +146,7 @@ for (const pairing of ["two agents", "Aira and an agent"] as const) {
         const closed = await agent.call("execute", {
           deck: start.deck,
           runId: run,
-          script: scriptOf([{ op: "set", target: added, name: "Agent" }]),
+          script: scriptOf([{ op: "update", target: added, name: "Agent" }]),
         })
         expect(closed.body.refusal).toBe("person-protected")
       }

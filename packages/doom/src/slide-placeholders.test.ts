@@ -78,12 +78,12 @@ describe("a title that hugs its lines", () => {
     const read = solveLayout(doom, ids.slide, estimate).get(title.id)!
     expect(read.y + read.h).toBe(540)
     const long = "Quarterly review for the board and every team that reports to it"
-    const wrapped = build(doom, { op: "set", target: title.id, text: long } as unknown as Intent)
+    const wrapped = build(doom, { op: "update", target: title.id, text: long } as unknown as Intent)
     const boxes = solveLayout(wrapped, ids.slide, estimate)
     const tall = boxes.get(title.id)!
     expect(tall.h).toBeGreaterThan(read.h)
     expect(tall.y + tall.h).toBe(540)
-    const change = { op: "set", target: title.id, box: { y: 100 } } as unknown as Intent
+    const change = { op: "update", target: title.id, box: { y: 100 } } as unknown as Intent
     const moved = apply(wrapped, compiled(wrapped, change, minter("m"), { boxes }))
     expect(solveLayout(moved, ids.slide, estimate).get(title.id)).toMatchObject({ y: 100, h: tall.h })
     expect(propOf(byRole(moved, "title"), "text")!.resize).toBe("height")
@@ -92,9 +92,9 @@ describe("a title that hugs its lines", () => {
 
 describe("an agent's words on a title slide", () => {
   const word = (more: Record<string, unknown>) => ({
-    op: "add" as const,
+    op: "insert" as const,
     kind: "text" as const,
-    slide: ids.slide,
+    parent: ids.slide,
     ...more,
   })
 

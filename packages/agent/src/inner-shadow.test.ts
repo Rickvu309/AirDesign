@@ -30,9 +30,9 @@ describe("inner shadow over the protocol", () => {
       deck: made.deck,
       script: scriptOf([
         {
-          op: "add",
+          op: "insert",
           kind: "shape",
-          slide,
+          parent: slide,
           fill: "accent1",
           innerShadow: { color: "accent1", x: 0, y: 2, blur: 4, spread: 1, opacity: 0.4 },
         },
@@ -44,7 +44,9 @@ describe("inner shadow over the protocol", () => {
     )
     const bad = await call("execute", {
       deck: made.deck,
-      script: scriptOf([{ op: "set", target: slide, innerShadow: { color: "nope", x: 0, y: 0, blur: 0, spread: 0 } }]),
+      script: scriptOf([
+        { op: "update", target: slide, innerShadow: { color: "nope", x: 0, y: 0, blur: 0, spread: 0 } },
+      ]),
     })
     expect(bad).toMatchObject({ ok: false, field: "innerShadow.color" })
   })

@@ -1,6 +1,7 @@
-import type { AddKind, Intent, IntentLook } from "./intent-read.js"
+import type { Intent, IntentLook } from "./intent-read.js"
+import type { LayerKind } from "./kind-fields.js"
 import { shapeGeometry } from "./preset-geometry.js"
-import { type Draft, create, living, put, stop } from "./intent-draft.js"
+import { type Draft, create, fitKind, living, put, stop } from "./intent-draft.js"
 import { askedArrow, iconName, layoutOf, solid, surfaceOf, textOfLook, turnOf, type Now } from "./intent-look.js"
 import { addGrid } from "./intent-grid.js"
 import type { StartRules } from "./start-rules.js"
@@ -15,51 +16,7 @@ import type { Node } from "./doom.js"
 import type { Text } from "./text.js"
 import { textHeight } from "./text-estimate.js"
 
-type Add = Extract<Intent, { op: "add" }>
-
-const common = [
-  "box",
-  "name",
-  "hidden",
-  "opacity",
-  "effect",
-  "effectOpacity",
-  "blur",
-  "innerShadow",
-  "rotation",
-  "flip",
-  "mask",
-] as const
-const painted = ["fill", "stroke", "strokeWidth", "radius", "dash"] as const
-const words = [
-  "text",
-  "textStyle",
-  "language",
-  "align",
-  "color",
-  "size",
-  "font",
-  "weight",
-  "lineHeight",
-  "letterSpacing",
-  "case",
-  "underline",
-  "strike",
-  "alignV",
-  "spaceBefore",
-  "spaceAfter",
-  "padding",
-] as const
-
-const takes: Readonly<Record<AddKind, readonly (keyof IntentLook)[]>> = {
-  text: [...common, ...painted, ...words, "link"],
-  shape: [...common, ...painted, ...words, "shape", "link"],
-  path: [...common, ...painted, ...words, "d", "fillStroke", "link"],
-  line: [...common, "stroke", "strokeWidth", "arrow", "startArrow", "dash", "from", "to", "route", "lane"],
-  frame: [...common, ...painted, "layout", "gap", "padding", "align", "rows", "clip"],
-  picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit", "crop"],
-  icon: [...common, "icon", "stroke", "strokeWidth"],
-}
+type Add = Extract<Intent, { op: "insert"; kind: LayerKind }>
 
 const titleStyles: ReadonlySet<Text["style"]> = new Set(["display", "title"])
 function surfaced(draft: Draft, look: IntentLook, now: Now = {}, align: StrokeStyle["align"] = "inside") {
@@ -72,13 +29,6 @@ const givenBox = (look: IntentLook, area: Area, h: number = area.h, grows = fals
   ...(look.box === undefined ? { x: area.x, y: area.y, w: area.w, h } : { ...look.box, ...(grows ? { h } : {}) }),
   ...turnOf(look),
 })
-
-function checkFields(intent: Add): void {
-  const allowed = new Set<string>(["op", "kind", "slide", "into", ...takes[intent.kind]])
-  for (const [key, value] of Object.entries(intent))
-    if (value !== undefined && !allowed.has(key))
-      stop("shape", undefined, key, "unknown", { code: "one-of", options: [...allowed] })
-}
 
 function emptyPlaceholderOf(
   draft: Draft,
@@ -112,7 +62,7 @@ function addWords(
   slide: Node,
   intent: Add,
   kind: "text" | "shape" | "path",
-  starts: StartRules,
+  starts: StartRules | undefined,
 ): void {
   if (kind === "text" && intent.text === undefined)
     stop("shape", undefined, "text", "missing", { code: "nonempty-string" })
@@ -143,7 +93,7 @@ function addWords(
     return
   }
   const empty =
-    kind === "text" && made !== undefined
+    kind === "text" && made !== undefined && starts !== undefined
       ? emptyPlaceholderFor(draft, slide, made.style, intent.box !== undefined, starts)
       : undefined
   if (empty !== undefined) {
@@ -262,7 +212,7 @@ function addPicture(draft: Draft, parent: Node, intent: Add): void {
   create(draft, "shape", parent.id, {
     ...surfaced(draft, intent),
     box: givenBox(intent, fitted),
-    geometry: { kind: "rect" },
+    geometry: shapeGeometry(intent.shape ?? "rect"),
   })
 }
 
@@ -284,17 +234,17 @@ function addIcon(draft: Draft, parent: Node, intent: Add): void {
   })
 }
 
-export function compileAdd(draft: Draft, intent: Add, starts: StartRules): void {
-  const slide = living(draft, intent.slide, "slide")
-  if (slide.type !== "slide") stop("shape", slide.id, "slide", "form", { code: "slide-id" })
-  const parent = intent.into === undefined ? slide : living(draft, intent.into, "into")
-  if (intent.into !== undefined && (parent.type !== "frame" || slideOf(draft.doom, parent.id) !== slide.id))
-    stop("missing", parent.id, "into")
-  checkFields(intent)
-  compileKind(draft, parent, slide, intent, starts)
+export function compileInsertLayer(draft: Draft, intent: Add, placeholders: StartRules | undefined): void {
+  const parent = living(draft, intent.parent, "parent")
+  if (parent.type !== "slide" && parent.type !== "frame")
+    stop("shape", parent.id, "parent", "form", { code: "slide-or-frame" })
+  const slideId = parent.type === "slide" ? parent.id : slideOf(draft.doom, parent.id)
+  const slide = slideId === undefined ? stop("missing", parent.id, "parent") : living(draft, slideId, "parent")
+  fitKind("insert", intent.kind, intent)
+  compileKind(draft, parent, slide, intent, placeholders)
 }
 
-function compileKind(draft: Draft, parent: Node, slide: Node, intent: Add, starts: StartRules): void {
+function compileKind(draft: Draft, parent: Node, slide: Node, intent: Add, starts: StartRules | undefined): void {
   switch (intent.kind) {
     case "text":
     case "shape":

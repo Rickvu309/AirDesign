@@ -29,7 +29,7 @@ export function board(mode: "together" | "per-slide"): {
     doom = landed
     return result.added.map((each) => each.id)
   }
-  const added = send(Array.from({ length: 4 }, () => ({ op: "slide", add: {} })))
+  const added = send(Array.from({ length: 4 }, () => ({ op: "insert", kind: "slide" })))
   const slides = [ids.slide, ...added]
   const parts = boardDeckIntents(slides)
   if (mode === "together") send(parts.flat())

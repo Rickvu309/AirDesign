@@ -5,8 +5,7 @@ import { intentsSchema } from "./intent-schema.js"
 describe("the change schema copy", () => {
   it("describes a move as the parser accepts it", () => {
     const described = JSON.stringify(intentsSchema.$defs.change.properties.op)
-    expect(described).toContain("into is required with nodes or box")
-    expect(described).toContain("names a slide")
+    expect(described).toContain("With several targets or a box, parent names a slide")
     expect(described).toContain("x, y or both")
     expect(described).toContain("w, h do not resize")
   })

@@ -1,6 +1,8 @@
 import { orderKeyBetween, type OrderKey } from "./order-key.js"
 import type { Intent } from "./intent-read.js"
-import { type Draft, Stop, add, keysAfter, living, put, stop } from "./intent-draft.js"
+import { type Draft, Stop, add, fitKind, keysAfter, living, onwards, put, stop } from "./intent-draft.js"
+import { compileSet } from "./intent-set.js"
+import { moveSlides, removeSlide } from "./intent-slide.js"
 import { moveToSlide, slidePlace } from "./move-to-slide.js"
 import { isRefusal } from "./refusal.js"
 import { sidesOf } from "./intent-look.js"
@@ -96,43 +98,39 @@ function sourceBoxes(draft: Draft, ids: readonly NodeId[]): ReadonlyMap<NodeId, 
   return solved.size === 0 ? undefined : solved
 }
 
-function placeOnSlide(draft: Draft, intent: Op<"move">): void {
-  if (intent.node !== undefined && intent.nodes !== undefined)
-    stop("shape", intent.node, "nodes", "form", { code: "layer-or-layers" })
-  const ids = intent.nodes ?? (intent.node === undefined ? undefined : [intent.node])
-  if (ids === undefined) stop("shape", undefined, "node", "needs", { code: "layer" })
-  if (intent.into === undefined) stop("shape", undefined, "into", "needs", { code: "destination-slide" })
+function placeOnSlide(
+  draft: Draft,
+  ids: readonly NodeId[],
+  into: NodeId | undefined,
+  after: NodeId | null | undefined,
+  box: Op<"move">["box"],
+): void {
+  if (into === undefined) stop("shape", undefined, "parent", "needs", { code: "destination-slide" })
   const boxes = sourceBoxes(draft, ids)
   const kept = slidePlace(draft.doom, ids, boxes)
   if (isRefusal(kept)) throw new Stop(kept)
-  const place = { x: intent.box?.x ?? kept.x, y: intent.box?.y ?? kept.y }
-  const moved = moveToSlide(draft.doom, ids, intent.into, place, {
+  const place = { x: box?.x ?? kept.x, y: box?.y ?? kept.y }
+  const moved = moveToSlide(draft.doom, ids, into, place, {
     ...(boxes === undefined ? {} : { boxes }),
-    ...(intent.after === undefined ? {} : { after: intent.after }),
+    ...(after === undefined ? {} : { after }),
   })
   if (isRefusal(moved)) throw new Stop(moved)
   draft.writes.push(...moved.writes)
 }
 
-export function compileMove(draft: Draft, intent: Op<"move">): void {
-  if (intent.nodes !== undefined || intent.box !== undefined) {
-    placeOnSlide(draft, intent)
-    return
-  }
-  if (intent.node === undefined) stop("shape", undefined, "node", "needs", { code: "layer" })
-  const node = arrangeableNode(draft, intent.node, "node")
+function reparent(draft: Draft, node: Node, into: NodeId | undefined, after: NodeId | null | undefined): void {
   const from = parentIdOf(node)
-  const target = intent.into === undefined ? living(draft, from, "into") : living(draft, intent.into, "into")
+  const target = living(draft, into ?? from, "parent")
   if (target.type !== "slide" && target.type !== "frame")
-    stop("shape", target.id, "into", "form", { code: "slide-or-frame" })
+    stop("shape", target.id, "parent", "form", { code: "slide-or-frame" })
   if (target.id === node.id || descendantsOf(draft.doom, node.id).some((inside) => inside.id === target.id))
-    stop("cycle", node.id, "into")
+    stop("cycle", node.id, "parent")
   const previous =
-    intent.after === undefined
+    after === undefined
       ? (childrenOf(draft.doom, target.id)
           .filter((sibling) => sibling.id !== node.id)
           .at(-1)?.id ?? null)
-      : intent.after
+      : after
   if (previous === node.id) stop("shape", node.id, "after", "form", { code: "after-sibling" })
   const [key] = keysAfter(draft, target.id, previous, 1, new Set([node.id]))
   draft.writes.push({ node: node.id, prop: "parent", value: { id: target.id, at: key as OrderKey } })
@@ -145,11 +143,41 @@ export function compileMove(draft: Draft, intent: Op<"move">): void {
   carry(draft, node, boxes, multiply(invert(now.content), was.content), was.rotation - now.rotation, baked)
 }
 
-export function compileWrap(draft: Draft, intent: Op<"wrap">): void {
-  const nodes = [...new Set(intent.nodes)].map((id) => arrangeableNode(draft, id, "nodes"))
+function afterOf(draft: Draft, into: NodeId, moving: readonly NodeId[], before: NodeId): NodeId | null {
+  const siblings = childrenOf(draft.doom, into).filter((sibling) => !moving.includes(sibling.id))
+  const at = siblings.findIndex((sibling) => sibling.id === before)
+  if (at < 0) stop("missing", before, "before")
+  return siblings[at - 1]?.id ?? null
+}
+
+export function compileMove(draft: Draft, intent: Op<"move">): void {
+  const targets = intent.targets.map((id) => living(draft, id, "targets"))
+  const first = targets[0] as Node
+  if (targets.some((node) => node.type === "slide" || node.type === "slideRow")) {
+    if (intent.parent !== undefined) stop("shape", first.id, "parent", "unknown")
+    if (intent.box !== undefined) stop("shape", first.id, "box", "unknown")
+    return moveSlides(draft, targets, intent)
+  }
+  if (intent.group !== undefined) stop("shape", first.id, "group", "unknown")
+  const ids = targets.map((node) => arrangeableNode(draft, node.id, "targets").id)
+  const placed = ids.length > 1 || intent.box !== undefined
+  const into = intent.parent ?? (placed ? slideOf(draft.doom, first.id) : undefined)
+  const after =
+    intent.before === undefined ? intent.after : afterOf(draft, into ?? parentIdOf(first), ids, intent.before)
+  if (placed) placeOnSlide(draft, ids, into, after, intent.box)
+  else reparent(draft, first, into, after)
+}
+
+function wrap(
+  draft: Draft,
+  targets: readonly NodeId[],
+  wrapLayout: Op<"group">["layout"],
+  clip: boolean | undefined,
+): NodeId {
+  const nodes = [...new Set(targets)].map((id) => arrangeableNode(draft, id, "targets"))
   const parent = parentIdOf(nodes[0] as Node)
   for (const node of nodes)
-    if (parentIdOf(node) !== parent) stop("shape", node.id, "nodes", "form", { code: "same-parent" })
+    if (parentIdOf(node) !== parent) stop("shape", node.id, "targets", "form", { code: "same-parent" })
   const position = new Map(childrenOf(draft.doom, parent).map((child, at) => [child.id, at]))
   const ordered = [...nodes].sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0))
   const boxes = sourceBoxes(draft, [parent])
@@ -166,9 +194,9 @@ export function compileWrap(draft: Draft, intent: Op<"wrap">): void {
     h: Math.max(1, Math.round(bounds.bottom - bounds.top)),
   }
   const layout: Layout | undefined =
-    intent.layout === "row" || intent.layout === "column"
+    wrapLayout === "row" || wrapLayout === "column"
       ? {
-          mode: intent.layout,
+          mode: wrapLayout,
           gap: gapFor(slideSize(draft).w, draft.placement),
           padding: sidesOf(0),
           align: "top-left",
@@ -182,9 +210,9 @@ export function compileWrap(draft: Draft, intent: Op<"wrap">): void {
     parent,
     {
       box: { ...zeroBox, ...origin, ...size },
-      ...(intent.clip === true && layout === undefined ? {} : { sizing: { w: "hug" as const, h: "hug" as const } }),
+      ...(clip === true && layout === undefined ? {} : { sizing: { w: "hug" as const, h: "hug" as const } }),
       ...(layout === undefined ? {} : { layout }),
-      ...(intent.clip === true ? { clip: true } : {}),
+      ...(clip === true ? { clip: true } : {}),
     },
     parentOf(ordered.at(-1) as Node)?.at as OrderKey,
   )
@@ -202,11 +230,20 @@ export function compileWrap(draft: Draft, intent: Op<"wrap">): void {
       box: { ...keptBox(node, solved, baked), x: Math.round(spot.x - origin.x), y: Math.round(spot.y - origin.y) },
     })
   }
+  return frame
 }
 
-export function compileUnwrap(draft: Draft, intent: Op<"unwrap">): void {
-  const frame = living(draft, intent.node, "node")
-  if (frame.type !== "frame") stop("shape", frame.id, "node", "form", { code: "frame" })
+export function compileGroup(draft: Draft, intent: Op<"group">): void {
+  const { op: _op, targets, layout, clip, ...look } = intent
+  fitKind("update", "frame", look)
+  const frame = wrap(draft, targets, layout, clip)
+  if (Object.values(look).some((value) => value !== undefined))
+    compileSet(onwards(draft), { ...look, op: "update", target: frame })
+}
+
+export function compileUngroup(draft: Draft, intent: Op<"ungroup">): void {
+  const frame = living(draft, intent.target, "target")
+  if (frame.type !== "frame") stop("shape", frame.id, "target", "form", { code: "frame" })
   const parent = parentIdOf(frame)
   const kids = childrenOf(draft.doom, frame.id)
   const keys = keysAfter(draft, parent, frame.id, kids.length)
@@ -220,7 +257,9 @@ export function compileUnwrap(draft: Draft, intent: Op<"unwrap">): void {
   draft.writes.push({ node: frame.id, prop: "parent", value: null })
 }
 
-export function compileDelete(draft: Draft, intent: Op<"delete">): void {
-  const nodes = [...new Set(intent.nodes)].map((id) => arrangeableNode(draft, id, "nodes").id)
-  for (const id of nodes) draft.writes.push({ node: id, prop: "parent", value: null })
+export function compileRemove(draft: Draft, intent: Op<"remove">): void {
+  for (const id of new Set(intent.targets)) {
+    if (living(draft, id, "targets").type === "slide") removeSlide(draft, id)
+    else draft.writes.push({ node: arrangeableNode(draft, id, "targets").id, prop: "parent", value: null })
+  }
 }

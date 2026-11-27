@@ -457,16 +457,16 @@ function landsAgentEdits(start: Doom, batches: readonly (readonly unknown[])[]):
 }
 
 const found: readonly (readonly [string, number, readonly (readonly unknown[])[]])[] = [
-  ["a line break in agent text", 0, [[{ op: "add", kind: "text", slide: ids.slide, text: "Line one\nLine two" }]]],
+  ["a line break in agent text", 0, [[{ op: "insert", kind: "text", parent: ids.slide, text: "Line one\nLine two" }]]],
   [
     "a table with words in its cells",
     0,
     [
       [
         {
-          op: "add",
+          op: "insert",
           kind: "frame",
-          slide: ids.slide,
+          parent: ids.slide,
           rows: [
             ["Metric", "Q3"],
             ["Revenue\nnet", "**$4.2M**"],
@@ -478,19 +478,19 @@ const found: readonly (readonly [string, number, readonly (readonly unknown[])[]
   [
     "text on a slide the run added",
     2,
-    [[{ op: "slide", add: {} }], [{ op: "add", kind: "text", slide: "p:1", text: "- one\n- two" }]],
+    [[{ op: "insert", kind: "slide" }], [{ op: "insert", kind: "text", parent: "p:1", text: "- one\n- two" }]],
   ],
   [
     "paragraph JSON sent as words",
     0,
-    [[{ op: "set", target: ids.title, text: JSON.stringify({ paras: [{ from: -1, runs: [{ text: "x" }] }] }) }]],
+    [[{ op: "update", target: ids.title, text: JSON.stringify({ paras: [{ from: -1, runs: [{ text: "x" }] }] }) }]],
   ],
   [
     "a box moved to a y of -0",
     0,
     [
-      [{ op: "set", target: ids.caption, box: { x: 0, y: 0, w: 0, h: 0 } }],
-      [{ op: "move", nodes: [ids.caption], into: ids.slide, box: { x: 1, y: -5e-324, w: 0, h: 0 } }],
+      [{ op: "update", target: ids.caption, box: { x: 0, y: 0, w: 0, h: 0 } }],
+      [{ op: "move", targets: [ids.caption], parent: ids.slide, box: { x: 1, y: -5e-324, w: 0, h: 0 } }],
     ],
   ],
 ]

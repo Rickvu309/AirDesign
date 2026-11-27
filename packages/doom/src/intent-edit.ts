@@ -112,7 +112,7 @@ export function intentSession(doom: Doom, by: EditBy): IntentSession {
     const added = compiled.flatMap((write) =>
       write.prop === "type" && !before.nodes.has(write.node) ? [write.node] : [],
     )
-    const filled = intent.op === "add" && added.length === 0 ? compiled[0]?.node : undefined
+    const filled = intent.op === "insert" && added.length === 0 ? compiled[0]?.node : undefined
     return { view, added: filled === undefined ? [...new Set(added)] : [filled] }
   }
   function finish(measure: Measure = by.measure ?? estimate): IntentEdit | IntentRefusal {
@@ -155,7 +155,7 @@ export function intentSession(doom: Doom, by: EditBy): IntentSession {
       const own = all.slice(ends[at - 1] ?? 0, ends[at])
       const first = own[0]
       const node = first === undefined ? undefined : landed.nodes.get(first.node)
-      if (intent.op !== "add" || node === undefined || own.some((write) => write.prop === "type")) return []
+      if (intent.op !== "insert" || node === undefined || own.some((write) => write.prop === "type")) return []
       return [{ id: node.id, change: at, kind: kindOf(node) }]
     })
     const added = [...made, ...filled].sort((one, two) => one.change - two.change)

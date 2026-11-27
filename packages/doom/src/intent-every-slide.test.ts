@@ -9,13 +9,13 @@ import { ids, land, sampleDeck } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
 import { starts } from "./testing/start-rules.js"
 
-const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "set", target, ...look }) as Intent
+const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "update", target, ...look }) as Intent
 const titles = (doom: Doom) => [...doom.nodes.values()].filter((node) => propOf(node, "role") === "title")
 
 describe("one change over every slide: '*.title' sets the title on each slide that has one", () => {
   it("restyles the title of every slide in one change", () => {
     const titled = started(land(sampleDeck(), [{ node: ids.title, prop: "role", value: "title" }]))
-    let doom = build(titled, { op: "duplicate", nodes: [ids.slide] }, minter("b"))
+    let doom = build(titled, { op: "copy", targets: [ids.slide] }, minter("b"))
     doom = build(doom, set("*.title", { textStyle: "heading", color: "accent2" }), minter("c"))
     expect(slidesOf(doom)).toHaveLength(2)
     expect(titles(doom)).toHaveLength(2)

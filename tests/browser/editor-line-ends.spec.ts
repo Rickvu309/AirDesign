@@ -201,7 +201,7 @@ test("an agent's unwrap frees the connector where the canvas painted it", async 
   const seen = await paintedStart(page, "l:1")
   await stack.toolBlocks(
     "airdesign_execute",
-    { deck: opened.deck, script: scriptOf([{ op: "unwrap", node: "f:1" }]) },
+    { deck: opened.deck, script: scriptOf([{ op: "ungroup", target: "f:1" }]) },
     opened.cookie,
   )
   await expect(page.locator('[data-slide-box] [data-node="f:1"]')).toHaveCount(0)

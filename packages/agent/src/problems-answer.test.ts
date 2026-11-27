@@ -65,7 +65,7 @@ describe("layout problems in the answers, measured by the host with the deck's f
     const box = { x: 160, y: 400, w: 400, h: 100 }
     const landed = await call("execute", {
       deck,
-      script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box, fill: "accent2" }]),
+      script: scriptOf([{ op: "insert", kind: "shape", parent: slides[0], box, fill: "accent2" }]),
     })
     expect(landed.ok).toBe(true)
     const answer = landed.fields as { rev: number; note: string; result: string; problems: Found[] }
@@ -84,7 +84,7 @@ describe("layout problems in the answers, measured by the host with the deck's f
     }
     await call("execute", {
       deck,
-      script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box: { x: 1800, y: 900, w: 300, h: 100 } }]),
+      script: scriptOf([{ op: "insert", kind: "shape", parent: slides[0], box: { x: 1800, y: 900, w: 300, h: 100 } }]),
     })
     const read = (await readOf(call, deck)).fields as { layers: string; problems: Found[] }
     const title = estimate(doom.textFromMarkdown("Revenue by region", "title"), testTheme, 1600).h
@@ -101,7 +101,7 @@ describe("layout problems in the answers, measured by the host with the deck's f
     }
     const landed = await call("execute", {
       deck,
-      script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box: { x: 160, y: 700, w: 400, h: 100 } }]),
+      script: scriptOf([{ op: "insert", kind: "shape", parent: slides[0], box: { x: 160, y: 700, w: 400, h: 100 } }]),
     })
     expect(landed.fields.problems).toEqual([])
     expect(String(landed.fields.note)).toContain(
@@ -118,7 +118,7 @@ describe("layout problems in the answers, measured by the host with the deck's f
     }
     const landed = await call("execute", {
       deck,
-      script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box: { x: 160, y: 700, w: 400, h: 100 } }]),
+      script: scriptOf([{ op: "insert", kind: "shape", parent: slides[0], box: { x: 160, y: 700, w: 400, h: 100 } }]),
     })
     expect(landed.ok).toBe(true)
     expect(landed.fields.problems).toEqual([])
@@ -151,8 +151,8 @@ describe("layout problems in the answers, measured by the host with the deck's f
     const landed = await call("execute", {
       deck,
       script: scriptOfEach([
-        { op: "add", kind: "text", slide: slides[0], text: "Launch 🚀", box: { x: 160, y: 700, w: 600, h: 60 } },
-        { op: "add", kind: "shape", slide: slides[0], box: { x: 1850, y: 900, w: 200, h: 100 } },
+        { op: "insert", kind: "text", parent: slides[0], text: "Launch 🚀", box: { x: 160, y: 700, w: 600, h: 60 } },
+        { op: "insert", kind: "shape", parent: slides[0], box: { x: 1850, y: 900, w: 200, h: 100 } },
       ]),
     })
     const answer = landed.fields as { note: string; result: string[]; problems: Found[] }
@@ -171,9 +171,9 @@ describe("layout problems in the answers, measured by the host with the deck's f
       slides: string[]
     }
     const off = Array.from({ length: 12 }, (_, at) => ({
-      op: "add",
+      op: "insert",
       kind: "shape",
-      slide: slides[0],
+      parent: slides[0],
       box: { x: 1850, y: at * 80, w: 200, h: 60 },
     }))
     const landed = await call("execute", { deck, script: scriptOf(off) })
@@ -196,7 +196,7 @@ describe("the layout call never fails a landed edit", () => {
 
 describe("the note on texts the fonts cannot measure", () => {
   const texts = (count: number) =>
-    Array.from({ length: count }, (_, at) => ({ op: "add", kind: "text", text: `Launch ${String(at)} 🚀` }))
+    Array.from({ length: count }, (_, at) => ({ op: "insert", kind: "text", text: `Launch ${String(at)} 🚀` }))
 
   it("names every text up to five, then counts the rest, in the right number", async () => {
     const note = async (count: number) => {
@@ -206,7 +206,7 @@ describe("the note on texts the fonts cannot measure", () => {
         rev: number
         slides: string[]
       }
-      const changes = texts(count).map((change) => ({ ...change, slide: slides[0] }))
+      const changes = texts(count).map((change) => ({ ...change, parent: slides[0] }))
       const landed = await call("execute", { deck, script: scriptOfEach(changes) })
       return { note: String(landed.fields.note), ids: landed.fields.result as string[] }
     }

@@ -167,7 +167,13 @@ describe("colour controls and agent colours", () => {
     for (const [name, fields] of Object.entries(sends))
       for (const field of fields)
         for (const color of agentColors) {
-          const writes = compileIntent(view, { op: "set", target: id(name), [field]: color }, mint, placement, starts)
+          const writes = compileIntent(
+            view,
+            { op: "update", target: id(name), [field]: color },
+            mint,
+            placement,
+            starts,
+          )
           const prop = propOfField[field]
           const wanted = doomColor(color)
           if (doom.isRefusal(writes) || !shows(landed(view, writes), name, prop, wanted)) {
@@ -201,7 +207,7 @@ describe("colour controls and agent colours", () => {
       const color = tint === undefined ? { var: role } : { var: role, tint }
       const writes = compileIntent(
         view,
-        { op: "set", target: id("card"), fill: tint === undefined ? role : `${role}+20` },
+        { op: "update", target: id("card"), fill: tint === undefined ? role : `${role}+20` },
         () => doom.nodeId("m:1"),
         placement,
         starts,

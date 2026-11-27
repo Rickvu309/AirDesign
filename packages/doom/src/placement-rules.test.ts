@@ -11,7 +11,7 @@ import { placement } from "./testing/placement-rules.js"
 import { starts } from "./testing/start-rules.js"
 
 const slide = ids.slide
-const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as Intent
+const add = (value: Record<string, unknown>) => ({ op: "insert", parent: slide, ...value }) as Intent
 
 function built(rules: PlacementRules, change: Intent): Doom {
   const deck = agentDeck()

@@ -48,7 +48,7 @@ describe("runs by other agents", () => {
     const { decks, claude, deck, slides } = await twoAgents()
     const landed = await claude("execute", {
       deck,
-      script: scriptOf([{ op: "add", kind: "text", slide: slides[1], text: "Hi" }]),
+      script: scriptOf([{ op: "insert", kind: "text", parent: slides[1], text: "Hi" }]),
     })
     const { runId } = landed.fields as { runId: string }
     expect(decks.decks.get(deck as never)?.runs.get(runId)).toMatchObject({
@@ -62,7 +62,7 @@ describe("runs by other agents", () => {
     const { claude, aira, deck, slides } = await twoAgents()
     const landed = await claude("execute", {
       deck,
-      script: scriptOf([{ op: "add", kind: "text", slide: slides[1], text: "Hi" }]),
+      script: scriptOf([{ op: "insert", kind: "text", parent: slides[1], text: "Hi" }]),
     })
     const read = await aira("execute", { deck, script: "get().slides.length" })
     const wrote = (landed.fields as { rev: number }).rev
@@ -88,7 +88,7 @@ describe("runs by other agents", () => {
     }
     const landed = await odd("execute", {
       deck,
-      script: scriptOf([{ op: "add", kind: "text", slide: slides[0], text: "Hi" }]),
+      script: scriptOf([{ op: "insert", kind: "text", parent: slides[0], text: "Hi" }]),
     })
     expect(landed.fields).toMatchObject({ ok: true })
     const read = (await aira("execute", { deck, script: "get().slides.length" })).fields as {

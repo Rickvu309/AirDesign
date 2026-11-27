@@ -1,5 +1,5 @@
 import { readCreateDeck, readExecute, readNamedDeck } from "@airdesign/catalog"
-import type { Theme } from "@airdesign/doom"
+import type * as doom from "@airdesign/doom"
 import { style, styles } from "@airdesign/taste"
 
 import { answered, doomRefused, hostRefused, refused, told, unadmitted, type Answer } from "./answer.js"
@@ -20,12 +20,13 @@ async function answerOp(plan: Plan, verb: string, fields: unknown): Promise<OpAn
   try {
     if (verb === "createDeck") {
       plan.ops += 1
-      throw new OpRefused(refused("field", { note: "Omit the deck id when calling createDeck." }).fields)
+      const said = "Omit the deck id when calling createDeck."
+      throw new OpRefused({ said, fields: refused("field", { note: said }).fields })
     }
     return { ok: true, value: await runOperation(plan, verb as Verb, fields) }
   } catch (thrown) {
     if (!(thrown instanceof OpRefused)) throw thrown
-    plan.refused = { op: plan.ops, answer: thrown.answer }
+    plan.refused = { op: plan.ops, said: thrown.said, answer: thrown.answer }
     return { ok: false, message: thrown.message }
   }
 }
@@ -60,7 +61,9 @@ function stopped(plan: Pick<Plan, "ops" | "refused">, end: Extract<ScriptEnd, { 
     })
   const refusal = plan.refused
   if (refusal !== undefined && end.message === String(refusal.answer.note)) {
-    const note = String(refusal.answer.note).replace(/^(Operation \d+ \([a-z]+\))/, `$1${at(end.line)}`)
+    const verb = typeof refusal.answer.verb === "string" ? refusal.answer.verb : undefined
+    const note =
+      verb === undefined ? refusal.said : `Operation ${String(refusal.op)} (${verb})${at(end.line)}: ${refusal.said}`
     return told(false, { ...refusal.answer, ...line, note: `Nothing landed. ${note}`, ...logs })
   }
   return told(false, {
@@ -72,14 +75,17 @@ function stopped(plan: Pick<Plan, "ops" | "refused">, end: Extract<ScriptEnd, { 
   })
 }
 
-function landRefused(plan: Plan, result: Answer): Answer {
-  const operation = typeof result.fields.at === "number" ? plan.intentOps[result.fields.at] : undefined
-  if (operation === undefined) {
-    const { at: _at, change: _change, note: _note, ...rest } = result.fields
-    return told(false, { ...rest, note: `Nothing landed. ${String(result.fields.note)}` })
-  }
-  const answer = opRefusal(plan, operation.op, operation.verb, result.fields)
-  return told(false, { ...answer, note: `Nothing landed. ${String(answer.note)}` })
+function nothingLanded(fields: Readonly<Record<string, unknown>>): Answer {
+  return told(false, { ...fields, note: `Nothing landed. ${String(fields.note)}` })
+}
+
+function landRefused(plan: Plan, refusal: doom.IntentRefusal, rev: number): Answer {
+  const { at, change: _change, ...rest } = refusal
+  const answer = doomRefused(rest, { rev })
+  const operation = at === undefined ? undefined : plan.intentOps[at]
+  return nothingLanded(
+    operation === undefined ? answer.fields : opRefusal(plan, operation.op, operation.verb, answer.fields).fields,
+  )
 }
 
 async function screenshots(plan: Plan, host: DeckHost) {
@@ -137,7 +143,7 @@ function leadOf(landed: Landed | undefined): string {
 }
 
 async function createFromScript(script: string, once: string, host: DeckHost): Promise<Answer> {
-  let creation: { readonly name: string | undefined; readonly theme: Theme | undefined } | undefined
+  let creation: { readonly name: string | undefined; readonly theme: doom.Theme | undefined } | undefined
   let failure: Answer | undefined
   let ops = 0
   const operation = async (verb: string, fields: unknown): Promise<OpAnswer> => {
@@ -164,7 +170,8 @@ async function createFromScript(script: string, once: string, host: DeckHost): P
   }
   const end = await scripts.run({ account: host.account, script, operation })
   if (!end.ok) {
-    const failed = failure === undefined ? {} : { refused: { op: ops, answer: failure.fields } }
+    const failed =
+      failure === undefined ? {} : { refused: { op: ops, said: String(failure.fields.note), answer: failure.fields } }
     return stopped({ ops, ...failed }, end)
   }
   if (failure !== undefined) return failure
@@ -223,8 +230,7 @@ export async function executeTool(
     plan.intents.length === 0
       ? undefined
       : plan.session.finish(await leavingMeasure(host, [opened.fold, plan.view], plan.intents))
-  if (compiled !== undefined && "refused" in compiled)
-    return landRefused(plan, doomRefused(compiled, { rev: opened.rev }))
+  if (compiled !== undefined && "refused" in compiled) return landRefused(plan, compiled, opened.rev)
   if (lastRead === undefined || (compiled === undefined && plan.read)) {
     try {
       await host.agentReads.remember(opened.deck, agent.id, opened.fold.rev)
@@ -233,7 +239,7 @@ export async function executeTool(
     }
   }
   const sent = compiled === undefined ? undefined : await landEdit(opened, compiled, host, lastRead ?? opened.fold.rev)
-  if (sent !== undefined && !("landed" in sent)) return landRefused(plan, sent)
+  if (sent !== undefined && !("landed" in sent)) return nothingLanded(sent.fields)
   const landed = sent
   const shots = await screenshots(plan, host)
   const rev = landed?.rev ?? opened.rev

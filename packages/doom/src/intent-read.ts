@@ -10,7 +10,8 @@ import { limits } from "./limits.js"
 import { type Field, choice, field, flag, number, string } from "./intent-fields.js"
 import { innerShadowFields } from "./intent-inner-shadow.js"
 import { slideLookFields } from "./intent-slide-look.js"
-import { type SlideAdd, type SlideMove, idSchema, readId, readAfter, slideFields } from "./intent-slide-fields.js"
+import { idSchema, readAfter, readGroup, readId } from "./intent-ids.js"
+import { type LayerKind, type NodeKind, layerKinds, nodeKinds } from "./kind-fields.js"
 import type { NodeId } from "./ids.js"
 import type { TreeNode } from "./doom-tree.js"
 import {
@@ -47,9 +48,6 @@ import { pathLimit, readPathData } from "./geometry.js"
 import { shapeNames } from "./preset-geometry.js"
 import { cropField } from "./intent-crop.js"
 
-export const addKinds = ["text", "shape", "line", "path", "frame", "picture", "icon"] as const
-export type AddKind = (typeof addKinds)[number]
-
 export type { IntentBox, IntentColor, IntentFill, IntentGradient, IntentLook } from "./intent-look-types.js"
 
 export type DeckLook = {
@@ -60,44 +58,49 @@ export type DeckLook = {
   readonly colors?: { readonly [K in ColorVar]?: Hex }
   readonly fonts?: { readonly heading?: string; readonly body?: string }
 }
+export type SlideGroup = NodeId | "new"
+export type Direction = (typeof directions)[number]
+type Targets = { readonly targets: readonly NodeId[] }
+
 export type Intent =
-  | ({ readonly op: "add"; readonly kind: AddKind; readonly slide: NodeId; readonly into?: NodeId } & Omit<
-      IntentLook,
-      "box"
-    > & { readonly box?: IntentBox })
-  | ({ readonly op: "set"; readonly target: string } & IntentLook)
-  | {
-      readonly op: "move"
-      readonly node?: NodeId
-      readonly nodes?: readonly NodeId[]
-      readonly into?: NodeId
+  | ({ readonly op: "insert"; readonly kind: LayerKind; readonly parent: NodeId } & Omit<IntentLook, "box"> & {
+        readonly box?: IntentBox
+      })
+  | ({
+      readonly op: "insert"
+      readonly kind: "slide"
       readonly after?: NodeId | null
-      readonly box?: NonNullable<IntentLook["box"]>
-    }
-  | {
-      readonly op: "wrap"
-      readonly nodes: readonly NodeId[]
-      readonly layout?: "row" | "column" | "none"
-      readonly clip?: boolean
-    }
-  | { readonly op: "unwrap"; readonly node: NodeId }
-  | { readonly op: "delete"; readonly nodes: readonly NodeId[] }
-  | { readonly op: "duplicate"; readonly nodes: readonly NodeId[] }
+      readonly group?: SlideGroup
+    } & IntentLook)
+  | ({ readonly op: "update"; readonly target: string } & IntentLook)
+  | ({ readonly op: "replace"; readonly target: NodeId; readonly kind: LayerKind } & IntentLook)
+  | ({ readonly op: "copy" } & Targets)
   | {
       readonly op: "paste"
       readonly piece: TreeNode
-      readonly into: NodeId
+      readonly parent: NodeId
       readonly box?: { readonly x: Px; readonly y: Px; readonly w?: Px; readonly h?: Px }
     }
-  | ({ readonly op: "deck" } & DeckLook)
-  | {
-      readonly op: "slide"
-      readonly add?: SlideAdd
-      readonly move?: SlideMove
-      readonly delete?: NodeId
-    }
+  | ({
+      readonly op: "move"
+      readonly parent?: NodeId
+      readonly after?: NodeId | null
+      readonly before?: NodeId
+      readonly group?: SlideGroup
+      readonly box?: NonNullable<IntentLook["box"]>
+    } & Targets)
+  | ({ readonly op: "reorder"; readonly direction: Direction } & Targets)
+  | ({ readonly op: "remove" } & Targets)
+  | ({ readonly op: "group" } & Targets & IntentLook)
+  | { readonly op: "ungroup"; readonly target: NodeId }
+  | ({ readonly op: "variables" } & DeckLook)
 
-export type IntentRefusal = Refusal & { readonly change: string; readonly at?: number; readonly field?: string }
+export type IntentRefusal = Refusal & {
+  readonly change: string
+  readonly at?: number
+  readonly field?: string
+  readonly kind?: NodeKind
+}
 
 const colorSchema = { $ref: "#/$defs/color" }
 const tintedName = new RegExp(`^(${colorVars.join("|")})([+-](100|[1-9][0-9]?))?$`)
@@ -239,28 +242,21 @@ const readTarget = matching(/^([a-z0-9]{1,16}:[0-9]{1,12}(\.(title|subtitle|body
   code: "target-role",
 })
 
+const directions = ["front", "back", "forward", "backward"] as const
+const groupSchema = { oneOf: [idSchema, { const: "new" }] }
+
 const placeFields = {
-  kind: choice(addKinds),
-  slide: id(),
-  into: id(),
-  target: field(
-    {
-      type: "string",
-    },
-    readTarget,
-  ),
-  node: id(),
-  nodes: field(
+  kind: choice(nodeKinds),
+  parent: id(),
+  target: field({ type: "string" }, readTarget),
+  targets: field(
     { type: "array", items: idSchema, minItems: 1, maxItems: limits.delete },
     list(readId, limits.delete, 1),
   ),
-  after: field(
-    {
-      oneOf: [idSchema, { type: "null" }],
-    },
-    readAfter,
-  ),
-  ...slideFields,
+  after: field({ oneOf: [idSchema, { type: "null" }] }, readAfter),
+  before: id(),
+  group: field(groupSchema, readGroup),
+  direction: choice(directions),
   theme: field(
     {
       type: "object",
@@ -303,19 +299,34 @@ const pickFrom = <T extends { readonly [P in keyof T]: Field<unknown> }, K exten
   }
 
 const lookReaders = pickFrom(lookFields, Object.keys(lookFields) as (keyof typeof lookFields)[])
+const readLayerKind = literal(layerKinds)
+const readInsertLayer = object(
+  { parent: readId, kind: literal(nodeKinds) as Reader<LayerKind> },
+  { ...lookReaders, box: object(boxSides) },
+)
+const readInsertSlide = object(
+  { kind: literal(["slide"]) },
+  { ...pickFrom(placeFields, ["after", "group"]), ...lookReaders },
+)
+const readInsert = (raw: unknown) =>
+  typeof raw === "object" && raw !== null && (raw as { kind?: unknown }).kind === "slide"
+    ? readInsertSlide(raw)
+    : readInsertLayer(raw)
+
 const read = variant("op", {
-  add: object(
-    { kind: literal(addKinds), slide: readId },
-    { ...pickFrom(placeFields, ["into"]), ...lookReaders, box: object(boxSides) },
-  ),
-  set: object(pickFrom(placeFields, ["target"]), lookReaders),
-  move: object({}, { ...pickFrom(placeFields, ["node", "nodes", "into", "after"]), box: lookFields.box.read }),
-  wrap: object(pickFrom(placeFields, ["nodes"]), pickFrom(lookFields, ["layout", "clip"])),
-  unwrap: object(pickFrom(placeFields, ["node"])),
-  delete: object(pickFrom(placeFields, ["nodes"])),
-  slide: object({}, pickFrom(placeFields, ["add", "move", "delete"])),
-  duplicate: object(pickFrom(placeFields, ["nodes"])),
-  deck: object(
+  insert: readInsert,
+  update: object(pickFrom(placeFields, ["target"]), lookReaders),
+  replace: object({ target: readId, kind: readLayerKind }, lookReaders),
+  copy: object(pickFrom(placeFields, ["targets"])),
+  move: object(pickFrom(placeFields, ["targets"]), {
+    ...pickFrom(placeFields, ["parent", "after", "before", "group"]),
+    box: lookFields.box.read,
+  }),
+  reorder: object(pickFrom(placeFields, ["targets", "direction"])),
+  remove: object(pickFrom(placeFields, ["targets"])),
+  group: object(pickFrom(placeFields, ["targets"]), lookReaders),
+  ungroup: object({ target: readId }),
+  variables: object(
     {},
     {
       ...pickFrom(lookFields, ["name", "language"]),
@@ -324,6 +335,19 @@ const read = variant("op", {
   ),
 })
 
+export const intentOps = [
+  "insert",
+  "update",
+  "replace",
+  "copy",
+  "move",
+  "reorder",
+  "remove",
+  "group",
+  "ungroup",
+  "variables",
+] as const
+
 export function readIntent(raw: unknown): Intent | (Refusal & { readonly field?: string }) {
   try {
     return read(raw) as Intent
@@ -331,6 +355,8 @@ export function readIntent(raw: unknown): Intent | (Refusal & { readonly field?:
     return detailOf(thrown)
   }
 }
+
+export const lookNames = Object.keys(lookFields) as readonly (keyof IntentLook)[]
 
 const schemasOf = (source: Readonly<Record<string, Field<unknown>>>) =>
   Object.fromEntries(Object.entries(source).map(([key, each]) => [key, each.schema]))
@@ -358,11 +384,9 @@ export const intentsSchema = {
       additionalProperties: false,
       required: ["op"],
       properties: {
-        op: {
-          enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck"],
-        },
+        op: { enum: intentOps },
         ...schemasOf(placeFields),
-        kind: { enum: addKinds },
+        kind: { enum: nodeKinds },
         ...schemasOf(lookFields),
       },
     },

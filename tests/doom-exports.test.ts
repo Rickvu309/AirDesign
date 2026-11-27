@@ -18,10 +18,10 @@ const exportedNames = (file: string) => {
 
 it("hands other packs only the Doom names they import", () => {
   expect(exportedNames("packages/doom/src/index.ts")).toEqual(
-    `Align9 Author Bake Bounds Box Clipboard Color ColorVar Copies Corners Doom Edit End Expectation Face FaceNeeds FontFace FontWidths
+    `Align9 Author Bake Bounds Box Clipboard Color ColorVar Copies Corners Direction Doom Edit End Expectation Face FaceNeeds FontFace FontWidths
     Geometry GridShortfall Grown Hex ImageCrop ImagePaint Intent IntentEdit IntentRefusal IntentSession Keyed LandBy
     Landed Landing LayerPositions Layout LayoutProblem Matrix Measure MeasureLayout MeasureProbe MediaType MissingGlyphs
-    Node NodeId NodeType OrderKey Paint Para PlacedBox PlacementRules Point Pressed ProblemRules PropName Props Refusal Replaced
+    Node NodeId NodeKind NodeType OrderKey Paint Para PlacedBox PlacementRules Point Pressed ProblemRules PropName Props Refusal Replaced
     Resolved ResolvedEffect ResolvedLine ResolvedPaint ResolvedRun Rev RevisionKey RunEdit Sides Site SlideGroup
     SlideStart Span StartRules StrokeStyle Text TextPatch TextStyleName Theme ThemeProblem TreeNode TreeSlide UndoBy
     Undoable Undoing Undone Write WriteKey adjustDefaults applyEdit applyMatrix artMatrix bakeLayout bakeTextLayers
@@ -29,11 +29,11 @@ it("hands other packs only the Doom names they import", () => {
     deckNameFollows deckOf deckTexts descendantsOf doomFaces doomFromTree duplicateWrites emptyDoom familyOf fitShift
     flows fontFace fontSamples freeLineEnds freedEnds gapFor graphemes hasDeck holdsLineEnd holdsText identityMatrix
     intentSession intentsSchema invertMatrix isLaidOut isLive isRefusal land landEdit layerKind layoutProblems
-    leavingRoots limits lineArrowheads liveRuns lockedIn lookWrite lostBy mayLeaveDeck measureWith measureWithLayout
-    mediaSize mediaTypeOf mediaTypes missingGlyphsIn moveToSlide nodeId notesText onDeck onTop orderKeyBetween
+    leavingRoots limits lineArrowheads liveRuns lockedIn lookFieldsOf lookNames lookWrite lostBy mayLeaveDeck measureWith measureWithLayout
+    mediaSize mediaTypeOf mediaTypes missingGlyphsIn moveToSlide nodeId nodeKinds notesText onDeck onTop orderKeyBetween
     overPixelLimit paintedFace paletteColorVars paraWrite paragraphAligns parentOf parseTheme pasteWrites pictureFit placeBox placeSlide
     presetHolds presetOutline propOf props readColor readEdit readFold readIntent readLanded readLinkAddress readNodeId
-    readRunEdit readRuns readStoredNode replacedBy resolveColor resolveSlide returningRoots rev revsToJson routeDistance
+    readRunEdit readRuns readStoredNode reorderWrites replacedBy resolveColor resolveSlide returningRoots rev revsToJson routeDistance
     runsToJson sameColor sameValue shapeNames siblingKeys siteSpot slideBackground slideGroups slideKeyText slideOf
     slidePlacementWrites slideRowAt slideStartWrites slideStarts slidesOf solveLayout storedFace strokeDash styleWrite
     textArea textFont textFromMarkdown textLimits textToMarkdown tinted titleSlideWrites touchedSlides undo unfittedBox

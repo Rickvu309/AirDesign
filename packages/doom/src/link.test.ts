@@ -56,7 +56,7 @@ describe("a link goes to a web or mail address or a slide", () => {
       ["mailto:?x", "shape"],
       [betweenLimits, "limit"],
     ] as const) {
-      const edit = compileIntents(agentDeck(), [{ op: "set", target: ids.title, text: `[x](${link})` }], {
+      const edit = compileIntents(agentDeck(), [{ op: "update", target: ids.title, text: `[x](${link})` }], {
         placement,
         starts,
         author: agent("run-1"),
@@ -66,7 +66,7 @@ describe("a link goes to a web or mail address or a slide", () => {
       expect(edit).toMatchObject({ refused })
     }
     for (const link of ["mailto:a@b.c", "mailto:a@b.c?subject=x", atLimit]) {
-      const edit = compileIntents(agentDeck(), [{ op: "set", target: ids.title, text: `[x](${link})` }], {
+      const edit = compileIntents(agentDeck(), [{ op: "update", target: ids.title, text: `[x](${link})` }], {
         placement,
         starts,
         author: agent("run-1"),

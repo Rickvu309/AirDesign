@@ -34,7 +34,7 @@ it("keeps naming a text its font cannot measure on every read and edit after the
   const landed = await call("execute", {
     deck,
     script: scriptOf([
-      { op: "add", kind: "text", slide: slides[0], text: "Launch 🚀", box: { x: 160, y: 300, w: 800, h: 80 } },
+      { op: "insert", kind: "text", parent: slides[0], text: "Launch 🚀", box: { x: 160, y: 300, w: 800, h: 80 } },
     ]),
   })
   const { result: id, runId } = landed.fields as { result: string; runId: string }
@@ -45,7 +45,7 @@ it("keeps naming a text its font cannot measure on every read and edit after the
   const again = await call("execute", {
     deck,
     runId,
-    script: scriptOf([{ op: "set", target: id, name: "Launch line" }]),
+    script: scriptOf([{ op: "update", target: id, name: "Launch line" }]),
   })
   expect(String(again.fields.note)).toContain(unread)
   expect(String(again.fields.note)).not.toContain("Layout clear")
