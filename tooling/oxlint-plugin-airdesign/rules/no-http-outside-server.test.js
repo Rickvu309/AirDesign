@@ -101,14 +101,14 @@ expectAccepts("another package stays out of scope", "apps/web/src/second.ts", na
 expectAccepts("a test file is out of scope", "apps/api/src/second.test.ts", named, rule)
 
 expectAccepts(
-  "the agent image fetch may send a request",
-  "apps/api/src/platform/image-fetch.ts",
+  "the pinned network may send a request",
+  "apps/api/src/platform/pinned-net.ts",
   `import { request } from "node:https"\nexport const get = (url) => request(url)\n`,
   rule,
 )
 expectRejects(
-  "the agent image fetch may not open a server",
-  "apps/api/src/platform/image-fetch.ts",
+  "the pinned network may not open a server",
+  "apps/api/src/platform/pinned-net.ts",
   `import { createServer } from "node:https"\nexport const open = () => createServer()\n`,
   rule,
   message,
