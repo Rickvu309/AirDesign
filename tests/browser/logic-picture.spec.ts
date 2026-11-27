@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { expect, type Browser } from "@playwright/test"
+import { expect, type Browser, type Page } from "@playwright/test"
 import { test } from "./deck-test"
 
 type Fault = { fault: string; at: string; message: string }
@@ -15,8 +15,8 @@ type Tool = { interCss: (repo: string) => string }
 const show = join(process.cwd(), ".agents/skills/show-airdesign")
 const load = async <T>(name: string) => (await import(pathToFileURL(join(show, name)).href)) as T
 
-const photo = (width: number) =>
-  `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${String(width)}" height="160"><rect width="100%" height="100%" fill="silver"/></svg>`)}`
+const photo = (width: number, height = 160) =>
+  `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${String(width)}" height="${String(height)}"><rect width="100%" height="100%" fill="silver"/></svg>`)}`
 
 const observed = (ref: string) => [{ ref, source: "Observed", verdict: "passed" }]
 
@@ -88,20 +88,41 @@ const flow = {
 
 const photos = { "before.png": photo(600), "failed.png": photo(420), "plan.png": photo(604) }
 
-async function faultsOf(browser: Browser, input: unknown, local: Record<string, string>, css = "") {
-  const { drawPicture, pictureFaults } = await load<Picture>("logic/picture.mjs")
-  const { pageWidth, toHtml } = await load<Pager>("logic/page.mjs")
+async function drawTree(page: Page, input: unknown, local: Record<string, string>, css = "") {
+  const { drawPicture } = await load<Picture>("logic/picture.mjs")
+  const { toHtml } = await load<Pager>("logic/page.mjs")
   const { readTree } = await load<Reader>("logic/tree.mjs")
   const { interCss } = await load<Tool>("bin/logic.mjs")
   const { tree } = readTree(input, { resolves: () => true })
   expect(tree).not.toBeNull()
+  await drawPicture(page, toHtml(tree, interCss(process.cwd()), local).replace("</style>", `${css}</style>`))
+}
+
+async function faultsOf(browser: Browser, input: unknown, local: Record<string, string>, css = "") {
+  const { pictureFaults } = await load<Picture>("logic/picture.mjs")
+  const { pageWidth } = await load<Pager>("logic/page.mjs")
   const context = await browser.newContext({ viewport: { width: pageWidth, height: 800 }, deviceScaleFactor: 2 })
   const page = await context.newPage()
-  await drawPicture(page, toHtml(tree, interCss(process.cwd()), local).replace("</style>", `${css}</style>`))
+  await drawTree(page, input, local, css)
   const faults = await pictureFaults(page)
   await context.close()
   return faults
 }
+
+test("the answer and each branch start at the top of their children's column", async ({ page }) => {
+  await drawTree(page, result, { "before.png": photo(600, 1800), "failed.png": photo(420, 1800) })
+  const answer = await page.locator(".d0").boundingBox()
+  const picture = await page.locator("main").boundingBox()
+  expect((answer?.y ?? Infinity) - (picture?.y ?? 0)).toBeLessThan(120)
+  const offsets = await page.locator(".node:has(> .kids)").evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const box = node.querySelector(":scope > .box")
+      const column = node.querySelector(":scope > .kids")
+      return (box?.getBoundingClientRect().top ?? Infinity) - (column?.getBoundingClientRect().top ?? 0)
+    }),
+  )
+  expect(offsets).toEqual([0, 0])
+})
 
 for (const [name, input] of Object.entries({ result, decision, flow }))
   test(`a ${name} page draws with no fault a person would see`, async ({ browser }) => {
