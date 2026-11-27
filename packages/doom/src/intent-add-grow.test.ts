@@ -25,6 +25,28 @@ describe("an agent's text grows with its words, as Figma's auto height", () => {
     expect(propOf(lastChild(doom, slide), "box")!.h).toBeGreaterThan(160)
   })
 
+  it("keeps the height of a box that centres or bottoms its words, as a Figma text box of fixed size", () => {
+    for (const alignV of ["center", "bottom"] as const) {
+      const doom = build(agentDeck(), text({ text: "2", alignV, box: { x: 10, y: 20, w: 56, h: 56 } }))
+      const made = lastChild(doom, slide)
+      expect(propOf(made, "box")).toMatchObject({ x: 10, y: 20, w: 56, h: 56 })
+      expect(propOf(made, "text")).toMatchObject({ resize: "fixed", alignV })
+      expect(solveLayout(doom, slide, measureWith({})).get(made.id)?.h).toBe(56)
+    }
+  })
+
+  it("grows a centred text past a height too short for its words", () => {
+    const words =
+      "Cutting DSO by 12 days is the clearest cash lever; we ask the board to endorse all three Q4 priorities"
+    const doom = build(
+      agentDeck(),
+      text({ textStyle: "title", text: words, alignV: "center", box: { x: 120, y: 70, w: 900, h: 160 } }),
+    )
+    const made = lastChild(doom, slide)
+    expect(propOf(made, "box")!.h).toBeGreaterThan(160)
+    expect(propOf(made, "text")?.resize).toBe("height")
+  })
+
   it("keeps a shape's label fixed to the shape, as Figma does", () => {
     const doom = build(agentDeck(), {
       op: "insert",
