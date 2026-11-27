@@ -44,6 +44,8 @@ const buttonVariants = cva(
           "rounded-md text-quiet hover:bg-muted hover:text-foreground active:translate-y-0 aria-pressed:bg-line aria-pressed:text-foreground aria-pressed:hover:bg-line",
         "panel-tab":
           "rounded-[var(--shape-control)] text-quiet hover:text-foreground active:translate-y-0 aria-pressed:bg-white aria-pressed:text-foreground aria-pressed:shadow-[0px_1px_2px_var(--black-10)]",
+        "slide-thumb":
+          "rounded-[var(--shape-card)] hover:bg-black/4 active:translate-y-0 aria-[current=true]:bg-[var(--row)] aria-[current=true]:hover:bg-[var(--row)]",
         "editable-label":
           "block truncate rounded-md border-0 text-left text-[length:inherit] text-foreground hover:bg-black/4 active:not-aria-[haspopup]:translate-y-0",
       },
@@ -69,6 +71,7 @@ const buttonVariants = cva(
           "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "size-9",
+        thumb: "h-auto flex-col gap-1 p-1.5",
       },
     },
     compoundVariants: [

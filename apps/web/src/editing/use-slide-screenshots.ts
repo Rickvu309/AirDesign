@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
-import { captureSlide } from "@/editing/slide-capture"
-import { reportSlideScreenshots, unresolvedAssets } from "@/editing/slide-screenshot-report"
-import type { EditorClient } from "./use-deck"
+import type { DoomDeck } from "@airdesign/live"
+import { captureSlide } from "./slide-capture"
+import { reportSlideScreenshots, unresolvedAssets } from "./slide-screenshot-report"
 
 export const quietFor = 1_000
 export const retryAfter = 5_000
@@ -23,7 +23,7 @@ export function SlideScreenshots(props: {
 }
 
 export function useSlideScreenshots(
-  client: Pick<EditorClient, "server" | "pending" | "reportScreenshots" | "subscribe" | "screenshotsWanted">,
+  client: Pick<DoomDeck, "server" | "pending" | "reportScreenshots" | "subscribe" | "screenshotsWanted">,
   assetUrl: (asset: string) => string | undefined,
 ): void {
   const urls = useRef(assetUrl)

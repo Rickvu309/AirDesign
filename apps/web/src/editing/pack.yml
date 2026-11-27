@@ -11,3 +11,5 @@ public:
   - slide-layout.ts
   - slide-screenshot-report.ts
   - slide-screenshots.ts
+  - use-asset-urls.ts
+  - use-slide-screenshots.ts
