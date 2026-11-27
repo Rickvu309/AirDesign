@@ -1,6 +1,6 @@
 ---
 name: decision-deck
-description: "Read when the reader must approve, choose or fund something by the end of the deck."
+description: "Read when getting a decision from executives is the deck's main job: approve, choose or fund something."
 ---
 
 # Decision deck
@@ -11,10 +11,10 @@ Work freely. At each pause point, stop and confirm every item. Fix what fails be
 
 ## Read on these triggers
 
-- Writing or rewriting titles: `principles/headlines`.
-- A slide shows a number or a chart: `principles/number-truth`.
-- Grouping reasons, options or risks, or ordering a list: `principles/one-two-three`.
-- The ask is a plan someone must carry out: `principles/strategy-5w1h`.
+- Read alone in order, the titles fail to tell the argument: `principles/headlines`.
+- A re-added total or a recomputed figure disagrees with the material, or a title claims a cause: `principles/number-truth`.
+- The reasons, options or risks will not fall into three of equal rank: `principles/one-two-three`.
+- The ask is a plan with several levers, owners and dates: `principles/strategy-5w1h`.
 
 ## Pieces that fit this job
 
@@ -32,9 +32,9 @@ Options, chosen by what the slide must prove. Copy them from `kit`; each recipe 
 ## Pause 1: Setup
 
 - [ ] The ask is one sentence, and slide 1 or 2 says a decision is needed today.
-- [ ] Presented slides fit the meeting: 5 to 6 for 30 minutes, 8 to 10 for 60, and 30 minutes when the length is unknown. The model and detail sit after an appendix divider.
+- [ ] The plan is 5 to 8 slides with the cover, with no appendix, divider or recap slide unless the person asked. The model's detail sits in a table on the slide it proves.
 - [ ] The lead argument fits the decider's function: return for finance, market and customers for product, risk for operations.
-- [ ] The first content slide alone carries the answer and the ask.
+- [ ] The first content slide alone carries the answer and the ask. No later slide says the recommendation again.
 
 ## Pause 2: Content
 
@@ -43,12 +43,14 @@ Options, chosen by what the slide must prove. Copy them from `kit`; each recipe 
 - [ ] Options are ordered by impact, the recommended one named, and rejected options listed with the reason for each.
 - [ ] The ask names owners, money, sign-offs and dates, and the assumptions that must hold.
 - [ ] No body runs over five points or about 40 words.
+- [ ] Every total is re-added from its parts, and every percentage and difference recomputed, before it goes on a slide. Where the material's own figure disagrees, the slide shows the recomputed one and a note says so.
 
 ## Pause 3: Headlines
 
 - [ ] Read alone, the titles go: recommendation, reasons, ask.
 - [ ] Each title gives a verdict or a move. A cautious title names what it depends on.
-- [ ] The last slide restates the recommendation and the ask with its deadline.
+- [ ] The last slide is the ask: what to approve, owners, money and dates.
+- [ ] Every number, date and name in a title matches the material exactly: £4.8M stays £4.8M, and a date or deadline appears only when the material gives it or one step of arithmetic on it does.
 
 ## Pause 4: Visuals
 

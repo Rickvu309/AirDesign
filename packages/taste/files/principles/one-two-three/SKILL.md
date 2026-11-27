@@ -1,6 +1,6 @@
 ---
 name: one-two-three
-description: "Read when you group points, reasons, options or pillars, order a list, or decide what earns a slide."
+description: "Read when points, reasons, options or pillars will not fall into three of equal rank, or the slides run past the plan."
 ---
 
 # One, two, three
@@ -11,14 +11,14 @@ Order is a message and grouping is an argument. The reader takes the first item 
 
 - **Three.** Group supporting points in threes. Four or more reads as a list to skim; one or two often make a single stronger title.
 - **Equal rank.** All three are the same kind of thing: all outcomes, all levers, all risks. A tactical item beside two strategic ones breaks the set.
-- **Scale with time.** A short slot gets three points; a long one gets a section per point. The opening summary names the same three that title the sections.
+- **Same three.** The opening summary names the same three that the later slides prove.
 - **Lead phrase.** Each point opens with a bold phrase that carries it, then a plain qualifier that says who does what and how.
 - **Tables for grids.** Three or more options across three or more attributes go in a table, options as rows or columns, never as prose.
 
 ## Order
 
 - Rank every list by importance, urgency or impact, and pick the rule on purpose: item one is the biggest ask, risk or number.
-- Preview, deliver, recap: the opening says what is coming, the close restates it with the ask.
+- Answer, proof, ask: the opening states the answer, the middle proves it, the close is the ask.
 
 ## What earns a slide
 

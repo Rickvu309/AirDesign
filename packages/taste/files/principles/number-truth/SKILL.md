@@ -1,6 +1,6 @@
 ---
 name: number-truth
-description: "Read when a slide shows a number, a chart or a table, or claims that one thing caused another."
+description: "Read when a re-added total or a recomputed figure disagrees with the material, or a title claims that one thing caused another."
 ---
 
 # Number truth

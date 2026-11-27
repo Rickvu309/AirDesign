@@ -10,7 +10,7 @@ Exact numbers the reader looks up or compares across rows and columns. `insert` 
 ## When
 
 - Several numbers per item, or numbers the reader needs exactly. One number per item is a `charts/bar`.
-- 2 to 8 body rows and 2 to 6 columns. More rows go on an appendix slide in the `dense` density of your style.
+- 2 to 8 body rows and 2 to 6 columns. Up to ten rows fit in the `dense` density of your style; past that, keep the rows the title needs and total the rest in one row.
 
 ## The rules
 

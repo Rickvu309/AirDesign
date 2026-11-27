@@ -1,6 +1,6 @@
 ---
 name: diagnosis-review
-description: "Read when the deck reports what happened and why: a quarterly or board update, a post-mortem, a variance or a performance review."
+description: "Read when the deck is a readout of what happened and why, even one that ends with an ask: a quarterly or board update, a survey, hiring status, operations metrics, a post-mortem."
 ---
 
 # Diagnosis review
@@ -11,10 +11,10 @@ Work freely. At each pause point, stop and confirm every item. Fix what fails be
 
 ## Read on these triggers
 
-- Writing or rewriting titles: `principles/headlines`.
-- A slide shows a number or a chart: `principles/number-truth`.
-- Grouping results, causes or next steps, or ordering a list: `principles/one-two-three`.
-- The review ends in a plan someone must carry out: `principles/strategy-5w1h`.
+- Read alone in order, the titles fail to tell the story: `principles/headlines`.
+- A re-added total or a recomputed figure disagrees with the material, or a title claims a cause: `principles/number-truth`.
+- The results, causes or next steps will not fall into three of equal rank: `principles/one-two-three`.
+- The review ends in a plan with several levers, owners and dates: `principles/strategy-5w1h`.
 
 ## Pieces that fit this job
 
@@ -31,7 +31,7 @@ Options, chosen by what the slide must prove. Copy them from `kit`; each recipe 
 ## Pause 1: Setup
 
 - [ ] Slide 1 or 2 says what kind of session this is (inform, or solve a problem) and what the reader must do, if anything.
-- [ ] Presented slides fit the meeting: 5 to 6 for 30 minutes, 8 to 10 for 60, and 30 minutes when the length is unknown. Background sits in a pre-read section, detail after an appendix divider.
+- [ ] The plan is 5 to 8 slides with the cover, with no appendix, divider or recap slide unless the person asked. Detail sits in a table on the slide that needs it.
 - [ ] A reader new to the topic gets one context slide, and every acronym is spelled out once.
 - [ ] Every point reads alone: a subject and a claim, never a teaser.
 
@@ -43,16 +43,19 @@ Options, chosen by what the slide must prove. Copy them from `kit`; each recipe 
 - [ ] A causal claim has a matched group that held flat, and a lift bigger than the metric's normal swing (1 to 1.5 standard deviations). Otherwise it reads as directional.
 - [ ] Each result sits beside a like-for-like benchmark, the market's rate or its own history.
 - [ ] Credit for a lagging metric goes to the work that drove it, not to a new initiative.
+- [ ] Every total is re-added from its parts, and every percentage and difference recomputed, before it goes on a slide. Where the material's own figure disagrees, the slide shows the recomputed one and a note says so.
 
 ## Pause 3: Headlines
 
 - [ ] Read alone, the titles tell the story: result, break, cause, next step.
 - [ ] Misses appear in titles as plainly as wins, in one tone across the deck.
 - [ ] Each title passes the obviousness test: a reader could disagree with it.
+- [ ] Every number, date and name in a title matches the material exactly: £4.8M stays £4.8M, and a date or deadline appears only when the material gives it or one step of arithmetic on it does.
+- [ ] The last slide is the next steps, with owners and dates.
 
 ## Pause 4: Visuals
 
-- [ ] A test-versus-control result is a `charts/line` with the intervention marked. A table of the same numbers goes to the appendix.
+- [ ] A test-versus-control result is a `charts/line` with the intervention marked. It replaces a table of the same numbers.
 - [ ] Every colored hit or miss shows its target beside it. Green means progress, amber short of goal, red risk.
 - [ ] One element per exhibit carries the accent, and it is the one the title names.
 - [ ] Each exhibit proves its own title, and each slide with outside or derived numbers has a source line.

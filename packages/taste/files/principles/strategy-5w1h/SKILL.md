@@ -1,6 +1,6 @@
 ---
 name: strategy-5w1h
-description: "Read when the deck proposes a plan that someone must carry out: a strategy, a roadmap, an investment or a launch plan."
+description: "Read when the ask is a plan with several levers, owners and dates for someone to carry out: a strategy, a roadmap or a launch plan."
 ---
 
 # Strategy in six questions
@@ -22,5 +22,5 @@ A plan is something a new leader could pick up and run. A vision, a list of valu
 - [ ] Every dependency on another team appears as an ask.
 - [ ] The not-doing list exists, with a reason per item.
 - [ ] A non-obvious recommendation shows how you reached it: the judgment calls, the assumptions and the evidence.
-- [ ] Principles and trade-offs come before tactics; channels, cadences and escalation owners wait for the appendix or a later slide.
+- [ ] Principles and trade-offs come before tactics; channels, cadences and escalation owners wait for a later slide or are left out.
 - [ ] Asking "why" a few times from any lever reaches the business goal.

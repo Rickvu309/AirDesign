@@ -1,6 +1,6 @@
 ---
 name: headlines
-description: "Read when you write, rewrite or reorder slide titles."
+description: "Read when the titles, read alone in order, fail to tell the argument, or a title is a label with no verb."
 ---
 
 # Headlines
