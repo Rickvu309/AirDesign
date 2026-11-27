@@ -9,6 +9,7 @@ import { discoveryFuzzGood } from "./testing/discovery-fuzz.js"
 import { fuzzGood, fuzzAira } from "./testing/aira-fuzz.js"
 import { attacks, hostileEscapes, hostileValues, leaks, type Attack } from "./testing/fuzz-attack.js"
 import { badTargets } from "./testing/fuzz-target.js"
+import type { Good } from "./testing/fuzz-good.js"
 import { storageFuzzGood } from "./testing/storage-fuzz.js"
 import { deckListFuzzGood } from "./testing/deck-list-fuzz.js"
 import { doomFuzzGood } from "./testing/doom-fuzz.js"
@@ -32,14 +33,6 @@ type Wire = {
 type Answer = {
   readonly status: number
   readonly text: string
-}
-
-type Good = {
-  readonly shape: "json" | "form" | "query" | "none"
-  readonly fields?: unknown
-  readonly headers?: readonly string[]
-  readonly answers: number
-  readonly says?: string
 }
 
 const smokeToken = "fuzz-smoke-token"
@@ -367,7 +360,7 @@ describe("hostile input over every route", () => {
     const wrong: string[] = []
     for (const route of routes) {
       for (const good of goods[keyOf(route)] ?? []) {
-        const method = route.method === "any" ? "POST" : route.method
+        const method = good.method ?? (route.method === "any" ? "POST" : route.method)
         const answer = await send(shapedWire(method, route.path, good, signedHeaders(), good.fields))
         if (answer.status !== good.answers || !answer.text.includes(good.says ?? "")) {
           wrong.push(record(keyOf(route), answer))

@@ -4,6 +4,7 @@ export const oauthAuthorizePath = "/oauth/authorize"
 
 export const mcpRoutes = {
   mcp: { path: "/mcp", method: "POST" },
+  serverCard: { path: "/mcp/server-card", method: "GET" },
   resourceMetadata: { path: "/.well-known/oauth-protected-resource", method: "GET" },
   resourceMetadataByPath: { path: "/.well-known/oauth-protected-resource/mcp", method: "GET" },
   authorizationMetadata: { path: "/.well-known/oauth-authorization-server", method: "GET" },

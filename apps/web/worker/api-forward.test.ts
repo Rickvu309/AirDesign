@@ -338,6 +338,7 @@ describe("API forwarding", () => {
     "/oauth/token",
     "/oauth/revoke",
     "/mcp",
+    "/mcp/server-card",
     "/aira/turn",
     "/aira/usage",
     "/.well-known/oauth-protected-resource",

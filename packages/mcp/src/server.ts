@@ -7,6 +7,8 @@ import { deckView, shownInView, type ViewHost } from "./deck-view.js"
 import { encode } from "./encode.js"
 import { skills } from "./skill-source.js"
 
+export const serverInfo = { name: "airdesign", version: "0.0.0" }
+
 function inputSchema(json: Readonly<Record<string, unknown>>) {
   return {
     "~standard": {
@@ -47,7 +49,7 @@ function listedTools(): readonly RegisteredTool[] {
 }
 
 export function createServer(session: Session, host: DeckHost, view?: ViewHost): McpServer {
-  const server = new McpServer({ name: "airdesign", version: "0.0.0" }, { instructions })
+  const server = new McpServer(serverInfo, { instructions })
   for (const tool of listedTools()) {
     server.registerTool(
       tool.name,
