@@ -7,5 +7,7 @@ public:
   - canvas-zoom.ts
   - painted-picture.ts
   - picture-file.ts
+  - slide-capture.ts
   - slide-layout.ts
+  - slide-picture-report.ts
   - slide-pictures.ts

@@ -2,7 +2,6 @@ import type { SlidePictures } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { reportSlidePictures, slideKey, unresolvedAssets } from "./slide-picture-report"
-import { grow, paint, spot } from "./testing/doom-fixtures"
 
 const asset = "a".repeat(64)
 
@@ -138,14 +137,17 @@ describe("reporting the pictures of a deck's slides", () => {
 
 describe("the pictures a slide waits for", () => {
   it("names each stored picture the slide uses that this device does not hold", () => {
-    const { view, slides } = grow([
-      {
-        type: "shape",
-        name: "picture",
-        props: { box: spot(0, 0, 100, 100), fills: [{ kind: "image", asset, fit: "fill" }] },
-      },
-      { type: "shape", name: "plain", props: { box: spot(0, 0, 100, 100), fills: paint } },
-    ])
+    const { doom: view, slides } = doom.doomFromTree({
+      theme: doom.defaultTheme,
+      slides: [
+        {
+          children: [
+            { type: "shape", props: { fills: [{ kind: "image", asset, fit: "fill" }] } },
+            { type: "shape", props: { fills: [{ kind: "solid", color: { var: "accent1" } }] } },
+          ],
+        },
+      ],
+    })
     expect(unresolvedAssets(view, slides[0]!, () => undefined)).toEqual([asset])
     expect(unresolvedAssets(view, slides[0]!, () => "blob:1")).toEqual([])
   })
