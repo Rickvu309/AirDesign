@@ -1,13 +1,21 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
-import { compileAgentEdit, readingOf } from "./agent-edit.js"
+import { compileAgentEdit } from "./agent-edit.js"
 import { agentDeck, minter, runName, started } from "./agent-fixtures.js"
 import { richDeck } from "./testing/rich-deck.js"
-import { type Doom, applyEdit, isRefusal, nodeId, rev } from "./index.js"
+import { type Doom, type NodeId, type Rev, type RevisionKey, applyEdit, isRefusal, nodeId, rev } from "./index.js"
 import { agent, create, ids, land, person, revOf, sampleDeck, textOf } from "./sample-deck.js"
 import { propOf } from "./doom-walk.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
+
+function readingOf(doom: Doom, base: number): Doom {
+  const at = rev(base)
+  const revs = new Map<NodeId, ReadonlyMap<RevisionKey, Rev>>()
+  for (const [node, props] of doom.revs)
+    revs.set(node, new Map([...props].map(([key, was]) => [key, was > at ? at : was])))
+  return { ...doom, rev: at, revs }
+}
 const by = (more: Record<string, unknown> = {}) => ({
   author: agent(runName),
   once: "agent-1",

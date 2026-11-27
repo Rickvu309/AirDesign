@@ -15,7 +15,7 @@ $V bench --keep                            # keep both stacks; the next try take
 
 Each case is a file in `bench/` exporting `{ name, setup(kit), measure(kit, prepared) }`. `setup` gets a journey kit on a fresh browser context and signs in; its answer goes to `measure`, which returns milliseconds. CPU throttle 4 (`Emulation.setCPUThrottlingRate`) is on for `measure` only. The viewport is the kit's 1470x923 at scale 2.
 
-Every case runs on a 40-slide deck the case builds through `doomRoutes.edit`: a new deck at `/s`, 39 added slides, and the board deck's text, shapes, grids and charts (`boardDeckChanges` in `packages/doom/src/board-deck.ts`) on every five slides (`openBoardDeck` in `bench/doom-deck.mjs`). The editor then sits on slide 2.
+Every case runs on a 40-slide deck the case builds through `doomRoutes.edit`: a new deck at `/s`, 39 added slides, and the board deck's text, shapes, grids and charts (`boardDeckChanges` in `packages/doom/src/testing/board-deck.ts`) on every five slides (`openBoardDeck` in `bench/doom-deck.mjs`). The editor then sits on slide 2.
 
 | case                 | measures                                                                                                                                                                         |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

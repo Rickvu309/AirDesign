@@ -2,3 +2,4 @@ layer: core
 enforce_public_types: true
 public:
   runtime: [src/index.ts]
+  testing: [src/testing/index.ts]

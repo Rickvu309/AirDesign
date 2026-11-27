@@ -1,4 +1,5 @@
 import * as doom from "@airdesign/doom"
+import { compileAgentChange } from "@airdesign/doom/testing"
 import { gestures } from "@/lib/gestures"
 import { describe, expect, it } from "vitest"
 import { nodeModel } from "./editor/design-model"
@@ -192,7 +193,7 @@ describe("every capability a person has names its agent word, or says why it is 
     const change = doom.readAgentChange(entry.probe)
     if (doom.isRefusal(change)) throw new Error(JSON.stringify(change))
     let minted = 0
-    const writes = doom.compileAgentChange(view, change, () => doom.nodeId(`new:${++minted}`))
+    const writes = compileAgentChange(view, change, () => doom.nodeId(`new:${++minted}`))
     if ("refused" in writes) throw new Error(JSON.stringify(writes))
     const after = land(view, { kind: "person", id: "parity" }, writes)
     expect(doom.slideGroups(after).map((group) => group.slides)).toEqual(groups)

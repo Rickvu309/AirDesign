@@ -1,5 +1,7 @@
 layer: feature
 dependencies:
+  - packages/doom#runtime
+  - packages/doom#testing
   - packages/agent#runtime
   - packages/agent#testing
   - apps/api/src/platform

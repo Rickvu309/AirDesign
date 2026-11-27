@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto"
 import { doomRoutes } from "@airdesign/catalog"
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
+import { foldToJson } from "@airdesign/doom/testing"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
@@ -196,7 +197,7 @@ describe("an edit", () => {
       replayed = next
     }
     const stored = await foldOf(deck)
-    expect(doom.foldToJson(replayed)).toEqual(doom.foldToJson(stored))
+    expect(foldToJson(replayed)).toEqual(foldToJson(stored))
   })
 
   it("answers a repeated once with the revision it landed at and logs nothing twice", async () => {
@@ -268,7 +269,7 @@ describe("an edit", () => {
     const unbased = await send(deck, [{ node: startIds.title, prop: "text", value: words("None") }])
     expect(unbased.json).toMatchObject({ ok: false, refusal: "edit", refused: "stale" })
     const after = await foldOf(deck)
-    expect(doom.foldToJson(after)).toEqual(doom.foldToJson(before))
+    expect(foldToJson(after)).toEqual(foldToJson(before))
     expect((await post("since", { deck, rev: 0 })).json.edits).toHaveLength(2)
   })
 
@@ -427,7 +428,7 @@ describe("catching up from a revision", () => {
       if (doom.isRefusal(next)) throw new Error("apply")
       view = next
     }
-    expect(doom.foldToJson(view)).toEqual(doom.foldToJson(await foldOf(deck)))
+    expect(foldToJson(view)).toEqual(foldToJson(await foldOf(deck)))
   })
 })
 

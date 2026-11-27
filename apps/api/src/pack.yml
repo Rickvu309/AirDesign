@@ -1,6 +1,8 @@
 layer: app
 public: []
 dependencies:
+  - packages/doom#runtime
+  - packages/doom#testing
   - apps/api/src/account
   - apps/api/src/account#testing
   - apps/api/src/aira

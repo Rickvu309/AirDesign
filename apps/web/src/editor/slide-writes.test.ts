@@ -1,4 +1,5 @@
 import * as doom from "@airdesign/doom"
+import { placeholderTitle } from "@airdesign/doom/testing"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import type { GridMoveSide } from "./grid-move"
@@ -54,7 +55,7 @@ describe("add slide", () => {
       type: "shape",
       role: "title",
       box: { x: 160, y: 80, w: 1600, h: 120 },
-      text: { chars: doom.placeholderTitle, style: "title" },
+      text: { chars: placeholderTitle, style: "title" },
     })
   })
 

@@ -1,4 +1,5 @@
 import * as doom from "@airdesign/doom"
+import { compileAgentChange } from "@airdesign/doom/testing"
 
 const spot = (x: number, y: number, w: number, h: number, rotation = 0) => ({
   x,
@@ -276,7 +277,7 @@ export const writesOf = (probe: Probe, look: Readonly<Record<string, unknown>>):
   let next = 0
   const mint = () => doom.nodeId(`m:${String((next += 1))}`)
   const change = { op: "set", target: idOf(probe), ...look } as doom.AgentChange
-  const writes = doom.compileAgentChange(built.view, change, mint)
+  const writes = compileAgentChange(built.view, change, mint)
   return doom.isRefusal(writes) ? [] : writes.filter((write) => write.node === idOf(probe))
 }
 

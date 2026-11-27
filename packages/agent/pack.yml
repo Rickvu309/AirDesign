@@ -2,3 +2,6 @@ layer: service
 public:
   runtime: [src/index.ts]
   testing: [src/testing/evals.ts]
+dependencies:
+  - packages/doom#runtime
+  - packages/doom#testing

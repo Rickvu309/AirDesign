@@ -1,9 +1,8 @@
-import type { RevisionKey } from "./doom.js"
 import type { AgentChange, AgentRefusal } from "./agent-change.js"
 import { compileAgentChange, nameOf } from "./agent-compile.js"
 import type { Reading } from "./agent-draft.js"
 import type { Measure } from "./measure.js"
-import type { NodeId, Rev } from "./ids.js"
+import type { NodeId } from "./ids.js"
 import { rev } from "./ids.js"
 import { kindOf } from "./agent-read.js"
 import { applyEdit, applyStep, countsOf } from "./apply-edit.js"
@@ -30,14 +29,6 @@ export type EditBy = {
   readonly boxes?: Reading["boxes"]
   readonly pictures?: Reading["pictures"]
   readonly measure?: Measure
-}
-
-export function readingOf(doom: Doom, base: number): Doom {
-  const at = rev(base)
-  const revs = new Map<NodeId, ReadonlyMap<RevisionKey, Rev>>()
-  for (const [node, props] of doom.revs)
-    revs.set(node, new Map([...props].map(([key, was]) => [key, was > at ? at : was])))
-  return { ...doom, rev: at, revs }
 }
 
 export type Bake = { readonly fold: Doom; readonly frame: NodeId }

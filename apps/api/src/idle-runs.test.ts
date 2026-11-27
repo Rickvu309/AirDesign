@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto"
 import { doomRoutes, readDeckId } from "@airdesign/catalog"
-import * as doom from "@airdesign/doom"
+import type { Run } from "@airdesign/doom/testing"
 import { Client } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
 
@@ -64,7 +64,7 @@ const started = (run: string, agent: string) => ({
   phase: "start",
 })
 
-async function runsOf(deck: string): Promise<ReadonlyMap<string, doom.Run>> {
+async function runsOf(deck: string): Promise<ReadonlyMap<string, Run>> {
   const opened = await ask(base, "POST", doomRoutes.open.path, { deck }, owner.cookie)
   const folded = doomRoutes.open.result(opened.json)
   if (!folded.ok) throw new Error(JSON.stringify(folded))

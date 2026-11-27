@@ -1,5 +1,6 @@
 import type { DeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
+import { foldToJson } from "@airdesign/doom/testing"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { installIndexedDb, traffic } from "./browser-fixtures.js"
 import { deleteDatabase, finished, scoped, storeName, transaction } from "./device.js"
@@ -55,7 +56,7 @@ describe("what one landed edit writes to the device", () => {
 
   it("reopens as the fold it wrote", async () => {
     const { moved } = await writtenByOneEdit(5)
-    expect(doom.foldToJson((await deviceStorage("cost5").read())!.fold!)).toEqual(doom.foldToJson(moved))
+    expect(foldToJson((await deviceStorage("cost5").read())!.fold!)).toEqual(foldToJson(moved))
   })
 
   it("writes the whole fold again when another tab wrote an older one in between", async () => {
@@ -67,7 +68,7 @@ describe("what one landed edit writes to the device", () => {
     await ahead.write({ fold: first })
     await behind.write({ fold: grown.doom })
     await ahead.write({ fold: second })
-    expect(doom.foldToJson((await deviceStorage("tabs").read())!.fold!)).toEqual(doom.foldToJson(second))
+    expect(foldToJson((await deviceStorage("tabs").read())!.fold!)).toEqual(foldToJson(second))
   })
 })
 
@@ -102,7 +103,7 @@ describe("two tabs that land the same edit", () => {
     const next = renames(moved, grown.ids["0.1"]!, "Then one").fold
     await other.write({ fold: next })
     expect(traffic.puts - before).toBe(3)
-    expect(doom.foldToJson((await deviceStorage("pair").read())!.fold!)).toEqual(doom.foldToJson(next))
+    expect(foldToJson((await deviceStorage("pair").read())!.fold!)).toEqual(foldToJson(next))
   })
 })
 
@@ -113,7 +114,7 @@ describe("a device copy saved as one value by the earlier app", () => {
   async function savedByTheEarlierApp(deck: string) {
     const grown = boardOf(2)
     const { queued } = renames(grown.doom, grown.ids["1.1"]!, "Typed offline")
-    await writeSlot(retiredFoldKey(deck), doom.foldToJson(grown.doom))
+    await writeSlot(retiredFoldKey(deck), foldToJson(grown.doom))
     await deviceStorage(deck).write({ queue: [queued] })
     return { grown, queued }
   }
@@ -125,7 +126,7 @@ describe("a device copy saved as one value by the earlier app", () => {
     expect(opened.deck.view().nodes.get(grown.ids["1.1"]!)?.name).toBe("Typed offline")
     expect(await readSlot(retiredFoldKey("upgrade"))).toBeNull()
     const kept = await deviceStorage("upgrade").read()
-    expect(doom.foldToJson(kept!.fold!)).toEqual(doom.foldToJson(grown.doom))
+    expect(foldToJson(kept!.fold!)).toEqual(foldToJson(grown.doom))
     expect(kept!.queue).toEqual([queued])
   })
 
@@ -142,18 +143,18 @@ describe("a device copy saved as one value by the earlier app", () => {
     const grown = boardOf(2)
     await deviceStorage("again").write({ fold: grown.doom, queue: [] })
     const later = renames(grown.doom, grown.ids["0.1"]!, "Saved by the earlier app").fold
-    await writeSlot(retiredFoldKey("again"), doom.foldToJson(later))
-    expect(doom.foldToJson((await deviceStorage("again").read())!.fold!)).toEqual(doom.foldToJson(later))
+    await writeSlot(retiredFoldKey("again"), foldToJson(later))
+    expect(foldToJson((await deviceStorage("again").read())!.fold!)).toEqual(foldToJson(later))
     expect(await readSlot(retiredFoldKey("again"))).toBeNull()
-    expect(doom.foldToJson((await deviceStorage("again").read())!.fold!)).toEqual(doom.foldToJson(later))
+    expect(foldToJson((await deviceStorage("again").read())!.fold!)).toEqual(foldToJson(later))
   })
 
   it("loses to newer rows", async () => {
     const grown = boardOf(2)
     const later = renames(grown.doom, grown.ids["0.1"]!, "Saved as rows").fold
     await deviceStorage("behind").write({ fold: later, queue: [] })
-    await writeSlot(retiredFoldKey("behind"), doom.foldToJson(grown.doom))
-    expect(doom.foldToJson((await deviceStorage("behind").read())!.fold!)).toEqual(doom.foldToJson(later))
+    await writeSlot(retiredFoldKey("behind"), foldToJson(grown.doom))
+    expect(foldToJson((await deviceStorage("behind").read())!.fold!)).toEqual(foldToJson(later))
     expect(await readSlot(retiredFoldKey("behind"))).toBeNull()
   })
 })
@@ -203,7 +204,7 @@ describe("a device copy whose rows do not add up to its head", () => {
     const opened = await openDoomDeck(server, "repair", { client: "a" })
     if (!opened.ok) throw new Error("the server copy should open")
     expect(opened.deck.view().nodes.get(grown.ids["1.1"]!)?.name).toBe("Typed offline")
-    expect(doom.foldToJson((await deviceStorage("repair").read())!.fold!)).toEqual(doom.foldToJson(first))
+    expect(foldToJson((await deviceStorage("repair").read())!.fold!)).toEqual(foldToJson(first))
   })
 
   it("does not open offline", async () => {

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
   type Layout,
-  type Track,
   applyMatrix,
   boxMatrix,
   contentMatrix,
@@ -9,6 +8,7 @@ import {
   readForAgent,
   solveLayout,
 } from "./index.js"
+import type { Track } from "./layout.js"
 import {
   advance,
   block,

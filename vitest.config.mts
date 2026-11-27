@@ -19,6 +19,10 @@ const alias = [
     replacement: path.join(import.meta.dirname, "packages/agent/src/testing/evals.ts"),
   },
   {
+    find: /^@airdesign\/doom\/testing$/,
+    replacement: path.join(import.meta.dirname, "packages/doom/src/testing/index.ts"),
+  },
+  {
     find: /^@airdesign\/([a-z0-9-]+)$/,
     replacement: path.join(import.meta.dirname, "packages/$1/src/index.ts"),
   },

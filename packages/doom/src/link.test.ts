@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { compileAgentEdit } from "./agent-edit.js"
 import { agentDeck, minter } from "./agent-fixtures.js"
-import { readLinkAddress, readWrite } from "./index.js"
+import { readLinkAddress } from "./index.js"
+import { readWrite } from "./read-write.js"
 import { agent, ids, sampleDeck, textOf } from "./sample-deck.js"
 
 const doom = sampleDeck()

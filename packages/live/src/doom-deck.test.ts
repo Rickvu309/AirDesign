@@ -1,5 +1,6 @@
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
+import { foldToJson } from "@airdesign/doom/testing"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { installIndexedDb } from "./browser-fixtures.js"
 import { deleteDatabase } from "./device.js"
@@ -112,7 +113,7 @@ async function pair() {
 const nameOf = (view: doom.Doom, node: doom.NodeId) => (view.nodes.get(node) as { name?: string }).name
 const boxOf = (view: doom.Doom, node: doom.NodeId) => (view.nodes.get(node) as { box?: { x: number } }).box?.x
 const textOf = (view: doom.Doom, node: doom.NodeId) => (view.nodes.get(node) as { text?: doom.Text }).text?.chars
-const json = (view: doom.Doom) => doom.foldToJson(view)
+const json = (view: doom.Doom) => foldToJson(view)
 
 function must(result: { readonly ok: boolean }) {
   expect(result.ok).toBe(true)

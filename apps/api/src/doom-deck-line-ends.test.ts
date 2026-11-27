@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto"
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
+import { foldToJson } from "@airdesign/doom/testing"
 import type { Pool } from "pg"
 import { Client } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
@@ -87,7 +88,7 @@ it("lands a line end on a shape the edit does not touch, and keeps the end the l
     if (doom.isRefusal(next)) throw new Error(JSON.stringify(next))
     replayed = next
   }
-  expect(doom.foldToJson(replayed)).toEqual(doom.foldToJson(fold))
+  expect(foldToJson(replayed)).toEqual(foldToJson(fold))
 })
 
 async function asWhole(deck: string, writes: readonly doom.Write[]) {

@@ -44,10 +44,11 @@ test("the server breaks and stacks every line where the canvas paints it, in eac
   const root = process.cwd()
   const { packageBuild } = await import("../../scripts/package-build.mjs")
   const doom = await packageBuild(root, "@airdesign/doom")
+  const { boardDeckChanges } = await packageBuild(root, "@airdesign/doom", "testing/index.js")
   const { servedFontMetrics, FontSource } = await packageBuild(root, "@airdesign/api")
   const { fontShelf, offShelf, shelfFolder } = await import("../../scripts/font-shelf.mjs")
   const metrics = servedFontMetrics(new FontSource(fontShelf(shelfFolder), offShelf))
-  const sample: readonly string[] = wordsOf(doom.boardDeckChanges(["s:1", "s:2", "s:3", "s:4", "s:5"]))
+  const sample: readonly string[] = wordsOf(boardDeckChanges(["s:1", "s:2", "s:3", "s:4", "s:5"]))
   expect(sample.length).toBeGreaterThan(20)
   await page.goto(`${fontRoutes.family.path}?family=Inter`)
   for (const { family, scripts } of families) {

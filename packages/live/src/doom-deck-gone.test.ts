@@ -1,5 +1,6 @@
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
+import { foldToJson } from "@airdesign/doom/testing"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { installIndexedDb } from "./browser-fixtures.js"
 import { deleteDatabase } from "./device.js"
@@ -76,7 +77,7 @@ describe("a deck the server no longer has", () => {
     expect(made.ok).toBe(true)
     const kept = await storage.read()
     if (kept?.fold === undefined) throw new Error("missing stored fold")
-    const fold = doom.foldToJson(kept.fold)
+    const fold = foldToJson(kept.fold)
     if (typeof fold !== "object" || fold === null) throw new Error("invalid serialized fold")
     const stale = {
       ...fold,
