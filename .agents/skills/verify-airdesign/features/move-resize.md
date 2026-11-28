@@ -1,6 +1,6 @@
 # Move and resize an element
 
-A person clicks a layer on the slide to select it. A frame with corner and side grips shows around it, with a rotate zone just outside each corner and a size label under it. Dragging anywhere inside the layer moves it, a corner or a side resizes it, a rotate zone turns it, and the arrow keys nudge it. The layer follows the pointer at once, one edit reaches the server when the gesture ends, and the box is there after a reload. The words are in `transform.md` and `snapping.md`.
+A person clicks a layer on the slide to select it. A frame with corner and side grips shows around it, with a rotate zone just outside each corner and a size label under it. Dragging anywhere inside the layer moves it, a corner or a side resizes it, a rotate zone turns it, and the arrow keys nudge it. The layer follows the pointer at once, one edit reaches the server when the gesture ends, and the box is there after a reload. The words are in `docs/words/transform.md` and `docs/words/snapping.md`.
 
 ## Sub-features
 

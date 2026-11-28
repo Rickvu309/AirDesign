@@ -63,7 +63,7 @@ Ready means all of that finished and the state file says `ready: true`. Launch p
 
 Keep the `run`. Every other command takes it. Use `$V launch --no-build` only when you built this exact checkout already. A build or start failure names its log file.
 
-Needs Linux with `/proc` for process ownership checks, PostgreSQL 18 at `/usr/lib/postgresql/18/bin`, `~/.local/pgsql-18/...`, or `AIRDESIGN_POSTGRES_BIN`, and Playwright's Chromium (`pnpm exec playwright install chromium` once per machine). Run `pnpm install` first in a fresh worktree. On a machine where Chromium's system libraries live in `~/.cache/chromium-libs/root/usr/lib/x86_64-linux-gnu`, every command here, `pnpm test:journeys`, `pnpm test:browser` and `$V suites` add that folder to `LD_LIBRARY_PATH` themselves; set nothing.
+Needs Linux with `/proc` for process ownership checks, PostgreSQL 18 at `/usr/lib/postgresql/18/bin`, `~/.local/pgsql-18/...`, or `AIRDESIGN_POSTGRES_BIN`, and Playwright's Chromium (`pnpm exec playwright install chromium` once per machine). Run `pnpm install` first in a fresh worktree. On a machine where Chromium's system libraries live in `~/.cache/chromium-libs/root/usr/lib/x86_64-linux-gnu`, every command here, `pnpm test:journeys`, `pnpm test:browser` and `$V suites` add that folder to `LD_LIBRARY_PATH` themselves. The SVG path journeys use Poppler from `PATH` or fall back to `~/.cache/pptx-tools/usr/bin` with the matching cached libraries when present.
 
 ### Doctor
 
@@ -75,8 +75,8 @@ Read-only. Prints `{"ok":true,...,"checks":{...}}` and exits 1 when any check fa
 
 - `serveOwned`, `postgresOwned`: the recorded PIDs are alive and their command lines carry this run, so the instance is ours.
 - `webServed`: `/` returns the AirDesign page.
-- `apiCommit`, `buildIsHead`: the API reports the commit it was launched at, and that commit is the checkout's `HEAD`. When `buildIsHead` is false you edited or moved since launch: stop and launch again.
-- `databaseAnswers`: `deckRoutes.list` without a cookie answers 401 `session`, which needs the API and Postgres both up.
+- `apiCommit`, `buildIsHead`: the API reports the commit it was launched at, and that commit is the checkout's `HEAD`. The SHA check sees commit changes only. Uncommitted edits and stale `--no-build` output can still pass. When the commit changes, stop and launch again.
+- `databaseAnswers`: `deckRoutes.list` without a cookie answers 401 `session` at the session guard. This confirms that API routing and the session guard respond. The request ends before a Postgres query.
 
 Doctor also prints `load`, the machine's one-minute load average on its cores. Above the core count it says the machine is busy. A step that fails then and passes alone has found a race: force the gap and fix it. When the stack is gone it prints `next`, naming `stack.log`, where the stack writes the signal or the uncaught error that stopped it.
 
@@ -137,11 +137,10 @@ Plain HTTP without a browser:
 
 ```sh
 $V sign-in <run>                                   # {"email":"...","cookie":"airdesign.session=..."}
-$V api <run> list '{}' --cookie 'airdesign.session=...'
-$V api <run> open '{"deck":"<id>"}' --cookie '...'
+$V api <run> list --cookie 'airdesign.session=...'
 ```
 
-`api` takes a `deckRoutes` key (`list`, `rename`, `star`, `trash`, `restore`, `delete`, `mediaUpload`, `media`) and saves the answer under the evidence dir. A deck's content is read and written through `doomRoutes` (`create`, `open`, `edit`, `since`, `screenshots`, `run`); post those from a journey with `post`.
+`api` takes a `deckRoutes` key (`list`, `star`, `trash`, `restore`, `delete`, `mediaUpload`, `media`) and saves the answer under the evidence dir. A deck's content is read and written through `doomRoutes` (`create`, `open`, `edit`, `since`, `screenshots`, `run`); post those from a journey with `post`.
 
 #### Saved proof
 

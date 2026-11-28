@@ -15,7 +15,8 @@ A signed-in person presses `New deck` on Home and AirDesign opens a new deck at 
 
 ## How to get to it (user POV)
 
-- Home `/`: `New deck` in the sidebar, or the `Describe your deck` box above the decks.
+- Home `/`: `New deck` in the sidebar.
+- Aira `/aira`: type in `Describe your deck` and press Enter.
 - An open deck: double-click the title on the slide and type, or press T and click the slide.
 
 ## Driving it with verify-airdesign

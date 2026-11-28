@@ -9,7 +9,7 @@ In an open deck, `Shapes` in the toolbar opens the tray the design shows (`/scre
 - `line-draw` L draws a line (`arrows: ["none", "none"]`) and Shift+L an arrow (`["none", "arrow"]`), from where the drag starts to where it ends.
 - `frame-draw` F draws a clipping frame (`clip: true`); a shape then drawn inside it lands as the frame's child.
 - `shape-undo` one Ctrl/Cmd+Z after an add takes the shape away.
-- `agent-shape` an agent's `airdesign_execute` operation, Doom's change `{ op: "add", kind: "shape", slide }` or `kind: "line"` with `arrow` adds the same layers.
+- `agent-shape` an agent uses `insert({ parent, kind: "shape" })` or `insert({ parent, kind: "line", arrow: true })` in `airdesign_execute` to add the same layers.
 
 ## How to get to it (user POV)
 

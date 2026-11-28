@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest"
-import { browserEnv, launchProblem, librariesDir, openBrowser } from "./browser.mjs"
+import { describe, expect, it, vi } from "vitest"
+import { browserEnv, launchProblem, librariesDir, openBrowser, runPoppler } from "./browser.mjs"
 
 describe("launchProblem", () => {
   it("names the missing library and the folder the commands read it from", () => {
@@ -55,5 +55,28 @@ describe("openBrowser", () => {
       )
     }
     await expect(openBrowser(launch, {}, "/libs", () => false)).rejects.toThrow(/libatk-1\.0\.so\.0 is missing/)
+  })
+})
+
+describe("runPoppler", () => {
+  it("uses the command on PATH when it runs", () => {
+    const execute = vi.fn(() => "system")
+    const options = { encoding: "utf8" }
+    expect(runPoppler("pdftoppm", ["-v"], options, execute)).toBe("system")
+    expect(execute).toHaveBeenCalledExactlyOnceWith("pdftoppm", ["-v"], options)
+  })
+
+  it("retries a missing command with cached Poppler and its libraries", () => {
+    const execute = vi
+      .fn()
+      .mockImplementationOnce(() => {
+        throw Object.assign(new Error("missing"), { code: "ENOENT" })
+      })
+      .mockReturnValueOnce("cached")
+    const options = { env: { LD_LIBRARY_PATH: "/opt/lib" } }
+    expect(runPoppler("pdftoppm", ["-v"], options, execute, "/cache/usr", () => true)).toBe("cached")
+    expect(execute).toHaveBeenNthCalledWith(2, "/cache/usr/bin/pdftoppm", ["-v"], {
+      env: { LD_LIBRARY_PATH: "/cache/usr/lib/x86_64-linux-gnu:/opt/lib" },
+    })
   })
 })

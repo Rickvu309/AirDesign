@@ -450,11 +450,16 @@ try {
   else if (command === "sign-in") {
     const { email, cookie } = await signIn(readState(rest[0]), flag("--email"))
     process.stdout.write(`${JSON.stringify({ email, cookie })}\n`)
-  } else if (command === "api") await apiCall(rest[0], rest[1], rest[2], flag("--cookie"))
-  else if (command === "journey") await journey(rest[0], rest[1])
+  } else if (command === "api") {
+    const [run, route, body] = rest
+    await apiCall(run, route, body?.startsWith("--") ? undefined : body, flag("--cookie"))
+  } else if (command === "journey") await journey(rest[0], rest[1])
   else if (command === "stop") await stop(rest[0])
-  else if (command !== "library") {
+  else if (command === undefined || command === "-h" || command === "--help") {
     process.stdout.write(usage)
+  } else if (command !== "library") {
+    process.stderr.write(`unknown command ${command}\n${usage}`)
+    process.exitCode = 1
   }
 } catch (error) {
   fail(`verify-airdesign ${command}: ${String(error.message ?? error)}`)

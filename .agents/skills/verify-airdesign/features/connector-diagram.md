@@ -7,8 +7,8 @@ A line's two ends are each a point on the slide or a site on another layer: its 
 - `connector-follows` while a person drags a layer a connector ends on, the canvas routes the connector from the layer's live box, so it follows during the drag and stays joined after the drop.
 - `connector-fixed` a line with both ends on layers does not move by a drag of its own (`movable` in `apps/web/src/editor/move-writes.ts`); move the layers instead.
 - `connector-copy` Ctrl/Cmd+D on a frame holding two shapes and a connector between them copies the connector joined to the copied shapes.
-- `connector-panel` the Design panel for a line shows Align, Border and Shadow (`panel-connector`).
-- `agent-line` an agent's `airdesign_execute` operation, Doom's change `{ op: "add", kind: "line", slide, box, arrow, stroke, strokeWidth }` adds a line across its box, with an arrowhead at its end when `arrow` is true.
+- `connector-panel` the Design panel for a line shows Align and Border (`panel-connector`). Route and arrowhead controls are in Border.
+- `agent-line` an agent adds a line across its box in `airdesign_execute` with `insert({ parent, kind: "line", box, arrow: true })` for an arrowhead at the end.
 
 ## How to get to it (user POV)
 
@@ -21,6 +21,7 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
+- **Browser spec.** `tests/browser/editor-line-ends.spec.ts` attaches and frees line ends, changes the route in the panel and reads the saved line.
 - **States for look.** `connector-follow` (the start shape held mid-drag while its elbow follows) and `connector-around` (the start held below and left of the end), both on the `connected` deck in `../look/doom-canvas.mjs`; `panel-connector`.
 - **Unit tests.** `apps/web/src/editor/arrange-writes.test.ts` copies a frame whose connector joins two of its shapes and finds the copy's ends on the copied shapes.
 

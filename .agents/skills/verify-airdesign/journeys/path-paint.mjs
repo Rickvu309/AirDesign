@@ -1,8 +1,8 @@
-import { execFileSync } from "node:child_process"
 import { readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { PNG } from "pngjs"
 import paths from "../../../../tests/browser/fixtures/paint-paths.json" with { type: "json" }
+import { runPoppler } from "../bin/browser.mjs"
 import { exportCopy, productCopy } from "../bin/product-copy.mjs"
 import { clickSlide, landNodes, openDoomDeck, readDoom, spot } from "../look/doom-deck.mjs"
 
@@ -240,7 +240,7 @@ async function drivePaths(kit, cases, grid, checkVector = false) {
   const pdfPath = join(out, "slide.pdf")
   const raster = join(out, "pdf")
   await writeFile(pdfPath, await page.pdf({ preferCSSPageSize: true }))
-  execFileSync("pdftoppm", ["-r", "144", "-png", "-singlefile", pdfPath, raster])
+  runPoppler("pdftoppm", ["-r", "144", "-png", "-singlefile", pdfPath, raster])
   if (checkVector)
     note("Seam scores reference sampled wedge interiors. Each interior also has an independent absolute RGB check.")
   const results = [
@@ -262,7 +262,7 @@ async function drivePaths(kit, cases, grid, checkVector = false) {
     }
   }
   if (checkVector) {
-    const images = execFileSync("pdfimages", ["-list", pdfPath], { encoding: "utf8" }).trimEnd().split("\n").slice(2)
+    const images = runPoppler("pdfimages", ["-list", pdfPath], { encoding: "utf8" }).trimEnd().split("\n").slice(2)
     expect.soft(images, "PDF image objects").toHaveLength(0)
     const bytes = (await readFile(pdfPath)).length
     expect.soft(bytes, "vector PDF bytes").toBeLessThanOrEqual(65_000)
@@ -274,7 +274,7 @@ async function drivePaths(kit, cases, grid, checkVector = false) {
     const dx = 55
     const rimY = cy - Math.sqrt((pieSize / 2) ** 2 - dx ** 2)
     const rim = join(out, "pdf-rim-400")
-    execFileSync("pdftoppm", [
+    runPoppler("pdftoppm", [
       "-r",
       "576",
       "-x",

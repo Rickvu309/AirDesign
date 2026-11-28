@@ -1,6 +1,6 @@
 # Set a slide's background
 
-On an open deck with no layer selected, the Design panel shows the current slide: its number, the deck's **Theme**, the slide's **Background** and its **Selection colors**. The background takes a solid colour, a gradient or a picture; the slide and its thumbnail paint it at once, it reaches the server as the slide node's `fills`, and one undo takes it back. An agent sets the same fill with `airdesign_execute` and `{ "op": "set", "target": "<slide>", "fill": … }`.
+On an open deck with no layer selected, the Design panel shows the current slide: its number, the deck's **Theme**, the slide's **Background** and its **Selection colors**. The background takes a solid colour, a gradient or a picture; the slide and its thumbnail paint it at once, it reaches the server as the slide node's `fills`, and one undo takes it back. An agent sets the same fill with `airdesign_execute` and `update({ target, fill })`.
 
 ## Sub-features
 
@@ -9,7 +9,7 @@ On an open deck with no layer selected, the Design panel shows the current slide
 - `background-picture` an image fill picked from a file fills the slide background (`tests/browser/editor-design.spec.ts`).
 - `background-undo` Ctrl/Cmd+Z on the canvas takes the background back to what it was, and a reload keeps the result.
 - `theme` opens the library picker and applies a theme to the whole deck. States `design-template` and `design-theme-options`.
-- `agent-background` `airdesign_execute` with a `set` whose target is the slide's id and a `fill` paints the slide's background (`packages/doom/src/intent-set.test.ts`, "paints a slide's background"), through the same run as other intents from the agent. The person's Undo for the run takes it back.
+- `agent-background` `airdesign_execute` with `update({ target, fill })` where `target` is the slide id paints the slide's background (`packages/doom/src/intent-set.test.ts`, "paints a slide's background"), through the same run as other intents from the agent. The person's Undo for the run takes it back.
 
 ## How to get to it (user POV)
 

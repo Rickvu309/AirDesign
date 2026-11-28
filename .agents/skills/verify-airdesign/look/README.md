@@ -2,7 +2,7 @@
 
 `look`, `compare`, `sheet` and `states` are commands of `../bin/verify-airdesign.mjs`. Each prints one JSON line with counts and absolute paths, or a message and exit 1. They use the repo's Playwright Chromium and `pngjs`, no paid model and no key.
 
-Every capture is the design's frame: 1470 by 923 CSS px, device scale 2, fonts and images loaded, reduced motion.
+Captures default to 1470 by 923 CSS px at device scale 2, with fonts and images loaded and reduced motion. Phone states use their own viewport, and panel shots use a taller viewport.
 
 ## look
 
@@ -15,11 +15,11 @@ Every capture is the design's frame: 1470 by 923 CSS px, device scale 2, fonts a
 
 Rank 1: a person loses content or a control. Rank 2: readability or layout. Rank 3: a hint.
 
-A path signs in a fresh account. `--cookie name=value` uses an account you already have.
+An app path signs in a fresh account. Raw `/screens/` paths skip sign-in. `--cookie name=value` uses an account you already have.
 
 ## compare
 
-`compare <run> <state-or-path> [design-screen]` puts the design screen beside the real page. The design screen defaults to the state's own. It may be a URL, so an old build can be put beside today's design.
+`compare <run> <state-or-path> [design-screen]` puts the design screen beside the real page. The design screen defaults to the state's own. It can be a URL whose pathname starts with `/screens/`, so an old build can be put beside today's design.
 
 - `compare.png`: design left, real right, at design size. Each shared region is outlined: green within 1 px and same style, orange changed, red on one side only. The middle strip marks the rows a difference spans.
 - `NN-<region>.png`: the design crop beside the real crop for each difference, at scale 2.
@@ -62,18 +62,19 @@ For reference-led changes and feedback about proportions, alignment, names, or b
 
 `detectors.mjs` is the table. Each detector is one module in `detectors/` that runs in the page on one element at a time, with the kit in `page-kit.mjs`. Each has a fixture where it must fire and a near miss where it must not, in `tests/browser/design-detectors.spec.ts`.
 
-| Detector            | Rank | Catches                                                                                                       | Cannot judge                                                                                                                     |
-| ------------------- | ---- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| overflowing-text    | 1    | text cut by a clipping container, painted under a later element, or painted over other text                   | text in a canvas or image; covers that ignore the pointer; text past a slide's own edge, which is off the slide as in PowerPoint |
-| invisible-control   | 1    | a focusable or editable element that paints nothing                                                           | whether a painted control is understandable                                                                                      |
-| internal-identifier | 1    | snake_case, SCREAMING_CASE, `a::b`, catalog tool names, `Site 3` and raw placeholder ids such as `ctrTitle 0` | an internal word that reads as English, such as a one-word refusal code                                                          |
-| empty-region        | 1    | the on-screen part of a landmark or panel, when that part is over 12% of the screen and shows almost nothing  | a peek under 12% of the screen; whether blank space serves the design; slides, the canvas and filmstrip are meant to leave room  |
-| truncated-text      | 2    | text cut by an ellipsis, a line clamp or its own hidden overflow                                              | whether the cut was meant                                                                                                        |
-| stacked-frames      | 2    | a border, outline or ring 2 to 8 px inside another that fills half of it                                      | whether two frames were meant                                                                                                    |
-| text-contrast       | 2    | text below WCAG AA against the solid layers painted under it                                                  | text over an image, gradient, canvas, filter or translucent layer; text on slides                                                |
-| focus-visible       | 2    | a control in the tab order with keyboard focus and no outline, ring or focus rule                             | focus states the page was not put in                                                                                             |
-| dead-control        | 2    | an enabled button or link with no href, form, onclick or React handler                                        | listeners added with `addEventListener`; a finding is a candidate to click                                                       |
-| off-token           | 3    | chrome color, size, radius or spacing that is not a `packages/theme` value                                    | whether the exception was meant; only with `--off-token`                                                                         |
+| Detector            | Rank | Catches                                                                                                         | Cannot judge                                                                                                                     |
+| ------------------- | ---- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| overflowing-text    | 1    | text cut by a clipping container, painted under a later element, or painted over other text                     | text in a canvas or image; covers that ignore the pointer; text past a slide's own edge, which is off the slide as in PowerPoint |
+| invisible-control   | 1    | a focusable or editable element that paints nothing                                                             | whether a painted control is understandable                                                                                      |
+| internal-identifier | 1    | snake_case, SCREAMING_CASE, `a::b`, catalog tool names, `Site 3` and raw placeholder ids such as `ctrTitle 0`   | an internal word that reads as English, such as a one-word refusal code                                                          |
+| empty-region        | 1    | the on-screen part of a landmark or panel, when that part is over 12% of the screen and shows almost nothing    | a peek under 12% of the screen; whether blank space serves the design; slides, the canvas and filmstrip are meant to leave room  |
+| stray-focus-edge    | 1    | an unwanted outline on a focused control while focus is quiet, or on a menu, listbox or dialog Tab cannot reach | focus that was elsewhere during the scan, or a ring drawn with a border or shadow                                                |
+| truncated-text      | 2    | text cut by an ellipsis, a line clamp or its own hidden overflow                                                | whether the cut was meant                                                                                                        |
+| stacked-frames      | 2    | a border, outline or ring 2 to 8 px inside another that fills half of it                                        | whether two frames were meant                                                                                                    |
+| text-contrast       | 2    | text below WCAG AA against the solid layers painted under it                                                    | text over an image, gradient, canvas, filter or translucent layer; text on slides                                                |
+| focus-visible       | 2    | a control in the tab order with keyboard focus and no outline, ring or focus rule                               | focus states the page was not put in                                                                                             |
+| dead-control        | 2    | an enabled button or link with no href, form, onclick or React handler                                          | listeners added with `addEventListener`; a finding is a candidate to click                                                       |
+| off-token           | 3    | chrome color, size, radius or spacing that is not a `packages/theme` value                                      | whether the exception was meant; only with `--off-token`                                                                         |
 
 `empty-region` judges the on-screen part of a region. A child counts only where its box meets the viewport, so paint past the fold cannot fill a blank screen. A peek under 12% of the screen is not an empty region.
 

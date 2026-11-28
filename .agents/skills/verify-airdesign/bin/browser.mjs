@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process"
 import { existsSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
@@ -12,6 +13,24 @@ export function browserEnv(env, dir = librariesDir, present = existsSync) {
   const given = (env.LD_LIBRARY_PATH ?? "").split(":").filter(Boolean)
   if (!present(dir) || given.includes(dir)) return env
   return { ...env, LD_LIBRARY_PATH: [dir, ...given].join(":") }
+}
+
+export function runPoppler(
+  command,
+  args,
+  options = {},
+  execute = execFileSync,
+  cache = path.join(os.homedir(), ".cache/pptx-tools/usr"),
+  present = existsSync,
+) {
+  try {
+    return execute(command, args, options)
+  } catch (error) {
+    const executable = path.join(cache, "bin", command)
+    if (error.code !== "ENOENT" || !present(executable)) throw error
+    const env = browserEnv(options.env ?? process.env, path.join(cache, "lib/x86_64-linux-gnu"), present)
+    return execute(executable, args, { ...options, env })
+  }
 }
 
 export function launchProblem(message) {
