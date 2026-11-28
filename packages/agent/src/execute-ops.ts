@@ -44,6 +44,7 @@ export type Plan = {
   read: boolean
   readonly intents: doom.Intent[]
   readonly intentOps: { readonly op: number; readonly verb: Verb }[]
+  readonly changedWrites: Set<doom.Write>
   readonly names: Map<string, string>
   readonly shots: doom.NodeId[]
   refused?: { readonly op: number; readonly said: string; readonly answer: Readonly<Record<string, unknown>> }
@@ -99,6 +100,7 @@ export function newPlan(
     read: false,
     intents: [],
     intentOps: [],
+    changedWrites: new Set(),
     names: new Map(),
     shots: [],
   }
@@ -229,6 +231,7 @@ async function step(plan: Plan, op: number, verb: Verb, intent: doom.Intent, ask
   if ("refused" in stepped) stopDoom(plan, op, verb, stepped, asked)
   plan.intents.push(intent)
   plan.intentOps.push({ op, verb })
+  for (const write of stepped.changedWrites) plan.changedWrites.add(write)
   plan.view = stepped.view
   return stepped.added
 }
