@@ -76,7 +76,11 @@ node .agents/skills/show-airdesign/bin/logic.mjs tree.json [--out dir]
 
 It writes `tree.md` for a chat or a PR body, `tree.html`, and `tree.png` for `verify-airdesign publish`. It prints the answer's verdict.
 
-A PR that changes what a person sees or what the API answers opens with the tree. `pnpm land` refuses a body file that does not:
+A PR opens with an `assure` tree. Its Markdown starts with `**Result.**`. `decide` and `explain` trees are for chat and plans, not PR leads.
+
+`pnpm land` refuses a body without an `assure` tree lead when the PR changes files a person sees. Those files are the ones `seen` in `scripts/before-after.mjs` lists, unless the body carries "No visible change: <why>". Pure API or internal PRs may open with either an `assure` tree or a `**Now:**` line and a `**Proof:**` line.
+
+The lead looks like this:
 
 ```markdown
 ![<the answer>](<the published tree.png link>)
@@ -90,7 +94,7 @@ A PR that changes what a person sees or what the API answers opens with the tree
 **Risk:** <only for a one-way door or stored data>
 ```
 
-Any other PR opens with a `**Now:**` line and a `**Proof:**` line. Either way the body holds at most 25 lines outside the details block.
+Either way the body holds at most 25 lines outside the details block.
 
 It then reads its own picture and prints `faults`: a photo drawn smaller than its size or not loaded, text past its box, a part past the picture's edge, text too faint to read. With a fault it exits 1. Crop the photo or shorten the words, and run it again.
 
