@@ -8,7 +8,9 @@ export type ViewHost = {
   readonly media: (body: unknown) => Promise<unknown>
 }
 
-export const deckViewUri = "ui://airdesign/deck.html"
+export const deckViewUri = "ui://airdesign/deck-v2.html"
+
+const previousDeckViewUri = "ui://airdesign/deck.html"
 
 export const viewMimeType = "text/html;profile=mcp-app"
 
@@ -77,22 +79,25 @@ export function deckView(host: ViewHost, origin: string) {
   return {
     attach(server: McpServer): void {
       server.server.registerCapabilities({ extensions: { [appsExtension]: { mimeTypes: [viewMimeType] } } })
-      server.registerResource("deck", deckViewUri, { title: "AirDesign deck", mimeType: viewMimeType }, async () => ({
-        contents: [
-          {
-            uri: deckViewUri,
-            mimeType: viewMimeType,
-            text: deckViewShell(origin),
-            _meta: {
-              ui: {
-                csp: { connectDomains: domains, resourceDomains: domains },
-                prefersBorder: true,
+      const resources = { deck: deckViewUri, "previous-deck": previousDeckViewUri }
+      for (const [name, uri] of Object.entries(resources)) {
+        server.registerResource(name, uri, { title: "AirDesign deck", mimeType: viewMimeType }, async () => ({
+          contents: [
+            {
+              uri,
+              mimeType: viewMimeType,
+              text: deckViewShell(origin),
+              _meta: {
+                ui: {
+                  csp: { connectDomains: domains, resourceDomains: domains },
+                  prefersBorder: true,
+                },
+                "openai/widgetDomain": origin,
               },
-              "openai/widgetDomain": origin,
             },
-          },
-        ],
-      }))
+          ],
+        }))
+      }
       const appOnly = { ui: { resourceUri: deckViewUri, visibility: ["app"] } }
       const tools = {
         [viewTools.open]: {

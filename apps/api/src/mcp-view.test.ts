@@ -74,11 +74,11 @@ describe("the deck view in a chat holds the painter lease and answers an agent's
   it("serves the view's shell from the API's public origin", async () => {
     const { agent, app } = await started()
     try {
-      const { contents } = await app.readResource({ uri: "ui://airdesign/deck.html" })
+      const { contents } = await app.readResource({ uri: "ui://airdesign/deck-v2.html" })
       expect((contents[0] as { text: string }).text).toContain('data-origin="https://app.example"')
       const { tools } = await agent.listTools()
       const execute = tools.find((tool) => tool.name === "airdesign_execute")
-      expect(execute?._meta?.ui).toEqual({ resourceUri: "ui://airdesign/deck.html" })
+      expect(execute?._meta?.ui).toEqual({ resourceUri: "ui://airdesign/deck-v2.html" })
     } finally {
       await agent.close()
       await app.close()

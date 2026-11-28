@@ -10,7 +10,7 @@ import { createServer, createServerHandler, type ViewHost } from "./index.js"
 
 const origin = "https://studio.example"
 const origins = { app: origin, site: "https://site.example" }
-const uri = "ui://airdesign/deck.html"
+const uri = "ui://airdesign/deck-v2.html"
 const appsHtml = "text/html;profile=mcp-app"
 const image = "a".repeat(64)
 
@@ -249,6 +249,15 @@ describe("the deck view as an MCP App", () => {
         ui: { csp: { connectDomains: [origin], resourceDomains: [origin] }, prefersBorder: true },
         "openai/widgetDomain": origin,
       })
+    })
+  })
+
+  it("serves the corrected loader to clients that still use the previous URI", async () => {
+    const previousUri = "ui://airdesign/deck.html"
+    await withClient(viewHost([]), async (client) => {
+      const current = await client.readResource({ uri })
+      const previous = await client.readResource({ uri: previousUri })
+      expect(previous.contents).toEqual(current.contents.map((content) => ({ ...content, uri: previousUri })))
     })
   })
 
