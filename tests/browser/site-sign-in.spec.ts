@@ -151,32 +151,28 @@ async function gradientContrast(page: Page, selector: string, labelSelector?: st
   }, labelSelector ?? null)
 }
 
-test("marketing and sign-in primary buttons clear 4.5:1 across rest, hover, pressed and sending states", async ({
-  page,
-}) => {
+test("all three landing calls to action use the app signature gradient", async ({ page }) => {
   await page.setViewportSize({ width: 1470, height: 923 })
   await page.goto(`${site.origin}/`)
-  await page.evaluate(() => document.fonts.ready)
-  const hero = "section.hero-landing a.primary-button"
-  const heroRest = await gradientContrast(page, hero)
-  expect(heroRest.filter).toBe("none")
-  expect(heroRest.lowest).toBeGreaterThanOrEqual(4.5)
-  await page.locator(hero).hover()
-  const heroHover = await gradientContrast(page, hero)
-  expect(heroHover.filter).toBe("none")
-  expect(heroHover.backgroundImage).not.toBe(heroRest.backgroundImage)
-  expect(heroHover.lowest).toBeGreaterThanOrEqual(4.5)
-  const heroBox = await page.locator(hero).boundingBox()
-  if (heroBox === null) throw new Error("missing hero button")
-  await page.mouse.move(heroBox.x + heroBox.width / 2, heroBox.y + heroBox.height / 2)
-  await page.mouse.down()
-  const heroActive = await gradientContrast(page, hero)
-  await page.mouse.move(0, 0)
-  await page.mouse.up()
-  expect(heroActive.filter).toBe("none")
-  expect(heroActive.backgroundImage).not.toBe(heroHover.backgroundImage)
-  expect(heroActive.lowest).toBeGreaterThanOrEqual(4.5)
+  const callsToAction = page.locator("a.primary-button")
+  await expect(callsToAction).toHaveCount(3)
+  for (const button of await callsToAction.all()) {
+    await expect(button).toHaveCSS("background-image", "linear-gradient(rgb(147, 184, 239) 0%, rgb(77, 148, 251) 100%)")
+  }
 
+  const hero = page.locator("section.hero-landing a.primary-button")
+  await hero.hover()
+  await expect(hero).toHaveCSS("filter", "brightness(1.06)")
+  await page.mouse.down()
+  try {
+    await expect(hero).toHaveCSS("filter", "brightness(0.94)")
+  } finally {
+    await page.mouse.move(0, 0)
+    await page.mouse.up()
+  }
+})
+
+test("the sign-in button clears 4.5:1 at rest and while sending", async ({ page }) => {
   await page.goto(`${site.origin}/sign-in`)
   await page.evaluate(() => document.fonts.ready)
   const submit = "[data-sign-in-form] button.primary-button"

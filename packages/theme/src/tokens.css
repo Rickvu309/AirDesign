@@ -135,6 +135,7 @@
   --duration-panel: 280ms;
   --curve-panel: cubic-bezier(0.32, 0.72, 0, 1);
   --transition-micro: var(--ease-micro);
+  --fill-signature: linear-gradient(180deg, var(--primary-top) 0%, var(--primary) 100%);
   --fill-marketing-top: #3b75c9;
   --fill-marketing-bottom: #1561c5;
   --fill-marketing-hover-top: #336dc0;

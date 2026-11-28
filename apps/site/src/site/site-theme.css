@@ -107,6 +107,12 @@
     transition: transform var(--transition-micro);
   }
 
+  .signature-button {
+    --button-edge: transparent;
+    background-image: var(--fill-signature);
+  }
+
+  .signature-button,
   .pressable {
     transition:
       filter var(--transition-micro),
@@ -246,9 +252,13 @@
       animation-play-state: paused;
     }
 
-    .primary-button:not(:disabled):hover {
+    .primary-button:not(.signature-button):not(:disabled):hover {
       --button-edge: var(--fill-marketing-hover-bottom);
       background-image: var(--fill-marketing-hover);
+    }
+
+    .signature-button:hover {
+      filter: brightness(1.06);
     }
 
     .nav-tab:hover,
@@ -257,9 +267,13 @@
     }
   }
 
-  .primary-button:not(:disabled):active {
+  .primary-button:not(.signature-button):not(:disabled):active {
     --button-edge: var(--fill-marketing-active-bottom);
     background-image: var(--fill-marketing-active);
+  }
+
+  .signature-button:active {
+    filter: brightness(0.94);
   }
 
   .nav-tab:active,
@@ -275,6 +289,10 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .signature-button {
+      transition: none;
+    }
+
     .primary-button:not(:disabled):active,
     .nav-tab:active,
     .text-link:active,
