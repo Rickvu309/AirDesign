@@ -15,7 +15,7 @@ const buttonVariants = cva(
         default:
           "bg-primary-strong text-primary-foreground hover:bg-strong-hover active:bg-strong-hover active:translate-y-0",
         signature:
-          "border-0 bg-[image:linear-gradient(180deg,var(--primary-top)_0%,var(--primary)_100%)] text-primary-foreground shadow-[inset_0_1px_0_var(--white-35),0_2px_6px_var(--strong-20)] transition-[filter,transform] hover:brightness-[1.06] active:brightness-[0.94]",
+          "border-0 bg-[image:var(--fill-signature)] text-primary-foreground shadow-[inset_0_1px_0_var(--white-35),0_2px_6px_var(--strong-20)] transition-[filter,transform] hover:brightness-[1.06] active:brightness-[0.94]",
         outline: cn("border-border", outline),
         "outline-field": cn("border-field-edge", outline),
         "panel-outline": cn("border-border font-normal aria-disabled:opacity-50", outline),
