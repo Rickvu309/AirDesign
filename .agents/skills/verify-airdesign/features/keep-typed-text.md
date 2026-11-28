@@ -4,7 +4,8 @@ Every edit a person makes is first applied on the device and queued there, then 
 
 ## Sub-features
 
-- `queue` each edit is applied to the view at once and kept with the server's last fold in IndexedDB (`deviceStorage` in `packages/live/src/doom-storage.ts`, keys `<deck>\u0004queue`, and `<deck>\u0004head`, `<deck>\u0004node` and `<deck>\u0004once` in `packages/live/src/fold-rows.ts`). A landed edit rewrites only the nodes it changed. Edits land in order, each on the one before it; offline they keep painting and queueing, and replay in order on reconnect (`packages/live/src/doom-deck.test.ts`).
+- `queue` each edit is applied to the view at once and kept with the server's last fold in IndexedDB (`deviceStorage` in `packages/live/src/doom-storage.ts`). Each queued edit has a key with the deck’s queue prefix, an order stamp and its `once`. Fold rows use `<deck>\u0004head`, `<deck>\u0004node` and `<deck>\u0004once` in `packages/live/src/fold-rows.ts`. A landed edit rewrites only the nodes it changed. Edits land in order, each on the one before it; offline they keep painting and queueing, and replay in order on reconnect (`packages/live/src/doom-deck.test.ts`).
+- `save-status` the save status distinguishes saving, saved, offline, unreachable and unsaved edits (`apps/web/src/editor/use-save-shown.ts`). When edits have to be set aside, the editor shows a recovery notice.
 - `lost-answer` an edit whose answer was lost lands once: it is sent again with the same `once`, and the server does not apply it twice.
 - `device-paint` a deck this account opened before on this browser opens from the kept fold and queue without waiting for `doomRoutes.open`, then catches up with `doomRoutes.since` (`openDoomDeck` in `packages/live/src/doom-deck.ts`). `[data-editor-ready]` marks the open editor.
 - `device-account` the kept decks, queued edits, stars, pictures and Aira chats are kept under the account (`accountKey` in `packages/live/src/device.ts`, read from the `airdesign.account` cookie the sign-in sets). Another account on the same browser sees none of the first one's; signed out, the device shows and keeps nothing (`packages/live/src/device-account.test.ts`).
@@ -26,6 +27,7 @@ Preconditions:
 - **Unit tests.** `pnpm exec vitest run packages/live/src/doom-deck.test.ts packages/live/src/device-account.test.ts` holds the queue, the replay, a lost answer, the reload offline and the account scoping.
 - **Reload.** `tests/browser/editor.spec.ts` moves and deletes a layer and finds the moves after a reload; `tests/browser/editor-text.spec.ts` keeps typed text through a reload.
 - **Offline.** `tests/browser/editor-picture.spec.ts` lands a dropped picture in the deck while its upload fails and sends it once the device is back online.
+- **Offline tabs and recovery.** `tests/browser/editor-offline-tabs.spec.ts` checks both tabs’ edits survive, a later open sends a closed tab’s edits, and replay handles stale edits and undo. Use `$V look <run> edits-set-aside` for the recovery notice.
 - **In a scratch journey.** Make a deck with `newDoomDeck`, type in its title, reload with no wait, and poll `post(doomRoutes.open, { deck }, cookie)` for the text. For a fresh device, open the deck address in a new `browser.newContext()` signed in with the same cookie.
 - **States for look.** `text-typed-at-once`, `text-placed-while-storing`, `deck-gone`.
 

@@ -6,7 +6,7 @@ On an open deck the bracket keys change where the selected layers sit in their p
 
 - `element-order` `]`, Ctrl/Cmd+Shift+] and Cmd+Option+] bring to the front; `[`, Ctrl/Cmd+Shift+[ and Cmd+Option+[ send to the back; Ctrl/Cmd+] and Ctrl/Cmd+[ step one place (the `arrange` rows of `gestures` in `apps/web/src/lib/gestures.ts`). Each writes the moved layers' `parent` with a new order key `at` between their new neighbours (`reorderWrites` in `packages/doom/src/intent-reorder.ts`, the writes Doom's reorder intent makes). A layer already at that end writes nothing.
 - `siblings` a layer moves only among the layers that share its parent; a layer inside a group or frame is not pulled out of it.
-- `agent-order` an agent's `airdesign_execute` operation, Doom's change `{ op: "move", node, after }` puts a layer after a sibling, or first with `after: null`.
+- `agent-order` in `airdesign_execute`, `move({ target, after })` or `move({ targets, after })` places layers after a sibling. Pass `after: null` to move them to the start of the stack.
 
 ## How to get to it (user POV)
 

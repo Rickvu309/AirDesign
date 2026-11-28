@@ -1,6 +1,6 @@
 # Delete account
 
-The account button at the top of the side navigation (on Home, Trash and every Settings page) opens a menu with `Usage`, `Agents`, `Account`, `Delete account` and `Sign out`, and the `Account` tab in Settings (`/settings/account`) shows the signed-in email with `Sign out` and `Delete account` buttons. Either opens the dialog `Delete your account?`, which names what goes (`Your decks, Trash and connected agents are deleted for good. This can't be undone.`) and asks for the signed-in email. Once the email is typed, `Delete account` deletes the account on the server with every deck, stored picture, session, agent connection and Aira usage it holds, removes the browser's copy of the decks, and goes to sign-in with `next` set to the page it was on.
+The account button at the top of the side navigation (on Home, Trash and every Settings page) opens a menu with `Usage`, `Agents`, `Account`, `Delete account` and `Sign out`, and the `Account` tab in Settings (`/settings/account`) shows the signed-in email with `Sign out` and `Delete account` buttons. Either opens the dialog `Delete your account?`, which names what goes (`Your decks, Trash and connected agents are deleted for good. This can't be undone.`) and asks for the signed-in email. Once the email is typed, `Delete account` deletes the account on the server with every deck, stored picture, session, agent connection and Aira usage it holds, asks the browser to remove its device copies, and goes to sign-in with `next` set to the page it was on.
 
 ## Sub-features
 
@@ -8,8 +8,8 @@ The account button at the top of the side navigation (on Home, Trash and every S
 - `delete-failed` when the server refuses the delete or cannot be reached, the dialog stays open with the alert `Unable to delete your account. Check your connection and try again.` and `Delete account` can be pressed again; a 401 goes to sign-in. `tests/browser/account.spec.ts` covers both.
 - `delete-server` `accountRoutes.delete` with `{ email }` answers 200 and clears the session and account cookies the way sign-out does. Any other email answers 400 `field`.
 - `delete-credentials` afterwards the old cookie answers 401 `session` everywhere, and the person's agent access and refresh tokens are refused.
-- `delete-files` the person's stored pictures are deleted from the store.
-- `delete-device` the browser holds none of the account's device copies (`dropAccount` in `packages/live/src/device-sweep.ts`).
+- `delete-files` the server deletes the person's stored pictures. Failed deletions stay queued for a later drain (`apps/api/src/delete-account-retry.test.ts`).
+- `delete-device` the browser makes a best-effort attempt to clear the account's device copies (`dropAccount` in `packages/live/src/device-sweep.ts`).
 - `delete-again` the same email can sign in again and starts with no decks.
 
 ## How to get to it (user POV)
@@ -33,4 +33,4 @@ Preconditions:
 - The confirmation ignores case and surrounding spaces, as sign-in does.
 - The Account tab's own `Delete account` opens the dialog only once the email has loaded. Drive it with `page.locator("[data-settings-content]").getByRole("button", { name: "Delete account", exact: true })`; the look states `account-tab` and `account-delete-ask` reach it.
 - On a Settings page the account button reads `Account` until the email loads. If the load fails, the email stays unknown.
-- A stored picture whose upload link has not expired stays queued in `deck.original_delete` until it expires and the drain runs; the file itself is deleted at once.
+- A stored picture whose upload link has not expired stays queued in `deck.original_delete` until it expires and the drain runs; the drain retries file deletion if the first attempt fails.

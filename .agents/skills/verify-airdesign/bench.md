@@ -13,9 +13,9 @@ $V bench --keep                            # keep both stacks; the next try take
 
 ## Cases
 
-Each case is a file in `bench/` exporting `{ name, setup(kit), measure(kit, prepared) }`. `setup` gets a journey kit on a fresh browser context and signs in; its answer goes to `measure`, which returns milliseconds. CPU throttle 4 (`Emulation.setCPUThrottlingRate`) is on for `measure` only. The viewport is the kit's 1470x923 at scale 2.
+All six cases are in `bench/doom.mjs`. Each provides `name`, `setup(kit)` and `measure(kit, prepared)`. `setup` gets a journey kit on a fresh browser context and signs in; its answer goes to `measure`, which returns milliseconds. CPU throttle 4 (`Emulation.setCPUThrottlingRate`) is on for `measure` only. The viewport is the kit's 1470x923 at scale 2.
 
-Every case runs on a 40-slide deck the case builds through `doomRoutes.edit`: a new deck at `/s`, 39 added slides, and the board deck's text, shapes, grids and charts (`boardDeckIntents` in `packages/doom/src/testing/board-deck.ts`) on every five slides (`openBoardDeck` in `bench/doom-deck.mjs`). The editor then sits on slide 2.
+Every case runs on a 40-slide deck the case builds through `doomRoutes.edit`: a new deck at `/s`, 39 added slides, and the board deck's text, shapes, grids and charts (`boardDeckIntents` in `packages/doom/src/testing/board-deck.ts`) on every slide. `openBoardDeck` in `bench/doom-deck.mjs` sends those payloads in batches of five slides. Case setup reloads the deck and selects slide 2.
 
 | case                 | measures                                                                                                                                                                         |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -55,4 +55,4 @@ The table goes to stderr and to `~/tmp/verify-airdesign/bench-<time>/bench.md`; 
 
 By hand, and from `pnpm prove --bench`. `pnpm prove` prints `bench suggested: pnpm prove --bench` when a source under `packages/render/` or `apps/web/src/editor/` changed. It never runs on a schedule or in GitHub CI, where a shared runner's CPU makes a throttled timing noise. A PR that touches the editor's gestures puts the bench table in its `## Proof`.
 
-`bin/bench.mjs` runs the bench, `bin/bench-verdict.mjs` holds the verdict rule and the table, and `bench/*.mjs` are the cases.
+`bin/bench.mjs` runs the bench, `bin/bench-verdict.mjs` holds the verdict rule and the table, and `bench/doom.mjs` defines the cases.

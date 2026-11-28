@@ -21,7 +21,7 @@ export const usage = [
   "verify-airdesign comment <pr> <file>       post a PR comment with the agent header; refuses an empty file",
   "verify-airdesign suites [--run] [check|browser-tests|journeys] [-- args]",
   "                                            the test suites this branch's changes need; --run runs them under the machine lock",
-  "verify-airdesign prove [--plan] [--only unit-tests,script-tests,model-check,browser-tests,look,bench] [--base ref]",
+  "verify-airdesign prove [--plan] [--bench] [--only unit-tests,script-tests,model-check,browser-tests,look,bench] [--base ref]",
   "                                            run the proof this branch's diff needs; writes proof.md",
   "verify-airdesign stop [run]                 stop this worktree's run, or all of its runs; refuses another worktree's run; keeps evidence",
   "",

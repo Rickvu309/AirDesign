@@ -14,7 +14,7 @@ Home (`Recents`, `/`) shows the signed-in person's six most recently edited deck
 - `trash-undo` `Undo` brings the deck back.
 - `trash-list` `/trash` says `Decks here are removed for good after 30 days.` and lists trashed decks with `Deleted <when>, <n> days left`. The server deletes trashed decks older than 30 days when the list loads. Trash has no empty-state text, and `Empty Trash` is disabled when it is empty. State `trash-populated`.
 - `trash-restore` `button "Restore"` moves the deck back to Home. State `trash-restore-failed`.
-- `trash-empty` `button "Empty Trash"` asks `Delete 1 deck for good?` (`decks` for more than one), says `This can't be undone.`, and offers `Cancel`; `Delete for good` removes them from the server with their edits, and drops this device's copy.
+- `trash-empty` `button "Empty Trash"` asks `Delete 1 deck for good?` (`decks` for more than one), says `This can't be undone.`, and offers `Cancel`; `Delete for good` removes them from the server with their edits and drops the device copies. With a Trash search active, Empty Trash acts on the matches and is disabled when none match.
 - `list-signed-out` signed out, Home's list call answers 401 and the page goes to the sign-in page with `next=<path and query>`.
 
 ## How to get to it (user POV)

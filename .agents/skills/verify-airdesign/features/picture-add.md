@@ -5,16 +5,19 @@ In an open deck a PNG, JPEG or GIF file dropped on the canvas lands at the drop 
 ## Sub-features
 
 - `picture-drop` a dropped file lands as one edit (Doom's `insert` intent of a `picture`, placed by `pictureBox` in `apps/web/src/editor/picture-box.ts`), selected, painted from a `blob:` address. One undo takes it away and redo brings it back; a reload and a fresh device paint it.
+- `picture-actions` open Actions, then `Place image`, to pick a file. Actions also offers icon search and can replace a selected icon.
+- `picture-crop` double-click a picture to enter crop mode, then crop by dragging the handles or moving the picture inside its frame. Each gesture is one undo step. Enter or an outside click ends cropping (`tests/browser/editor-crop.spec.ts`).
 - `picture-paste` a picture file pasted outside a text lands centred on the slide.
 - `picture-refuse` a file that is not a PNG, JPEG or GIF, a file at or over the media limit or past the pixel limit, or one the browser cannot decode lands nothing and shows what to choose instead (`pictureCopy` in `apps/web/src/copy/picture-copy.ts`).
 - `picture-upload` the picture paints and lands in the deck while its upload fails; the upload goes through when the device is back online (`flushMedia` in `packages/live/src/media.ts`).
 - `picture-uploading` a device that does not hold the bytes paints the box with `Image is still uploading from another device`.
 - `picture-fill` the Design panel's Fill `Image` picks a file for a shape's fill, the slide background, or a picture's `Replace`, and the panel shows it (see `design-panel.md`).
-- `agent-picture` an agent's `airdesign_execute` operation, Doom's change `{ op: "add", kind: "picture", slide, fill: { image: "https://…" } }` lands a picture. The API fetches the address once (`apps/api/src/platform/image-fetch.ts`): https on the default port only, every resolved address and every redirect public, at most three redirects, 10 s, at most `imagesPerCall` (10) addresses a call. A failed address refuses the call with one line per address saying why (`packages/agent/src/named-image.ts`). In the stack, `images.verify.test` answers from `tests/browser/fixtures/` (see `../stand-ins.md`). An agent's first read of a slide with a picture gets the slide as the open tab painted it (`tests/browser/editor-slide-picture.spec.ts`, `tests/browser/editor-screenshot-wake.spec.ts`).
+- `agent-picture` an agent's `airdesign_execute` operation, Doom's change `insert({ parent, kind: "picture", fill: { image } })` lands a picture. The API fetches the address once (`apps/api/src/platform/image-fetch.ts`): https on the default port only, every resolved address and every redirect public, at most three redirects, 10 s, at most `imagesPerCall` (10) addresses a call. A failed address refuses the call with one line per address saying why (`packages/agent/src/named-image.ts`). In the stack, `images.verify.test` answers from `tests/browser/fixtures/` (see `../stand-ins.md`). An agent can call `screenshot({ target })` for the slide as the open tab painted it (`tests/browser/editor-slide-picture.spec.ts`, `tests/browser/editor-screenshot-wake.spec.ts`).
 
 ## How to get to it (user POV)
 
 - An open deck `/s/<id>`: drop a picture file on the canvas, or paste one.
+- The toolbar’s Actions menu: choose `Place image` or search for an icon.
 - The Design panel with a shape, a picture or nothing selected: Fill or Background, then `Image`.
 
 ## Driving it with verify-airdesign

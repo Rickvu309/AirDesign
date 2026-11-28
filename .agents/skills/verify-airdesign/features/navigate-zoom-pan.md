@@ -5,10 +5,10 @@ A person zooms and pans the slide as in Figma Slides. Ctrl or Command with the s
 ## Sub-features
 
 - `wheel` Ctrl/Cmd+scroll over a point zooms and keeps that point of the slide under the cursor (`wheelScale` in `apps/web/src/editor/canvas-view.ts`).
-- `keys` Shift+0 and Ctrl/Cmd+0 go to 100%, `+`, `-`, Ctrl/Cmd+= and Ctrl/Cmd+- step through 10, 25, 50, 75, 100, 150, 200, 300 and 400%, and Shift+1 goes back to fit. The range is 10% to 400% (`zoomRange` in `apps/web/src/editing/canvas-zoom.ts`). The keys are the `view` rows of `gestures` in `apps/web/src/lib/gestures.ts`.
+- `keys` Shift+0 and Ctrl/Cmd+0 go to 100%, `+`, `-`, Ctrl/Cmd+= and Ctrl/Cmd+- step through 10, 25, 50, 75, 100, 150, 200, 300 and 400%, and Shift+1 goes back to fit. The range is 10% to 400% (`zoomRanges.slides` in `apps/web/src/editing/canvas-zoom.ts`). The keys are the `view` rows of `gestures` in `apps/web/src/lib/gestures.ts`.
 - `selection` Shift+2 fills the canvas with the selected layers and centres them.
 - `pan` holding Space, or the hand tool, shows the grab cursor; a drag scrolls the view and moves nothing on the slide. V goes back to Move. Space types a space while editing text.
-- `zoom-menu` a click on `[data-zoom-readout]` opens the zoom menu: a percent or Fit zooms the slide. Agent and Design share one zoom.
+- `zoom-menu` a click on `[data-zoom-readout]` opens the zoom menu: a percent or Fit zooms the slide. Agent and Design share the same zoom. At Fit, a change in available canvas space when switching panels recalculates the percentage.
 
 ## How to get to it (user POV)
 
@@ -22,7 +22,7 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Browser tests.** `pnpm test:browser tests/browser/editor-view.spec.ts` drives the zoom keys, Shift+2 on a selected layer, the hand tool from the Move menu, V and a Ctrl+wheel zoom, reading `[data-zoom-readout]` and the scroll of `[data-editor-stage]`. `tests/browser/editor-page.spec.ts` picks 100% and Fit from the zoom menu and checks Agent and Design keep one zoom.
+- **Browser tests.** `pnpm test:browser tests/browser/editor-view.spec.ts` drives the zoom keys, Shift+2 on a selected layer, the hand tool from the Move menu, V and a Ctrl+wheel zoom, reading `[data-zoom-readout]` and the scroll of `[data-editor-stage]`. `tests/browser/editor-page.spec.ts` picks 100% and Fit from the zoom menu and checks that Fit recalculates when switching from the wider Agent panel to Design.
 - **States for look.** `zoom-selection` (a text box after Shift+2) and `zoom-menu` (the menu open).
 
 ## Gotchas

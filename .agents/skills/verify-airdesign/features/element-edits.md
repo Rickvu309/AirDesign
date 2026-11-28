@@ -9,7 +9,7 @@ In an open deck the Text tool (T, or `Text` in the toolbar) places a text layer 
 - `text-edit` a double-click on a text layer edits it where it was clicked; Enter on a selected text layer edits it with all its words selected. A double-click on a shape with no words starts words inside it and makes no new layer.
 - `emptied-text` a text layer whose words are all deleted is removed when the edit ends, and one undo brings it back with its words. A shape left with no words stays.
 - `delete` Delete or Backspace on a selected layer, outside its text, removes it with what it holds: the node's `parent` becomes `null` on the server (Doom's `remove` intent, `removeIntents` in `apps/web/src/editor/editor-intents.ts`). While the caret is in the text, the keys edit the text. One undo brings the layer back.
-- `agent` `airdesign_execute` with `{ op: "add", kind: "text", slide, text }` adds a text layer and `{ op: "delete", nodes: [...] }` deletes layers (`Intent` in `packages/doom/src/intent-read.ts`); Undo under Aira's reply takes Aira's run back, and `airdesign_undo_run` takes back any agent's (see `aira-panel.md`).
+- `agent` in `airdesign_execute`, `insert({ parent, kind: "text", text })` adds a text layer and `remove({ target })` or `remove({ targets })` deletes layers. Undo under Aira’s reply takes Aira’s run back. `airdesign_undo_run` takes back the calling agent’s own run.
 
 ## How to get to it (user POV)
 
