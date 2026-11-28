@@ -9,13 +9,6 @@ The readers build things. They want the mechanism, the trade-off chosen and the 
 
 Work freely. At each pause point, stop and confirm every item. Fix what fails before you go on.
 
-## Read on these triggers
-
-- Read alone in order, the titles fail to tell the design: `principles/headlines`.
-- A re-added total or a recomputed figure disagrees with the material, or a title claims a cause: `principles/number-truth`.
-- The components, options or risks will not fall into three of equal rank: `principles/one-two-three`.
-- The deck proposes work with several owners and milestones: `principles/strategy-5w1h`.
-
 ## Pieces that fit this job
 
 Options, chosen by what the slide must explain. Copy them from `kit`; each recipe is a script you run.

@@ -9,13 +9,6 @@ A speaker carries the words and the slides carry the picture. Each slide gives t
 
 Work freely. At each pause point, stop and confirm every item. Fix what fails before you go on.
 
-## Read on these triggers
-
-- Read alone in order, the titles fail to tell the story: `principles/headlines`.
-- A re-added total or a recomputed figure disagrees with the material, or a title claims a cause: `principles/number-truth`.
-- The pillars of the talk will not fall into three of equal rank: `principles/one-two-three`.
-- The pitch asks for money or people to carry out a plan with several owners and dates: `principles/strategy-5w1h`.
-
 ## Pieces that fit this job
 
 Options, chosen by the moment in the talk. Copy them from `kit`; each recipe is a script you run.

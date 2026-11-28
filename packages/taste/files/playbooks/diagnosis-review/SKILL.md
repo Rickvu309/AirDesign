@@ -9,13 +9,6 @@ The reader wants an honest account: what moved, why it moved, and what happens n
 
 Work freely. At each pause point, stop and confirm every item. Fix what fails before you go on.
 
-## Read on these triggers
-
-- Read alone in order, the titles fail to tell the story: `principles/headlines`.
-- A re-added total or a recomputed figure disagrees with the material, or a title claims a cause: `principles/number-truth`.
-- The results, causes or next steps will not fall into three of equal rank: `principles/one-two-three`.
-- The review ends in a plan with several levers, owners and dates: `principles/strategy-5w1h`.
-
 ## Pieces that fit this job
 
 Options, chosen by what the slide must prove. Copy them from `kit`; each recipe is a script you run.

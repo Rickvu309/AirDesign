@@ -9,12 +9,6 @@ The person's content is the material: their numbers, names and claims stay exact
 
 Work freely. At each pause point, stop and confirm every item. Fix what fails before you go on.
 
-## Read on these triggers
-
-- Read alone in order, the new titles fail to tell the argument: `principles/headlines`.
-- A re-added total or a recomputed figure disagrees with the old deck, or a title claims a cause: `principles/number-truth`.
-- The old deck runs past 8 slides, or its points will not fall into three of equal rank: `principles/one-two-three`.
-
 ## Pieces that fit this job
 
 Options, chosen by the form each old slide should take. Copy them from `kit`; each recipe is a script you run.

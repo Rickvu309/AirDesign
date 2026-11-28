@@ -29,7 +29,7 @@ Settle these four before the first slide, and write them down as one line: inten
 
 4. **Ask.** One sentence: what the reader does or believes at the end.
 
-Then read the one playbook your intent names and follow it. Read a principle only when its trigger in the playbook fires.
+Then read the one playbook your intent names and follow it.
 
 ## The deck
 
@@ -44,6 +44,6 @@ Then read the one playbook your intent names and follow it. Read a principle onl
 - One accent per slide, on the thing the title names.
 - One figure, one value: a number reads the same in the title, the chart and the table, with the same rounding.
 - Bars and columns stand on a zero baseline. A bridge whose steps are thin against its total may start its axis at a labelled value above zero, with any target drawn as a line.
-- A gap or correction in the material sits beside the exhibit it changes, under the chart or as a row note, with both figures named.
+- A small discrepancy sits under the exhibit it changes, with both figures named. A gap or timing risk that breaks a target or changes the decision gets its own headline or slide.
 - After each slide, read it with `get({ target: slide })` in `airdesign_execute` and fix every problem before the next slide.
 - When the deck is done, call `screenshot({ target: slide })` on each slide and look at it as the reader will. If the answer says no tab is open, carry on without pictures.

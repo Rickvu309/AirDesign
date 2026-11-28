@@ -9,13 +9,6 @@ The reader is a decider with little time, and the deck exists to get one yes. As
 
 Work freely. At each pause point, stop and confirm every item. Fix what fails before you go on.
 
-## Read on these triggers
-
-- Read alone in order, the titles fail to tell the argument: `principles/headlines`.
-- A re-added total or a recomputed figure disagrees with the material, or a title claims a cause: `principles/number-truth`.
-- The reasons, options or risks will not fall into three of equal rank: `principles/one-two-three`.
-- The ask is a plan with several levers, owners and dates: `principles/strategy-5w1h`.
-
 ## Pieces that fit this job
 
 Options, chosen by what the slide must prove. Copy them from `kit`; each recipe is a script you run.
