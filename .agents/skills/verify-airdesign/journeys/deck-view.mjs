@@ -1,6 +1,9 @@
+import { createRequire } from "node:module"
 import { expect } from "@playwright/test"
 import { connectOutsideAgent } from "./aira-panel.mjs"
 import { openDoomDeck } from "../look/doom-deck.mjs"
+
+const { deckViewCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/deck-view-copy.ts")
 
 const built = (slide) => `
 const s = insert({ kind: "slide", after: ${JSON.stringify(slide)} })
@@ -53,6 +56,7 @@ const widths = [
   [300, 300],
   [480, 360],
   [640, 480],
+  [736, 560],
   [1024, 768],
   [1470, 923],
   [2940, 1600],
@@ -74,6 +78,11 @@ async function slideLeads(page, capture, [width, height]) {
     .toBeLessThanOrEqual(2 * (width < 640 ? 16 : 24) + 1)
   if (width < 480) {
     await expect(strip, `at ${String(width)} px the strip is hidden`).toBeHidden()
+    const end = await slide.getAttribute("data-view-slide")
+    await page.getByRole("button", { name: deckViewCopy.previousSlide }).click()
+    await expect(slide).not.toHaveAttribute("data-view-slide", end)
+    await page.getByRole("button", { name: deckViewCopy.nextSlide }).click()
+    await expect(slide).toHaveAttribute("data-view-slide", end)
   } else {
     await expect(strip).toBeVisible()
     const shown = await slide.boundingBox()
@@ -121,6 +130,7 @@ export default async function drive(kit) {
   await expect(
     page.locator(`[data-view-slide="${slide}"]`).getByText("Renewals carried the quarter", { exact: true }),
   ).toBeVisible()
+  await expect(page.getByRole("button", { name: deckViewCopy.fullscreen })).toHaveCount(0)
   await capture("deck-view")
 
   const fromView = await call("execute", { deck, script: shot })

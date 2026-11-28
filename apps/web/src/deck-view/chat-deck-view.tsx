@@ -3,7 +3,7 @@ import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { deckViewCopy } from "@/copy/deck-view-copy"
 import { connectChatHost, parentLine, type ChatHost, type HostContext, type HostState } from "./chat-host"
 import { chatAssets, chatDoomRemote } from "./chat-remote"
-import { DeckView, type Shell } from "./deck-view"
+import { DeckView, OpeningDeck, type Shell } from "./deck-view"
 
 const quietHeight = 96
 
@@ -14,27 +14,23 @@ const nothingToWatch = () => () => undefined
 function useHostLook({ theme, styles }: HostContext) {
   useLayoutEffect(() => {
     const root = document.documentElement
-    if (theme !== undefined) root.dataset.hostTheme = theme
+    if (theme !== undefined) {
+      root.dataset.hostTheme = theme
+      root.style.colorScheme = theme
+    }
     const variables = Object.entries(styles?.variables ?? {})
     for (const [name, value] of variables) root.style.setProperty(name, value)
     return () => {
       delete root.dataset.hostTheme
+      root.style.removeProperty("color-scheme")
       for (const [name] of variables) root.style.removeProperty(name)
     }
   }, [theme, styles])
 }
 
-function Opening() {
-  return (
-    <div className="h-dvh bg-canvas" aria-busy="true">
-      <span className="sr-only">{deckViewCopy.opening}</span>
-    </div>
-  )
-}
-
 function NoDeck() {
   return (
-    <div className="flex h-dvh items-center justify-center gap-2.5 bg-canvas px-6 text-sm text-muted-foreground">
+    <div className="deck-view flex h-dvh items-center justify-center gap-2.5 px-6 text-sm text-(--deck-view-quiet)">
       <AirdesignMark size={20} />
       {deckViewCopy.noDeck}
     </div>
@@ -64,6 +60,9 @@ export function ChatDeckView() {
 
   const remote = useMemo(() => (chat === null ? null : chatDoomRemote(chat)), [chat])
   const source = useMemo(() => (chat === null ? undefined : chatAssets(chat)), [chat])
+  const { displayMode, availableDisplayModes, safeAreaInsets } = context
+  const fullscreen = displayMode === "fullscreen"
+  const canFullscreen = availableDisplayModes?.includes("fullscreen") ?? false
   const shell = useMemo<Shell>(
     () =>
       chat === null
@@ -71,10 +70,14 @@ export function ChatDeckView() {
         : {
             openLink: chat.openLink,
             fitHeight: (height) => chat.sizeTo({ width: Math.ceil(window.innerWidth), height }),
+            displayMode,
+            canFullscreen,
+            requestDisplayMode: chat.requestDisplayMode,
+            safeAreaInsets,
             closed: chat.closed,
             ...(chat.tellModel === undefined ? {} : { tellModel: chat.tellModel }),
           },
-    [chat],
+    [chat, displayMode, canFullscreen, safeAreaInsets],
   )
 
   useEffect(() => {
@@ -82,7 +85,7 @@ export function ChatDeckView() {
     chat.sizeTo({ width: Math.ceil(window.innerWidth), height: quietHeight })
   }, [chat, shown])
 
-  if (remote === null || shown === undefined) return <Opening />
+  if (remote === null || shown === undefined) return <OpeningDeck insets={fullscreen ? safeAreaInsets : undefined} />
   if (shown === null) return <NoDeck />
   return <DeckView key={shown.deck} id={shown.deck} slide={shown.slide} remote={remote} shell={shell} source={source} />
 }

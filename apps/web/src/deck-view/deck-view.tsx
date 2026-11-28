@@ -1,6 +1,7 @@
 import * as doom from "@airdesign/doom"
 import type { DoomDeck, DoomRemote } from "@airdesign/live"
 import { DoomSlide, Filmstrip, SlidePaint, useDoomSlide } from "@airdesign/render"
+import { ArrowUpRightIcon, ChevronLeftIcon, ChevronRightIcon, MaximizeIcon, MinimizeIcon } from "lucide-react"
 import {
   useEffect,
   useLayoutEffect,
@@ -8,6 +9,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type RefObject,
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
@@ -15,6 +17,7 @@ import {
 import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { hairlineShadow, surfaceShadow } from "@/components/ui/shadows"
+import { Skeleton } from "@/components/ui/skeleton"
 import { deckViewCopy } from "@/copy/deck-view-copy"
 import { productCopy } from "@/copy/product-copy"
 import { slideListCopy } from "@/copy/slide-list-copy"
@@ -23,10 +26,12 @@ import { geometryOf, type Placed } from "@/editing/slide-geometry"
 import { useAssetUrls, type AssetSource } from "@/editing/use-asset-urls"
 import { useSlideScreenshots } from "@/editing/use-slide-screenshots"
 import { cn } from "@/lib/class-names"
+import { composing } from "@/lib/composing"
 import { slideNumber } from "@/lib/slide-numbering"
 import { appUrl } from "./app-url"
-import type { Viewed } from "./chat-host"
+import type { ChatHost, HostContext, Viewed } from "./chat-host"
 import { useViewDeck } from "./use-view-deck"
+import "./deck-view.css"
 
 const thumbWidth = 64
 
@@ -36,18 +41,19 @@ function paddingOf(room: Room): number {
 
 type Room = { readonly width: number; readonly height: number }
 
-function useRoom(): [(element: HTMLElement | null) => void, Room | null] {
-  const [element, setElement] = useState<HTMLElement | null>(null)
+function useRoom(): [RefObject<HTMLElement | null>, Room | null] {
+  const stage = useRef<HTMLElement>(null)
   const [room, setRoom] = useState<Room | null>(null)
   useLayoutEffect(() => {
+    const element = stage.current
     if (element === null) return
     const measure = () => setRoom({ width: element.clientWidth, height: element.clientHeight })
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(element)
     return () => observer.disconnect()
-  }, [element])
-  return [setElement, room]
+  }, [])
+  return [stage, room]
 }
 
 function fitWidth(room: Room, size: { readonly w: number; readonly h: number }): number {
@@ -70,6 +76,16 @@ export type Shell = {
   readonly fitHeight?: (height: number) => void
   readonly tellModel?: (viewed: Viewed) => void
   readonly closed?: AbortSignal
+  readonly displayMode?: HostContext["displayMode"]
+  readonly canFullscreen?: boolean
+  readonly requestDisplayMode?: ChatHost["requestDisplayMode"]
+  readonly safeAreaInsets?: HostContext["safeAreaInsets"]
+}
+
+function padding(insets: HostContext["safeAreaInsets"]) {
+  if (insets === undefined) return undefined
+  const { top, right, bottom, left } = insets
+  return { paddingTop: top, paddingRight: right, paddingBottom: bottom, paddingLeft: left }
 }
 
 function opener(shell: Shell) {
@@ -87,10 +103,17 @@ function OpenLink({ href, shell }: { readonly href: string; readonly shell: Shel
       href={href}
       target="_blank"
       rel="noreferrer"
-      className={buttonVariants({ size: "dense" })}
+      aria-label={deckViewCopy.openInAirDesign}
+      title={deckViewCopy.openInAirDesign}
+      className={buttonVariants({
+        variant: "ghost",
+        size: "dense",
+        className: "max-[480px]:size-7 max-[480px]:px-0",
+      })}
       onClick={opener(shell)}
     >
-      {deckViewCopy.openInAirDesign}
+      <span className="max-[480px]:hidden">{deckViewCopy.openInAirDesign}</span>
+      <ArrowUpRightIcon aria-hidden="true" />
     </a>
   )
 }
@@ -206,10 +229,28 @@ function ShownDeck({
   }, [named])
   const at = Math.max(0, chosen === undefined ? 0 : slides.indexOf(chosen))
   const slide = slides[at]
-  const { tellModel } = shell
+  const { tellModel, fitHeight, requestDisplayMode } = shell
+  const fullscreen = shell.displayMode === "fullscreen"
+  const insets = fullscreen ? shell.safeAreaInsets : undefined
+  const layers =
+    picked !== null && picked.slide === slide ? picked.layers.filter((id) => doom.slideOf(view, id) === slide) : []
+  const selected = layers.length > 0
+  const [firstLayer] = layers
+  const layerName =
+    firstLayer !== undefined && layers.length === 1 ? doom.propOf(view.nodes.get(firstLayer), "name") : undefined
+  const name = doom.deckName(view)
+  const [stage, room] = useRoom()
+  const strip = useRef<HTMLElement>(null)
+  const header = useRef<HTMLElement>(null)
+  const selection = useRef<HTMLDivElement>(null)
+  const stepped = useRef(false)
+  const restoreStage = () => {
+    if (selection.current?.contains(document.activeElement)) stage.current?.focus({ preventScroll: true })
+  }
   const choose = (index: number) => {
     const next = slides[index]
     if (next === undefined) return
+    restoreStage()
     setChosen(next)
     setPicked(null)
     tellModel?.({ deck: id, slide: next, slideNumber: slideNumber(index), selected: [] })
@@ -218,24 +259,25 @@ function ShownDeck({
     tellModel === undefined || slide === undefined
       ? undefined
       : (layers: readonly doom.NodeId[]) => {
-          setPicked({ slide, layers })
+          setPicked(layers.length === 0 ? null : { slide, layers })
           tellModel({ deck: id, slide, slideNumber: slideNumber(at), selected: layers })
         }
   const { size } = doom.deckOf(view)
-  const [roomRef, room] = useRoom()
-  const strip = useRef<HTMLElement>(null)
-  const header = useRef<HTMLElement>(null)
-  const stepped = useRef(false)
-  const { fitHeight } = shell
   const wide = room?.width
   const many = slides.length > 1
 
   useLayoutEffect(() => {
-    if (fitHeight === undefined || wide === undefined) return
+    if (fullscreen || fitHeight === undefined || wide === undefined) return
     const padding = paddingOf({ width: wide, height: 0 })
     const slideHeight = Math.round(((wide - padding * 2) * size.h) / size.w)
-    fitHeight((header.current?.offsetHeight ?? 0) + slideHeight + padding * 2 + (strip.current?.offsetHeight ?? 0))
-  }, [fitHeight, wide, size.w, size.h, many])
+    fitHeight(
+      (header.current?.offsetHeight ?? 0) +
+        slideHeight +
+        padding * 2 +
+        (strip.current?.offsetHeight ?? 0) +
+        (selection.current?.offsetHeight ?? 0),
+    )
+  }, [fitHeight, fullscreen, wide, size.w, size.h, many, selected])
 
   useLayoutEffect(() => {
     const current = strip.current?.querySelector<HTMLElement>('[aria-current="true"]')
@@ -244,49 +286,141 @@ function ShownDeck({
     stepped.current = false
   }, [at])
 
-  const step = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.altKey || event.metaKey || event.ctrlKey) return
+  const clear = () => {
+    restoreStage()
+    pick?.([])
+  }
+  const step = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (composing(event) || event.defaultPrevented || event.altKey || event.metaKey || event.ctrlKey || event.shiftKey)
+      return
+    if (event.key === "Escape") {
+      if (fullscreen) {
+        event.preventDefault()
+        if (!event.repeat) void requestDisplayMode?.("inline")
+      } else if (selected) {
+        event.preventDefault()
+        clear()
+      }
+      return
+    }
+    if (!many) return
     const next = stepOf(event.key, at, slides.length)
     if (next === null) return
     event.preventDefault()
-    stepped.current = true
+    if (next === at) return
+    stepped.current = strip.current?.contains(document.activeElement) ?? false
     choose(next)
   }
 
   const width = room === null ? 0 : fitWidth(room, size)
   const thumbHeight = Math.round((thumbWidth * size.h) / size.w)
   return (
-    <div className="flex h-dvh flex-col bg-canvas text-foreground" data-deck-view-ready={id}>
-      <header ref={header} className="flex h-12 shrink-0 items-center gap-2.5 border-b border-line bg-white pr-2 pl-4">
+    <div className="deck-view flex h-dvh flex-col" data-deck-view-ready={id} style={padding(insets)} onKeyDown={step}>
+      <header
+        ref={header}
+        className="deck-view-bar flex h-12 shrink-0 items-center gap-2 border-b px-3 max-[480px]:gap-1 max-[480px]:px-2"
+      >
         <AirdesignMark size={20} />
-        <h1 className="min-w-0 flex-1 truncate text-sm font-medium">{doom.deckName(view)}</h1>
+        <h1 className="min-w-0 flex-1 truncate text-sm font-medium" title={name}>
+          {name}
+        </h1>
+        {many && (
+          <div role="group" aria-label={slideListCopy.listName} className="flex shrink-0 items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="max-[480px]:size-7"
+              aria-label={deckViewCopy.previousSlide}
+              aria-keyshortcuts={deckViewCopy.keys.previous}
+              title={deckViewCopy.previousSlide}
+              disabled={at === 0}
+              focusableWhenDisabled
+              onClick={() => choose(at - 1)}
+            >
+              <ChevronLeftIcon aria-hidden="true" />
+            </Button>
+            <span
+              className="min-w-10 text-center text-xs whitespace-nowrap text-(--deck-view-quiet) tabular-nums"
+              aria-live="polite"
+            >
+              <span aria-hidden="true">{deckViewCopy.counter(slideNumber(at), slides.length)}</span>
+              <span className="sr-only">{slideListCopy.slideName(slideNumber(at), slides.length)}</span>
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="max-[480px]:size-7"
+              aria-label={deckViewCopy.nextSlide}
+              aria-keyshortcuts={deckViewCopy.keys.next}
+              title={deckViewCopy.nextSlide}
+              disabled={at === slides.length - 1}
+              focusableWhenDisabled
+              onClick={() => choose(at + 1)}
+            >
+              <ChevronRightIcon aria-hidden="true" />
+            </Button>
+          </div>
+        )}
+        {shell.canFullscreen && requestDisplayMode !== undefined && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="max-[480px]:size-7"
+            aria-label={fullscreen ? deckViewCopy.exitFullscreen : deckViewCopy.fullscreen}
+            aria-keyshortcuts={fullscreen ? deckViewCopy.keys.clear : undefined}
+            title={fullscreen ? deckViewCopy.exitFullscreen : deckViewCopy.fullscreen}
+            onClick={() => void requestDisplayMode(fullscreen ? "inline" : "fullscreen")}
+          >
+            {fullscreen ? <MinimizeIcon aria-hidden="true" /> : <MaximizeIcon aria-hidden="true" />}
+          </Button>
+        )}
         <OpenLink href={appUrl(`/s/${id}`)} shell={shell} />
       </header>
       <main
-        ref={roomRef}
-        className="relative flex min-h-0 flex-1 items-center justify-center"
+        ref={stage}
+        tabIndex={0}
+        aria-label={deckViewCopy.slide}
+        aria-keyshortcuts={many ? deckViewCopy.keys.slide : undefined}
+        className="relative flex min-h-0 flex-1 items-center justify-center focus-visible:-outline-offset-2"
         onClick={(event) => {
           if (event.target === event.currentTarget) pick?.([])
         }}
       >
         {slide !== undefined && width > 0 && (
-          <ViewSlide
-            view={view}
-            slide={slide}
-            width={width}
-            assetUrl={assets.assetUrl}
-            picked={picked?.slide === slide ? picked.layers : []}
-            onPick={pick}
-          />
+          <ViewSlide view={view} slide={slide} width={width} assetUrl={assets.assetUrl} picked={layers} onPick={pick} />
         )}
       </main>
+      {selected && (
+        <div ref={selection} className="deck-view-bar flex shrink-0 items-center border-t px-3 py-1.5">
+          <div className="flex min-w-0 items-center gap-1 rounded-md bg-(--deck-view-room) pl-2" data-view-selection>
+            <span role="status" className="min-w-0 truncate text-xs" title={layerName}>
+              {layerName ? (
+                <>
+                  <span className="sr-only">{deckViewCopy.selectedLayer} </span>
+                  {layerName}
+                </>
+              ) : (
+                deckViewCopy.layersSelected(layers.length)
+              )}
+            </span>
+            <Button
+              variant="ghost"
+              size="xs"
+              aria-label={deckViewCopy.clearSelection}
+              aria-keyshortcuts={fullscreen ? undefined : deckViewCopy.keys.clear}
+              onClick={clear}
+            >
+              {deckViewCopy.clear}
+            </Button>
+          </div>
+        </div>
+      )}
       {slides.length > 1 && (
         <nav
           ref={strip}
           aria-label={slideListCopy.listName}
-          className="flex shrink-0 scroll-px-3 gap-1 overflow-x-auto border-t border-line bg-white px-3 py-1.5 max-[480px]:hidden"
+          className="deck-view-bar flex shrink-0 scroll-px-3 gap-1 overflow-x-auto border-t px-3 py-1.5 max-[480px]:hidden"
           data-slide-list
-          onKeyDown={step}
         >
           {slides.map((each, index) => (
             <Button
@@ -302,7 +436,7 @@ function ShownDeck({
               <Filmstrip
                 className={cn(
                   "block overflow-hidden rounded-xs bg-white",
-                  index === at ? "ring-2 ring-index" : hairlineShadow,
+                  index === at ? "ring-2 ring-(--deck-view-accent)" : hairlineShadow,
                 )}
                 width={thumbWidth}
                 height={thumbHeight}
@@ -318,11 +452,11 @@ function ShownDeck({
 
 function Missing({ shell }: { readonly shell: Shell }) {
   return (
-    <div className="flex h-dvh flex-col items-center justify-center bg-canvas px-6 text-center" data-deck-view-missing>
+    <div className="deck-view flex h-dvh flex-col items-center justify-center px-6 text-center" data-deck-view-missing>
       <h1 className="text-[length:var(--type-title)] leading-8 font-medium tracking-page-title">
         {productCopy.deckNotFoundTitle}
       </h1>
-      <p className="mt-2 max-w-sm text-[length:var(--type-body)] leading-[var(--leading-body)] text-muted-foreground">
+      <p className="mt-2 max-w-sm text-[length:var(--type-body)] leading-[var(--leading-body)] text-(--deck-view-quiet)">
         {productCopy.deckNotFoundBody}
       </p>
       <a
@@ -334,6 +468,24 @@ function Missing({ shell }: { readonly shell: Shell }) {
       >
         {productCopy.goToDecks}
       </a>
+    </div>
+  )
+}
+
+export function OpeningDeck({ insets }: { readonly insets: HostContext["safeAreaInsets"] }) {
+  return (
+    <div className="deck-view flex h-dvh flex-col" style={padding(insets)} role="status" aria-busy="true">
+      <span className="sr-only">{deckViewCopy.opening}</span>
+      <div className="deck-view-bar flex h-12 shrink-0 items-center gap-2 border-b px-3" aria-hidden="true">
+        <AirdesignMark size={20} />
+        <Skeleton className="h-3 w-24" />
+      </div>
+      <div
+        className="deck-view-stage-placeholder flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4"
+        aria-hidden="true"
+      >
+        <Skeleton className="aspect-video" />
+      </div>
     </div>
   )
 }
@@ -354,10 +506,6 @@ export function DeckView({
   const opening = useViewDeck(id, remote, shell.closed)
   if (opening.status === "missing") return <Missing shell={shell} />
   if (opening.status === "loading")
-    return (
-      <div className="h-dvh bg-canvas" aria-busy="true">
-        <span className="sr-only">{deckViewCopy.opening}</span>
-      </div>
-    )
+    return <OpeningDeck insets={shell.displayMode === "fullscreen" ? shell.safeAreaInsets : undefined} />
   return <ShownDeck id={id} client={opening.deck} slide={slide} shell={shell} source={source} />
 }
