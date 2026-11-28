@@ -106,7 +106,6 @@ describe("guides", () => {
   it.each([
     ["slides", 50],
     ["playbooks/", 70],
-    ["principles/", 70],
   ])("keeps %s within %i lines", (prefix, most) => {
     const named = guides().filter((each) =>
       prefix.endsWith("/") ? each.name.startsWith(prefix) : each.name === prefix,
@@ -120,10 +119,10 @@ describe("guides", () => {
     }
   })
 
-  it("leads each playbook and principle description with the moment to read it", () => {
-    const triggered = guides().filter((each) => /^(playbooks|principles)\//.test(each.name))
-    expect(triggered.length).toBe(9)
-    for (const each of triggered) expect(each.description, each.name).toMatch(/^Read when /)
+  it("leads each playbook description with the moment to read it", () => {
+    const playbooks = guides().filter((each) => each.name.startsWith("playbooks/"))
+    expect(playbooks.length).toBe(5)
+    for (const each of playbooks) expect(each.description, each.name).toMatch(/^Read when /)
     for (const each of guides()) expect(each.description, each.name).not.toMatch(/before you design/i)
   })
 })

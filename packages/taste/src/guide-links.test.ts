@@ -37,6 +37,11 @@ describe("guide links", () => {
       for (const linked of linksOf(each.name)) expect(names, `${each.name} names ${linked}`).toContain(linked)
   })
 
+  it("has no principle guides or links to them", () => {
+    expect([...names].filter((name) => name.startsWith("principles/"))).toEqual([])
+    for (const each of guides()) expect(each.markdown, each.name).not.toContain("principles/")
+  })
+
   it("reaches every guide from slides by following the names in it", () => {
     expect([...names].filter((name) => !reachedFrom("slides").has(name))).toEqual([])
   })
@@ -62,7 +67,6 @@ describe("guide links", () => {
     const shared = [...names].filter(
       (name) =>
         name === "slides" ||
-        name.startsWith("principles/") ||
         (name.startsWith("playbooks/") && !["playbooks/decision-deck", "playbooks/diagnosis-review"].includes(name)),
     )
     for (const name of shared)

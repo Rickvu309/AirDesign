@@ -32,7 +32,8 @@ async function largestAnswers(): Promise<Readonly<Record<string, number>>> {
     }
   }
   const decks = memoryDecks(() => suite[0]!.task.deck())
-  await call(decks, "airdesign_read_skill", {})
+  const skillIndex = await call(decks, "airdesign_read_skill", {})
+  expect(JSON.stringify(encode(skillIndex))).not.toContain("principles/")
   for (const { name } of guides()) await call(decks, "airdesign_read_skill", { name })
   await call(decks, "airdesign_get_style", {})
   for (const { id: name } of styles) await call(decks, "airdesign_get_style", { name })

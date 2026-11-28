@@ -43,6 +43,7 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
     expect(index.ok).toBe(true)
     expect(index.skills.length).toBeGreaterThan(0)
     expect(index.skills.map((skill) => skill.name)).toContain("execute")
+    expect(index.skills.filter(({ name }) => name.startsWith("principles/"))).toEqual([])
     expect(index.text).toContain("execute")
     expect(index.note).toContain("airdesign_read_skill")
 
