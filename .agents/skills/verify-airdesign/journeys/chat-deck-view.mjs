@@ -4,8 +4,9 @@ import { createServer } from "node:http"
 import { createRequire } from "node:module"
 import path from "node:path"
 import { expect } from "@playwright/test"
-import { chatHostPage, hostLook, strictPolicy } from "../bin/chat-host.mjs"
+import { chatHostPage, strictPolicy } from "../bin/chat-host.mjs"
 import { fakeOrigins } from "../bin/site.mjs"
+import { pickBar, verifyChatDeckNavigation } from "../bin/verify-chat-deck-navigation.mjs"
 import { verifyImageHost } from "../bin/verify-images.mjs"
 import { outsideAgentToken } from "./aira-panel.mjs"
 
@@ -216,66 +217,6 @@ export default async function drive(kit) {
       `An outside agent built slide ${slide} with a picture from ${verifyImageHost}; the open view followed, read the picture with airdesign_view_media and painted it from a data: URL.`,
     )
 
-    const root = view.locator("html")
-    const chrome = view.locator(`[data-deck-view-ready="${deck}"]`)
-    await expect(root).toHaveAttribute("data-host-theme", "light")
-    const chromePixels = async () => {
-      const box = await chrome.boundingBox()
-      return page.screenshot({ clip: { x: box.x + 16, y: box.y + 16, width: box.width - 32, height: box.height - 32 } })
-    }
-    const lightPixels = await chromePixels()
-    await page.evaluate(() => {
-      document.body.dataset.theme = "dark"
-    })
-    await tell("view", "ui/notifications/host-context-changed", { theme: "dark", styles: { variables: hostLook } })
-    await expect(root).toHaveAttribute("data-host-theme", "dark")
-    const arrived = await root.evaluate(
-      (element, names) => Object.fromEntries(names.map((name) => [name, element.style.getPropertyValue(name)])),
-      Object.keys(hostLook),
-    )
-    expect(arrived).toEqual(hostLook)
-    expect((await chromePixels()).equals(lightPixels), "host variables leave the chrome as it was").toBe(true)
-    await capture("chat-view-dark")
-    await page.evaluate(() => {
-      delete document.body.dataset.theme
-    })
-    await tell("view", "ui/notifications/host-context-changed", { theme: "light" })
-    await expect(root).toHaveAttribute("data-host-theme", "light")
-    note(
-      `The chat switched to dark: the view's root took data-host-theme="dark" and the host's ${String(Object.keys(hostLook).length)} style variables, its chrome pixel for pixel as in light, then went back to light.`,
-    )
-
-    const inline = await painted.boundingBox()
-    await page.evaluate(() => {
-      document.getElementById("view").style.width = "300px"
-    })
-    await expect.poll(async () => (await painted.boundingBox()).width).toBeLessThan(300)
-    await expect.poll(async () => (await seenBy("view")).sizes.at(-1)?.width).toBe(300)
-    await capture("chat-view-narrow")
-    await page.evaluate(() => {
-      document.getElementById("view").style.width = "736px"
-    })
-    await expect.poll(async () => (await painted.boundingBox()).width).toBe(inline.width)
-
-    const sized = (await seenBy("view")).sizes
-    await tell("view", "ui/notifications/host-context-changed", { displayMode: "fullscreen" })
-    await ask("view", "ping", {})
-    await page.evaluate(() => {
-      Object.assign(document.getElementById("view").style, { width: "760px", height: "820px" })
-    })
-    await expect.poll(async () => (await painted.boundingBox()).width).toBeGreaterThan(inline.width)
-    expect((await seenBy("view")).sizes).toEqual(sized)
-    await tell("view", "ui/notifications/host-context-changed", { displayMode: "inline" })
-    await page.evaluate(() => {
-      document.getElementById("view").style.width = "736px"
-    })
-    await expect.poll(async () => (await seenBy("view")).sizes.length).toBeGreaterThan(sized.length)
-    await expect.poll(async () => (await painted.boundingBox()).width).toBe(inline.width)
-    expect((await seenBy("view")).sizes.at(-1)).toEqual(sized.at(-1))
-    note(
-      `In fullscreen the view sent no size of its own; back inline it asked again for ${String(sized.at(-1).height)} px.`,
-    )
-
     const shot = await execute(agent, { deck, script: `screenshot({ target: ${JSON.stringify(slide)} })` })
     expect(shot.structuredContent.screenshots).toEqual([slide])
     const images = shot.content.filter((block) => block.type === "image")
@@ -292,9 +233,7 @@ export default async function drive(kit) {
       `The agent's screenshot() was answered by the chat view with one ${String(Math.round((images[0].data.length * 3) / 4 / 1024))} KB JPEG of the slide; its picture's sky reads rgb(${String(sky.r)},${String(sky.g)},${String(sky.b)}) and sun rgb(${String(sun.r)},${String(sun.g)},${String(sun.b)}).`,
     )
 
-    const scale = inline.width / 1920
-    const onBar = { position: { x: (bar.x + bar.w / 2) * scale, y: (bar.y + bar.h / 2) * scale } }
-    await painted.click(onBar)
+    await pickBar(painted, bar)
     await expect(view.locator(`[data-view-selected="${growth}"]`)).toBeVisible()
     await expect
       .poll(async () => (await seenBy("view")).contexts)
@@ -309,9 +248,27 @@ export default async function drive(kit) {
           structuredContent: { deck, slide, slideNumber: 1, selected: [growth] },
         },
       ])
+    await expect(view.locator("[data-view-selection]")).toContainText("Growth")
     await capture("chat-view-selected")
     note(`A click on the Growth bar selected layer ${growth} and sent ui/update-model-context with it.`)
 
+    await verifyChatDeckNavigation({
+      page,
+      view,
+      painted,
+      slide,
+      bar,
+      captures: {
+        narrow: () => capture("chat-view-narrow"),
+        light: () => capture("chat-view-light"),
+        dark: () => capture("chat-view-dark"),
+        fullscreen: () => capture("chat-view-fullscreen"),
+      },
+      note,
+      seenBy,
+      tell,
+      edit: (script) => execute(agent, { deck, script }),
+    })
     await view.getByRole("link", { name: deckViewCopy.openInAirDesign }).click()
     await expect.poll(async () => (await seenBy("view")).opened).toEqual([`${origin}/s/${deck}`])
     const sizes = (await seenBy("view")).sizes
@@ -320,11 +277,12 @@ export default async function drive(kit) {
       `Open in AirDesign sent ui/open-link with ${origin}/s/${deck}; the view sized its frame ${String(sizes.length)} times, last to ${String(sizes.at(-1).height)} px.`,
     )
 
-    await page.evaluate(() => window.frameView("plain", { takesContext: false }))
+    await page.evaluate(() => window.frameView("plain", { takesContext: false, modes: ["inline"] }))
     const plain = page.frameLocator("#plain")
     const plainSlide = plain.locator(`[data-view-slide="${slide}"]`)
     await unfaulted(expect(plainSlide).toBeVisible({ timeout: 30_000 }))
-    await plainSlide.click(onBar)
+    await pickBar(plainSlide, bar)
+    await expect(plain.getByRole("button", { name: deckViewCopy.fullscreen })).toHaveCount(0)
     await plain.getByRole("link", { name: deckViewCopy.openInAirDesign }).click()
     await expect.poll(async () => (await seenBy("plain")).opened).toEqual([`${origin}/s/${deck}`])
     await expect(plain.locator("[data-view-selected]")).toHaveCount(0)

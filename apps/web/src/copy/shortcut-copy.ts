@@ -9,5 +9,10 @@ export const shortcutCopy = {
   keyNames: {
     Enter: "Enter",
     Space: "Space",
+    ArrowLeft: "ArrowLeft",
+    ArrowRight: "ArrowRight",
+    Home: "Home",
+    End: "End",
+    Escape: "Escape",
   },
 } as const

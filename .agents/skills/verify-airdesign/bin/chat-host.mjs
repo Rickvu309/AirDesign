@@ -13,7 +13,9 @@ export function strictPolicy({ connectDomains, resourceDomains }) {
 
 export const hostLook = {
   "--color-background-primary": "light-dark(#ffffff, #262624)",
+  "--color-background-secondary": "light-dark(#f5f5f2, #1c1c1b)",
   "--color-text-primary": "light-dark(#141413, #faf9f5)",
+  "--color-text-secondary": "light-dark(#555552, #cccac1)",
   "--color-border-primary": "light-dark(#1f1e1d26, #faf9f526)",
   "--font-sans": '"Anthropic Sans", system-ui, sans-serif',
   "--font-weight-normal": "400",
@@ -36,13 +38,13 @@ const look = ${JSON.stringify(hostLook)}
 const answers = new Map()
 let asked = 0
 window.host = {}
-window.frameView = (name, { takesContext = true, streams = false } = {}) => {
+window.frameView = (name, { takesContext = true, streams = false, modes = ["inline", "fullscreen"] } = {}) => {
   const frame = document.createElement("iframe")
   frame.id = name
   frame.setAttribute("sandbox", "allow-scripts allow-same-origin")
   frame.src = ${JSON.stringify(view)}
   document.body.append(frame)
-  const seen = { init: null, heard: [], calls: [], pending: [], cancelled: [], contexts: [], opened: [], sizes: [] }
+  const seen = { init: null, heard: [], calls: [], pending: [], cancelled: [], contexts: [], opened: [], sizes: [], modes: [] }
   window.host[name] = seen
   const held = new Map()
   const send = (message) => frame.contentWindow.postMessage(message, "*")
@@ -57,7 +59,7 @@ window.frameView = (name, { takesContext = true, streams = false } = {}) => {
         protocolVersion: "2026-01-26",
         hostInfo: { name: "chat-host", version: "1.0.0" },
         hostCapabilities: { openLinks: {}, serverTools: {}, ...(takesContext ? { updateModelContext: { text: {} } } : {}) },
-        hostContext: { theme: "light", styles: { variables: look }, displayMode: "inline", availableDisplayModes: ["inline", "fullscreen"] },
+        hostContext: { theme: "light", styles: { variables: look }, displayMode: "inline", availableDisplayModes: modes, safeAreaInsets: { top: 16, right: 24, bottom: 16, left: 24 } },
       } })
     } else if (message.method === "ui/notifications/initialized" && !streams) {
       send({ jsonrpc: "2.0", method: "ui/notifications/tool-input", params: { arguments: call.arguments } })
@@ -85,6 +87,14 @@ window.frameView = (name, { takesContext = true, streams = false } = {}) => {
     } else if (message.method === "ui/update-model-context") {
       seen.contexts.push(message.params)
       send({ jsonrpc: "2.0", id: message.id, result: {} })
+    } else if (message.method === "ui/request-display-mode") {
+      const mode = message.params.mode
+      seen.modes.push(mode)
+      if (modes.includes(mode)) {
+        frame.style.width = mode === "fullscreen" ? "1470px" : "736px"
+        if (mode === "fullscreen") frame.style.height = "823px"
+        send({ jsonrpc: "2.0", id: message.id, result: { mode } })
+      }
     } else if (message.method === "ui/notifications/size-changed") {
       seen.sizes.push(message.params)
       frame.style.height = message.params.height + "px"

@@ -1,0 +1,46 @@
+.deck-view {
+  --deck-view-surface: var(--color-background-primary, var(--deck-view-surface-default, var(--background)));
+  --deck-view-text: var(--color-text-primary, var(--deck-view-text-default, var(--foreground)));
+  --deck-view-room: var(--color-background-secondary, var(--deck-view-room-default, var(--canvas)));
+  --deck-view-quiet: var(--color-text-secondary, var(--deck-view-quiet-default, var(--muted-foreground)));
+  --deck-view-edge: var(--color-border-primary, var(--deck-view-edge-default, var(--line)));
+  --deck-view-accent: var(--deck-view-accent-default, var(--index));
+  --deck-view-hover: var(--deck-view-hover-default, var(--black-6));
+  --focus-ring: var(--deck-view-accent);
+  background-color: var(--deck-view-room);
+  color: var(--deck-view-text);
+}
+
+[data-host-theme="dark"] .deck-view {
+  --deck-view-surface-default: var(--menu-dark);
+  --deck-view-text-default: var(--background);
+  --deck-view-room-default: var(--ink);
+  --deck-view-quiet-default: var(--sheet);
+  --deck-view-edge-default: var(--stage-hover);
+  --deck-view-hover-default: var(--stage-hover);
+  --deck-view-accent-default: var(--primary-top);
+}
+
+.deck-view-bar {
+  --foreground: var(--deck-view-text);
+  --muted: var(--deck-view-hover);
+  background-color: var(--deck-view-surface);
+  border-color: var(--deck-view-edge);
+}
+
+.deck-view > svg > path:first-child,
+.deck-view-bar > svg > path:first-child {
+  stroke: var(--deck-view-text);
+}
+
+.deck-view-bar [data-slot="button"][aria-disabled="true"] {
+  opacity: 0.5;
+}
+
+.deck-view [data-slot="skeleton"] {
+  background-color: var(--deck-view-hover);
+}
+
+.deck-view-stage-placeholder > [data-slot="skeleton"] {
+  width: min(100%, calc((100dvh - 5rem) * 16 / 9));
+}
