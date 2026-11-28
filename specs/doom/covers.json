@@ -5,25 +5,37 @@
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["applyEdit"],
       "digest": "4ecf149e8f59",
-      "blob": "4f3249169a85a8fdb3a255a285d094e7f7c3ea2e"
+      "blob": "14cab653482100155d028d8d2dc58c16f2ace4c0"
     },
     {
       "file": "packages/doom/src/invert.ts",
       "names": ["invert"],
-      "digest": "e0f9643b59e8",
-      "blob": "6cf41d95cbf7e9ef4ec8adf751959089b9008499"
+      "digest": "f7f1cffe1da1",
+      "blob": "1aa292961d0ff0b0c703ccf9a5414c67ff27e2d7"
     },
     {
       "file": "packages/doom/src/view-of.ts",
       "names": ["viewOf"],
       "digest": "b61675a078d4",
-      "blob": "6874659e3125dec99f06bfa686ad6fe15a8006d3"
+      "blob": "a52f0b8c33d536168c5373fbee0200870dc768d6"
     },
     {
       "file": "packages/doom/src/read-write.ts",
       "names": ["readWrite", "readEdit"],
       "digest": "3326e59e7221",
       "blob": "771834f05d08a70ae55f02d8c72e6f2669e0443f"
+    },
+    {
+      "file": "packages/doom/src/undo.ts",
+      "names": ["undo"],
+      "digest": "e7d7faab5883",
+      "blob": "6d54956dd0563df624814e71eda6c2d54dc2ad96"
+    },
+    {
+      "file": "packages/doom/src/land.ts",
+      "names": ["landOn"],
+      "digest": "da3592b45ea9",
+      "blob": "5e09f75a245dc81bec630bbbccf45cddb05d4b81"
     }
   ]
 }

@@ -10,8 +10,8 @@
     {
       "file": "packages/doom/src/freed-line-ends.ts",
       "names": ["paintedBack", "freedEnds", "leftBy", "freeLineEnds"],
-      "digest": "3d7d31a32124",
-      "blob": "bf12cae743c3797859975e9e25bdf7146b76826d"
+      "digest": "4bfef914a2a5",
+      "blob": "e8b34ab75fd9126b7e1ee2361f6bf6b5a444c7ef"
     },
     {
       "file": "packages/doom/src/line-ends-back.ts",

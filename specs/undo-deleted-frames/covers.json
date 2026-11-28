@@ -4,20 +4,38 @@
     {
       "file": "packages/live/src/doom-deck.ts",
       "names": ["connected"],
-      "digest": "00393a816919",
-      "blob": "5f7bb17c3e03908d46fc84a8c2d987a8f770065f"
+      "digest": "89bb7cc16a5c",
+      "blob": "381eb4ca16559a77e482c748507887b096507f22"
     },
     {
       "file": "packages/doom/src/invert.ts",
       "names": ["invert"],
-      "digest": "e0f9643b59e8",
-      "blob": "3cdd0dacbe26b71472e251ceefc8c6097edf3f53"
+      "digest": "f7f1cffe1da1",
+      "blob": "1aa292961d0ff0b0c703ccf9a5414c67ff27e2d7"
     },
     {
       "file": "packages/doom/src/standing-layers.ts",
       "names": ["onStandingLayers", "landingMoves", "shows", "boxLeftInPlace", "lineLeftInPlace"],
       "digest": "aa0dd5779fd7",
       "blob": "35f67662cf68bd0f1425291d07c61ca428ff4347"
+    },
+    {
+      "file": "packages/doom/src/undo.ts",
+      "names": ["undo", "inverse"],
+      "digest": "3f0e1fd88630",
+      "blob": "6d54956dd0563df624814e71eda6c2d54dc2ad96"
+    },
+    {
+      "file": "packages/doom/src/parent-landing.ts",
+      "names": ["parentLanding"],
+      "digest": "f49d000cc1d6",
+      "blob": "add2bcf5f4597ec8b4b3350607c7ecd308235c6b"
+    },
+    {
+      "file": "packages/doom/src/apply-edit.ts",
+      "names": ["takesBackDelete", "write"],
+      "digest": "8b93e33abb8b",
+      "blob": "14cab653482100155d028d8d2dc58c16f2ace4c0"
     }
   ]
 }

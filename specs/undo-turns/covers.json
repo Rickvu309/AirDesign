@@ -3,9 +3,21 @@
   "covers": [
     {
       "file": "packages/doom/src/standing-layers.ts",
-      "names": ["boxLeftInPlace"],
-      "digest": "bd48444e87e9",
-      "blob": "6d350dbd748f12f41727d45c4211f4308fd2048e"
+      "names": ["boxLeftInPlace", "onStandingLayers", "turnsLeftInPlace"],
+      "digest": "ff582b325a74",
+      "blob": "35f67662cf68bd0f1425291d07c61ca428ff4347"
+    },
+    {
+      "file": "packages/doom/src/undo.ts",
+      "names": ["undo"],
+      "digest": "e7d7faab5883",
+      "blob": "6d54956dd0563df624814e71eda6c2d54dc2ad96"
+    },
+    {
+      "file": "packages/doom/src/invert-run.ts",
+      "names": ["invertRun"],
+      "digest": "b03bf25a9139",
+      "blob": "c2bdaaf81614113cce32bf63ec472180e0676cb8"
     }
   ]
 }

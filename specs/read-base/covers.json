@@ -4,8 +4,8 @@
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["landEdit"],
-      "digest": "f51427d80b6f",
-      "blob": "c7c15fea3b669c067a4a663e78bee1f750f0f0ae"
+      "digest": "37981a24b399",
+      "blob": "14cab653482100155d028d8d2dc58c16f2ace4c0"
     },
     {
       "file": "packages/doom/src/read-write.ts",
@@ -16,14 +16,14 @@
     {
       "file": "packages/live/src/doom-deck.ts",
       "names": ["connected"],
-      "digest": "00393a816919",
-      "blob": "5f7bb17c3e03908d46fc84a8c2d987a8f770065f"
+      "digest": "89bb7cc16a5c",
+      "blob": "381eb4ca16559a77e482c748507887b096507f22"
     },
     {
       "file": "packages/live/src/doom-follow.ts",
       "names": ["catchDoom", "foldCaught"],
       "digest": "f53264b656b1",
-      "blob": "2840e4fd25e97bc7a30a14bc775e82245594f4b1"
+      "blob": "f382004e496289a458f2a0b8d96776ba12c637ed"
     },
     {
       "file": "packages/live/src/doom-queue.ts",
@@ -34,8 +34,20 @@
     {
       "file": "apps/api/src/doom/doom-deck.ts",
       "names": ["editDoom", "updateSql"],
-      "digest": "44a6ea664312",
-      "blob": "92c037e2e907d1ff628847c75fae90f565b537a8"
+      "digest": "25145eca039a",
+      "blob": "c30beed5cb7548f6205c4ef747ab7bad7874b92b"
+    },
+    {
+      "file": "packages/doom/src/land.ts",
+      "names": ["land"],
+      "digest": "a7ab7a783162",
+      "blob": "5e09f75a245dc81bec630bbbccf45cddb05d4b81"
+    },
+    {
+      "file": "packages/doom/src/undo.ts",
+      "names": ["undo"],
+      "digest": "e7d7faab5883",
+      "blob": "6d54956dd0563df624814e71eda6c2d54dc2ad96"
     }
   ]
 }

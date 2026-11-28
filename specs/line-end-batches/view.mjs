@@ -18,7 +18,7 @@ export const state = (v) =>
   `${v.nOn ? `, N's start is ${end(v.ns)}` : ""}` +
   `${v.mOn ? `, M's start is ${end(v.ms)}` : ""}` +
   `, F ${v.fOn ? "is on the deck" : "is off the deck"}` +
-  `${v.got === "none" ? "" : `; the last batch ${batch(v)}: the server ${v.got} it, the whole deck ${v.whole} it`}`
+  `${v.got === "none" ? "" : `; the last batch ${batch(v)}: the server ${v.got} it, the whole deck ${v.agrees ? "agrees" : "disagrees"}`}`
 
 export const step = (action) => (action === "Send" ? "an agent or a tab sends one batch" : null)
 
