@@ -1,5 +1,5 @@
 import { readCreateDeck, readExecute, readNamedDeck } from "@airdesign/catalog"
-import type * as doom from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import { style, styles } from "@airdesign/taste"
 
 import { answered, doomRefused, hostRefused, refused, told, unadmitted, type Answer } from "./answer.js"
@@ -142,6 +142,16 @@ function leadOf(landed: Landed | undefined): string {
   return "Landed as one undo step."
 }
 
+function lastEditedSlide(plan: Plan, { after, edit }: doom.IntentEdit): doom.NodeId | undefined {
+  for (let at = edit.writes.length - 1; at >= 0; at -= 1) {
+    const write = edit.writes[at]
+    if (write === undefined || !plan.changedWrites.has(write)) continue
+    const slide = doom.slideOf(after, write.node) ?? doom.slideOf(plan.opened.fold, write.node)
+    if (slide !== undefined && doom.onDeck(after.nodes, slide)) return slide
+  }
+  return undefined
+}
+
 async function createFromScript(script: string, once: string, host: DeckHost): Promise<Answer> {
   let creation: { readonly name: string | undefined; readonly theme: doom.Theme | undefined } | undefined
   let failure: Answer | undefined
@@ -242,6 +252,7 @@ export async function executeTool(
   if (sent !== undefined && !("landed" in sent)) return nothingLanded(sent.fields)
   const landed = sent
   const shots = await screenshots(plan, host)
+  const slide = compiled === undefined || shots.shown.length > 0 ? undefined : lastEditedSlide(plan, compiled)
   const rev = landed?.rev ?? opened.rev
   const runId = landed === undefined || landed.unchanged === true ? input.runId : plan.run
   const kept = resultOf(end)
@@ -265,6 +276,7 @@ export async function executeTool(
       ...(kept.result === undefined ? {} : { result: kept.result }),
       ...(end.logs.length === 0 ? {} : { logs: end.logs }),
       ...(shots.shown.length === 0 ? {} : { screenshots: shots.shown }),
+      ...(slide === undefined ? {} : { slide }),
     }),
     opened.fold,
     agent.id,

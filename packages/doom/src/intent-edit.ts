@@ -46,7 +46,11 @@ export function compileIntents(doom: Doom, intents: readonly Intent[], by: EditB
   return compiled.value
 }
 
-export type IntentStep = { readonly view: Doom; readonly added: readonly NodeId[] }
+export type IntentStep = {
+  readonly view: Doom
+  readonly added: readonly NodeId[]
+  readonly changedWrites: readonly Write[]
+}
 
 export type IntentSession = {
   readonly view: () => Doom
@@ -113,7 +117,14 @@ export function intentSession(doom: Doom, by: EditBy): IntentSession {
       write.prop === "type" && !before.nodes.has(write.node) ? [write.node] : [],
     )
     const filled = intent.op === "insert" && added.length === 0 ? compiled[0]?.node : undefined
-    return { view, added: filled === undefined ? [...new Set(added)] : [filled] }
+    const own = compiled
+    return {
+      view,
+      added: filled === undefined ? [...new Set(added)] : [filled],
+      get changedWrites() {
+        return changingWrites(before, own)
+      },
+    }
   }
   function finish(measure: Measure = by.measure ?? estimate): IntentEdit | IntentRefusal {
     if (intents.length === 0)

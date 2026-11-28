@@ -132,9 +132,10 @@ function deckOf(raw: unknown): string | undefined {
 }
 
 function slideOf(raw: unknown): string | undefined {
-  const screenshots = recordOf(raw)?.screenshots
-  const [first] = Array.isArray(screenshots) ? screenshots : []
-  return typeof first === "string" ? first : undefined
+  const fields = recordOf(raw)
+  const [first] = Array.isArray(fields?.screenshots) ? fields.screenshots : []
+  if (typeof first === "string") return first
+  return typeof fields?.slide === "string" ? fields.slide : undefined
 }
 
 function selectedWords(selected: readonly string[]): string {

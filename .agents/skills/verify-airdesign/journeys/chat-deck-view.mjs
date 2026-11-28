@@ -9,6 +9,7 @@ import { fakeOrigins } from "../bin/site.mjs"
 import { pickBar, verifyChatDeckNavigation } from "../bin/verify-chat-deck-navigation.mjs"
 import { verifyImageHost } from "../bin/verify-images.mjs"
 import { outsideAgentToken } from "./aira-panel.mjs"
+import { followEditedSlide } from "./parts/follow-edited-slide.mjs"
 
 const { deckViewCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/deck-view-copy.ts")
 
@@ -276,6 +277,20 @@ export default async function drive(kit) {
     note(
       `Open in AirDesign sent ui/open-link with ${origin}/s/${deck}; the view sized its frame ${String(sizes.length)} times, last to ${String(sizes.at(-1).height)} px.`,
     )
+
+    await view.locator(`[data-view-thumb="${slide}"]`).click()
+    await followEditedSlide({
+      kit,
+      deck,
+      first: slide,
+      cookie,
+      view,
+      painted,
+      execute: (args) => execute(agent, args),
+      tell,
+      ask,
+      unfaulted,
+    })
 
     await page.evaluate(() => window.frameView("plain", { takesContext: false, modes: ["inline"] }))
     const plain = page.frameLocator("#plain")

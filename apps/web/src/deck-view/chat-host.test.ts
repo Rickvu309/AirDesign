@@ -78,17 +78,22 @@ describe("the deck view's line to the chat that shows it", () => {
     expect(chat.state().shown).toEqual({ deck: "d5" })
   })
 
-  it("opens on the slide the agent took a screenshot of", async () => {
+  it("opens on the edited slide unless the agent's answer includes a screenshot", async () => {
     const host = fakeHost(() => ({}))
     const chat = await connectChatHost(host.line)
     const shown: unknown[] = []
     chat.subscribe(() => shown.push(chat.state().shown))
-    host.tell("ui/notifications/tool-input", { arguments: { deck: "d1", script: "screenshot()" } })
+    host.tell("ui/notifications/tool-input", { arguments: { deck: "d1", script: "insert({ kind: 'slide' })" } })
     host.tell("ui/notifications/tool-result", {
       content: [],
-      structuredContent: { ok: true, deck: "d1", rev: 4, screenshots: ["s2", "s3"] },
+      structuredContent: { ok: true, deck: "d1", rev: 3, slide: "s3" },
     })
-    expect(shown).toEqual([{ deck: "d1" }, { deck: "d1", slide: "s2" }])
+    expect(chat.state().shown).toEqual({ deck: "d1", slide: "s3" })
+    host.tell("ui/notifications/tool-result", {
+      content: [],
+      structuredContent: { ok: true, deck: "d1", rev: 4, screenshots: ["s2", "s3"], slide: "s3" },
+    })
+    expect(shown).toEqual([{ deck: "d1" }, { deck: "d1", slide: "s3" }, { deck: "d1", slide: "s2" }])
   })
 
   it("words the slide in view and the person's selection for the model", () => {

@@ -142,7 +142,75 @@ describe("execute runs a script as one edit", () => {
     })
     expect(answer.fields).toMatchObject({ ok: true, rev: before, result: ["deck", slides.length, "slide", "string"] })
     expect(answer.fields.runId).toBeUndefined()
+    expect(answer.fields).not.toHaveProperty("slide")
     expect(String(answer.fields.note)).toContain("only read the deck")
+  })
+
+  it("answers with the slide an edit landed on", async () => {
+    const by = agent()
+    const { deck } = await by.made()
+    const added = await by.call("execute", { deck, script: 'insert({ kind: "slide" })' })
+    const second = added.fields.result
+    expect(added.fields).toMatchObject({ ok: true, slide: second })
+    const answer = await by.call("execute", {
+      deck,
+      script: `insert({ parent: "${second}", kind: "text", text: "Second" })`,
+    })
+    expect(answer.fields).toMatchObject({ ok: true, slide: second })
+  })
+
+  it("answers with the last changed slide in script order", async () => {
+    const by = agent()
+    const {
+      deck,
+      slides: [first],
+    } = await by.made()
+    const answer = await by.call("execute", {
+      deck,
+      script: `
+        const second = insert({ kind: "slide", name: "Second" })
+        insert({ parent: "${first}", kind: "text", text: "Last edit" })
+        update({ target: second, name: "Second" })
+        get({ target: second })
+      `,
+    })
+    expect(answer.fields).toMatchObject({ ok: true, slide: first })
+  })
+
+  it("omits the slide when its value already matches", async () => {
+    const by = agent()
+    const { deck } = await by.made()
+    const added = await by.call("execute", { deck, script: 'insert({ kind: "slide", name: "Second" })' })
+    const answer = await by.call("execute", {
+      deck,
+      script: `update({ target: "${added.fields.result}", name: "Second" })`,
+    })
+    expect(answer.fields).toMatchObject({ ok: true, unchanged: true })
+    expect(answer.fields).not.toHaveProperty("slide")
+  })
+
+  it("falls back to the last surviving edited slide after deleting a slide", async () => {
+    const by = agent()
+    const {
+      deck,
+      slides: [first],
+    } = await by.made()
+    const added = await by.call("execute", { deck, script: 'insert({ kind: "slide" })' })
+    const deleted = await by.call("execute", {
+      deck,
+      script: `remove({ target: "${added.fields.result}" })`,
+    })
+    expect(deleted.ok).toBe(true)
+    expect(deleted.fields).not.toHaveProperty("slide")
+    const answer = await by.call("execute", {
+      deck,
+      script: `
+        update({ target: "${first}", name: "Kept" })
+        const second = insert({ kind: "slide" })
+        remove({ target: second })
+      `,
+    })
+    expect(answer.fields).toMatchObject({ ok: true, slide: first })
   })
 
   it("answers the same call again with what it landed, without running the script twice", async () => {
@@ -284,6 +352,7 @@ describe("screenshots in an execute answer", () => {
     })
     expect(asked).toBe(1)
     expect(answer.fields.screenshots).toHaveLength(2)
+    expect(answer.fields).not.toHaveProperty("slide")
     expect(answer.screenshots).toEqual(["QUFB", "QUFB"])
   })
 })
