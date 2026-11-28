@@ -69,6 +69,7 @@ export type Shell = {
   readonly openLink?: (url: string) => void
   readonly fitHeight?: (height: number) => void
   readonly tellModel?: (viewed: Viewed) => void
+  readonly closed?: AbortSignal
 }
 
 function opener(shell: Shell) {
@@ -350,7 +351,7 @@ export function DeckView({
   readonly shell?: Shell
   readonly source?: AssetSource
 }) {
-  const opening = useViewDeck(id, remote)
+  const opening = useViewDeck(id, remote, shell.closed)
   if (opening.status === "missing") return <Missing shell={shell} />
   if (opening.status === "loading")
     return (

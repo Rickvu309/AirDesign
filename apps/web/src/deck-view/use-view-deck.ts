@@ -6,26 +6,28 @@ export type ViewOpening =
   | { readonly status: "missing" }
   | { readonly status: "ready"; readonly deck: DoomDeck }
 
-export function useViewDeck(id: string, remote: DoomRemote): ViewOpening {
+export function useViewDeck(id: string, remote: DoomRemote, closed?: AbortSignal): ViewOpening {
   const [opening, setOpening] = useState<ViewOpening>({ status: "loading" })
   useEffect(() => {
-    let current = true
     const stop = new AbortController()
-    void openDoomDeck(remote, id, { storage: memoryStorage() }).then((opened) => {
-      if (!current) return
-      if (!opened.ok) {
-        setOpening({ status: "missing" })
-        return
-      }
-      void opened.deck.follow(stop.signal).then((followed) => {
-        if (current && followed === "gone") setOpening({ status: "missing" })
-      })
-      setOpening({ status: "ready", deck: opened.deck })
-    })
-    return () => {
-      current = false
-      stop.abort()
-    }
-  }, [id, remote])
+    const following = closed === undefined ? stop.signal : AbortSignal.any([stop.signal, closed])
+    void openDoomDeck(remote, id, { storage: memoryStorage() }).then(
+      (opened) => {
+        if (following.aborted) return
+        if (!opened.ok) {
+          setOpening({ status: "missing" })
+          return
+        }
+        void opened.deck.follow(following).then((followed) => {
+          if (!stop.signal.aborted && followed === "gone") setOpening({ status: "missing" })
+        })
+        setOpening({ status: "ready", deck: opened.deck })
+      },
+      (error: unknown) => {
+        if (!following.aborted) throw error
+      },
+    )
+    return () => stop.abort()
+  }, [id, remote, closed])
   return opening
 }

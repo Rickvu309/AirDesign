@@ -4,6 +4,7 @@ import { createServer } from "node:http"
 import { createRequire } from "node:module"
 import path from "node:path"
 import { expect } from "@playwright/test"
+import { chatHostPage, hostLook, strictPolicy } from "../bin/chat-host.mjs"
 import { fakeOrigins } from "../bin/site.mjs"
 import { verifyImageHost } from "../bin/verify-images.mjs"
 import { outsideAgentToken } from "./aira-panel.mjs"
@@ -42,61 +43,6 @@ function mcpCaller(origin, token) {
     if (line === undefined) throw new Error(`/mcp answered ${String(response.status)} to ${method}: ${text}`)
     return JSON.parse(line)
   }
-}
-
-function strictPolicy({ connectDomains, resourceDomains }) {
-  const resources = resourceDomains.join(" ")
-  return [
-    "default-src 'none'",
-    "base-uri 'none'",
-    `script-src 'unsafe-inline' 'wasm-unsafe-eval' ${resources}`,
-    `style-src 'unsafe-inline' ${resources}`,
-    `img-src data: ${resources}`,
-    `font-src ${resources}`,
-    `connect-src ${connectDomains.join(" ")}`,
-  ].join("; ")
-}
-
-function hostPage(sandbox, call) {
-  return `<!doctype html>
-<html><head><meta charset="utf-8"><title>Chat host</title>
-<style>body { margin: 0; padding: 24px; font: 14px system-ui } iframe { display: block; width: 736px; height: 400px; border: 1px solid #ddd; border-radius: 12px }</style>
-</head><body>
-<iframe id="view" sandbox="allow-scripts allow-same-origin" src="${sandbox}/view"></iframe>
-<script>
-const call = ${JSON.stringify(call)}
-const frame = document.getElementById("view")
-window.host = { opened: [], contexts: [], sizes: [] }
-const send = (message) => frame.contentWindow.postMessage(message, "*")
-window.addEventListener("message", async (event) => {
-  if (event.source !== frame.contentWindow) return
-  const message = event.data
-  if (message.method === "ui/initialize")
-    send({ jsonrpc: "2.0", id: message.id, result: {
-      protocolVersion: "2026-01-26",
-      hostInfo: { name: "chat-host", version: "1.0.0" },
-      hostCapabilities: { openLinks: {}, serverTools: {}, updateModelContext: { text: {} } },
-      hostContext: { displayMode: "inline", availableDisplayModes: ["inline"] },
-    } })
-  else if (message.method === "ui/notifications/initialized") {
-    send({ jsonrpc: "2.0", method: "ui/notifications/tool-input", params: { arguments: call.arguments } })
-    send({ jsonrpc: "2.0", method: "ui/notifications/tool-result", params: call.result })
-  } else if (message.method === "tools/call") {
-    const answer = await (await fetch("/tools-call", { method: "POST", body: JSON.stringify(message.params) })).json()
-    send({ ...answer, id: message.id })
-  } else if (message.method === "ui/open-link") {
-    window.host.opened.push(message.params.url)
-    send({ jsonrpc: "2.0", id: message.id, result: {} })
-  } else if (message.method === "ui/update-model-context") {
-    window.host.contexts.push(message.params)
-    send({ jsonrpc: "2.0", id: message.id, result: {} })
-  } else if (message.method === "ui/notifications/size-changed") {
-    window.host.sizes.push(message.params)
-    frame.style.height = message.params.height + "px"
-  }
-})
-</script>
-</body></html>`
 }
 
 async function listen(server) {
@@ -173,21 +119,38 @@ export default async function drive(kit) {
   })
   const sandboxOrigin = `http://localhost:${String(await listen(sandbox))}`
   const viewCalls = []
+  const relayed = []
   const closing = new AbortController()
   const host = createServer(async (request, response) => {
     if (request.method === "POST" && request.url === "/tools-call") {
       const params = await body(request)
       viewCalls.push(params.name)
-      const answer = await chat("tools/call", params, closing.signal).catch((error) => ({
-        jsonrpc: "2.0",
-        error: { code: -32603, message: String(error) },
-      }))
+      const relay = { name: params.name, endedByHost: false }
+      relayed.push(relay)
+      const ended = new AbortController()
+      response.on("close", () => {
+        if (response.writableFinished) return
+        relay.endedByHost = Date.now()
+        ended.abort()
+      })
+      const answer = await chat("tools/call", params, AbortSignal.any([closing.signal, ended.signal])).catch(
+        (error) => ({ jsonrpc: "2.0", error: { code: -32603, message: String(error) } }),
+      )
+      if (ended.signal.aborted) return
+      relay.answered = Date.now()
       return void response.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(answer))
     }
     if (request.url !== "/") return void response.writeHead(404).end()
-    response.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end(hostPage(sandboxOrigin, shown))
+    response
+      .writeHead(200, { "content-type": "text/html; charset=utf-8" })
+      .end(chatHostPage(`${sandboxOrigin}/view`, shown))
   })
   const hostOrigin = `http://127.0.0.1:${String(await listen(host))}`
+  const seenBy = (name) => page.evaluate((name) => window.host[name], name)
+  const tell = (name, method, params) =>
+    page.evaluate(({ name, method, params }) => window.tell(name, method, params), { name, method, params })
+  const ask = (name, method, params) =>
+    page.evaluate(({ name, method, params }) => window.ask(name, method, params), { name, method, params })
 
   const consoled = []
   const faults = []
@@ -223,8 +186,9 @@ export default async function drive(kit) {
     const view = page.frameLocator("#view")
     await unfaulted(expect(view.locator(`[data-deck-view-ready="${deck}"]`)).toBeVisible({ timeout: 30_000 }))
     out = path.dirname(await capture("chat-view-new-deck"))
+    expect((await seenBy("view")).init.appCapabilities).toEqual({ availableDisplayModes: ["inline", "fullscreen"] })
     note(
-      `A chat host at ${hostOrigin} framed the shell from resources/read, served by ${sandboxOrigin} under ${policy}; execute createDeck showed the new deck ${deck}.`,
+      `A chat host at ${hostOrigin} framed the shell from resources/read, served by ${sandboxOrigin} under ${policy}; the view offered inline and fullscreen, and execute createDeck showed the new deck ${deck}.`,
     )
 
     const slide = await view.locator("[data-view-slide]").getAttribute("data-view-slide")
@@ -252,6 +216,66 @@ export default async function drive(kit) {
       `An outside agent built slide ${slide} with a picture from ${verifyImageHost}; the open view followed, read the picture with airdesign_view_media and painted it from a data: URL.`,
     )
 
+    const root = view.locator("html")
+    const chrome = view.locator(`[data-deck-view-ready="${deck}"]`)
+    await expect(root).toHaveAttribute("data-host-theme", "light")
+    const chromePixels = async () => {
+      const box = await chrome.boundingBox()
+      return page.screenshot({ clip: { x: box.x + 16, y: box.y + 16, width: box.width - 32, height: box.height - 32 } })
+    }
+    const lightPixels = await chromePixels()
+    await page.evaluate(() => {
+      document.body.dataset.theme = "dark"
+    })
+    await tell("view", "ui/notifications/host-context-changed", { theme: "dark", styles: { variables: hostLook } })
+    await expect(root).toHaveAttribute("data-host-theme", "dark")
+    const arrived = await root.evaluate(
+      (element, names) => Object.fromEntries(names.map((name) => [name, element.style.getPropertyValue(name)])),
+      Object.keys(hostLook),
+    )
+    expect(arrived).toEqual(hostLook)
+    expect((await chromePixels()).equals(lightPixels), "host variables leave the chrome as it was").toBe(true)
+    await capture("chat-view-dark")
+    await page.evaluate(() => {
+      delete document.body.dataset.theme
+    })
+    await tell("view", "ui/notifications/host-context-changed", { theme: "light" })
+    await expect(root).toHaveAttribute("data-host-theme", "light")
+    note(
+      `The chat switched to dark: the view's root took data-host-theme="dark" and the host's ${String(Object.keys(hostLook).length)} style variables, its chrome pixel for pixel as in light, then went back to light.`,
+    )
+
+    const inline = await painted.boundingBox()
+    await page.evaluate(() => {
+      document.getElementById("view").style.width = "300px"
+    })
+    await expect.poll(async () => (await painted.boundingBox()).width).toBeLessThan(300)
+    await expect.poll(async () => (await seenBy("view")).sizes.at(-1)?.width).toBe(300)
+    await capture("chat-view-narrow")
+    await page.evaluate(() => {
+      document.getElementById("view").style.width = "736px"
+    })
+    await expect.poll(async () => (await painted.boundingBox()).width).toBe(inline.width)
+
+    const sized = (await seenBy("view")).sizes
+    await tell("view", "ui/notifications/host-context-changed", { displayMode: "fullscreen" })
+    await ask("view", "ping", {})
+    await page.evaluate(() => {
+      Object.assign(document.getElementById("view").style, { width: "760px", height: "820px" })
+    })
+    await expect.poll(async () => (await painted.boundingBox()).width).toBeGreaterThan(inline.width)
+    expect((await seenBy("view")).sizes).toEqual(sized)
+    await tell("view", "ui/notifications/host-context-changed", { displayMode: "inline" })
+    await page.evaluate(() => {
+      document.getElementById("view").style.width = "736px"
+    })
+    await expect.poll(async () => (await seenBy("view")).sizes.length).toBeGreaterThan(sized.length)
+    await expect.poll(async () => (await painted.boundingBox()).width).toBe(inline.width)
+    expect((await seenBy("view")).sizes.at(-1)).toEqual(sized.at(-1))
+    note(
+      `In fullscreen the view sent no size of its own; back inline it asked again for ${String(sized.at(-1).height)} px.`,
+    )
+
     const shot = await execute(agent, { deck, script: `screenshot({ target: ${JSON.stringify(slide)} })` })
     expect(shot.structuredContent.screenshots).toEqual([slide])
     const images = shot.content.filter((block) => block.type === "image")
@@ -268,12 +292,12 @@ export default async function drive(kit) {
       `The agent's screenshot() was answered by the chat view with one ${String(Math.round((images[0].data.length * 3) / 4 / 1024))} KB JPEG of the slide; its picture's sky reads rgb(${String(sky.r)},${String(sky.g)},${String(sky.b)}) and sun rgb(${String(sun.r)},${String(sun.g)},${String(sun.b)}).`,
     )
 
-    const shownBox = await painted.boundingBox()
-    const scale = shownBox.width / 1920
-    await painted.click({ position: { x: (bar.x + bar.w / 2) * scale, y: (bar.y + bar.h / 2) * scale } })
+    const scale = inline.width / 1920
+    const onBar = { position: { x: (bar.x + bar.w / 2) * scale, y: (bar.y + bar.h / 2) * scale } }
+    await painted.click(onBar)
     await expect(view.locator(`[data-view-selected="${growth}"]`)).toBeVisible()
     await expect
-      .poll(() => page.evaluate(() => window.host.contexts))
+      .poll(async () => (await seenBy("view")).contexts)
       .toEqual([
         {
           content: [
@@ -289,16 +313,73 @@ export default async function drive(kit) {
     note(`A click on the Growth bar selected layer ${growth} and sent ui/update-model-context with it.`)
 
     await view.getByRole("link", { name: deckViewCopy.openInAirDesign }).click()
-    await expect.poll(() => page.evaluate(() => window.host.opened)).toEqual([`${origin}/s/${deck}`])
-    const sizes = await page.evaluate(() => window.host.sizes)
+    await expect.poll(async () => (await seenBy("view")).opened).toEqual([`${origin}/s/${deck}`])
+    const sizes = (await seenBy("view")).sizes
     expect(sizes.at(-1)?.height).toBeGreaterThan(0)
     note(
       `Open in AirDesign sent ui/open-link with ${origin}/s/${deck}; the view sized its frame ${String(sizes.length)} times, last to ${String(sizes.at(-1).height)} px.`,
     )
 
+    await page.evaluate(() => window.frameView("plain", { takesContext: false }))
+    const plain = page.frameLocator("#plain")
+    const plainSlide = plain.locator(`[data-view-slide="${slide}"]`)
+    await unfaulted(expect(plainSlide).toBeVisible({ timeout: 30_000 }))
+    await plainSlide.click(onBar)
+    await plain.getByRole("link", { name: deckViewCopy.openInAirDesign }).click()
+    await expect.poll(async () => (await seenBy("plain")).opened).toEqual([`${origin}/s/${deck}`])
+    await expect(plain.locator("[data-view-selected]")).toHaveCount(0)
+    expect((await seenBy("plain")).heard).not.toContain("ui/update-model-context")
+    note("In a chat without updateModelContext the same click selected nothing and sent no ui/update-model-context.")
+
+    await page.evaluate(() => window.frameView("streamed", { streams: true }))
+    await expect.poll(async () => (await seenBy("streamed"))?.heard).toContain("ui/notifications/initialized")
+    await tell("streamed", "ui/notifications/tool-input-partial", { arguments: { deck, script: "get(" } })
+    const streamed = page.frameLocator("#streamed")
+    await unfaulted(expect(streamed.locator(`[data-deck-view-ready="${deck}"]`)).toBeVisible({ timeout: 30_000 }))
+    await tell("streamed", "ui/notifications/tool-cancelled", { reason: "The person stopped the reply" })
+    await ask("streamed", "ping", {})
+    await expect(streamed.locator(`[data-deck-view-ready="${deck}"]`)).toBeVisible()
+    note(
+      `A view framed while the call still streamed opened ${deck} from tool-input-partial alone and kept it after tool-cancelled.`,
+    )
+
+    await page.evaluate(() => window.frameView("cancelled", { streams: true }))
+    await expect.poll(async () => (await seenBy("cancelled"))?.heard).toContain("ui/notifications/initialized")
+    await tell("cancelled", "ui/notifications/tool-input-partial", { arguments: { script: 'createDeck({ name: "Tr' } })
+    await tell("cancelled", "ui/notifications/tool-cancelled", { reason: "The person stopped the reply" })
+    const cancelled = page.frameLocator("#cancelled")
+    await unfaulted(expect(cancelled.getByText(deckViewCopy.noDeck)).toBeVisible())
+    await capture("chat-view-cancelled")
+    note("A call cancelled before it named a deck left its view on the quiet no-deck line, not an endless opening.")
+
+    const openDeck = async () => {
+      const state = await agent("tools/call", { name: "airdesign_get_app_state", arguments: {} })
+      expect(state.result.structuredContent).toHaveProperty("openDeck")
+      return state.result.structuredContent.openDeck?.deck ?? null
+    }
+    await expect.poll(openDeck).toBe(deck)
+    const tornDown = Date.now()
+    const holding = []
+    for (const name of ["view", "plain", "streamed", "cancelled"]) {
+      const closed = await page.evaluate((name) => window.tearDown(name), name)
+      expect(closed.result).toEqual({})
+      expect(closed.heard).toEqual([...closed.pending.map(() => "notifications/cancelled"), `answer ${closed.id}`])
+      expect(closed.cancelled.toSorted()).toEqual(closed.pending.toSorted())
+      holding.push(...closed.pending)
+      if (name !== "view") await page.evaluate((name) => document.getElementById(name).remove(), name)
+    }
+    expect(holding.length).toBeGreaterThanOrEqual(3)
+    const endedSince = () => relayed.filter((relay) => relay.name === "airdesign_view_since" && relay.endedByHost)
+    await expect.poll(() => endedSince().length).toBeGreaterThanOrEqual(3)
+    writeFileSync(path.join(out, "probe-relayed.json"), JSON.stringify({ tornDown, relayed }, null, 2))
+    await expect.poll(openDeck, { timeout: 2_000 }).toBeNull()
+    note(
+      `Every view cancelled its held calls before acknowledging teardown. The host ended ${String(endedSince().length)} waits to /mcp and the server cleared the open deck within two seconds.`,
+    )
+
     expect(faults).toEqual([])
     note(
-      `No CSP violation, refusal, CORS line or error while the view loaded, painted, answered and linked; set aside ${String(probes)} eval probe(s) the code caught.`,
+      `No CSP violation, refusal, CORS line or error while the views loaded, painted, answered, linked and closed; set aside ${String(probes)} eval probe(s) the code caught.`,
     )
   } finally {
     closing.abort()

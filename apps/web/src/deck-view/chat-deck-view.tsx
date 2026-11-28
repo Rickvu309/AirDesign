@@ -1,11 +1,28 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore } from "react"
 import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { deckViewCopy } from "@/copy/deck-view-copy"
-import { connectChatHost, parentLine, type ChatHost, type Shown } from "./chat-host"
+import { connectChatHost, parentLine, type ChatHost, type HostContext, type HostState } from "./chat-host"
 import { chatAssets, chatDoomRemote } from "./chat-remote"
 import { DeckView, type Shell } from "./deck-view"
 
 const quietHeight = 96
+
+const unconnected: HostState = { shown: undefined, context: {} }
+const stillUnconnected = () => unconnected
+const nothingToWatch = () => () => undefined
+
+function useHostLook({ theme, styles }: HostContext) {
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    if (theme !== undefined) root.dataset.hostTheme = theme
+    const variables = Object.entries(styles?.variables ?? {})
+    for (const [name, value] of variables) root.style.setProperty(name, value)
+    return () => {
+      delete root.dataset.hostTheme
+      for (const [name] of variables) root.style.removeProperty(name)
+    }
+  }, [theme, styles])
+}
 
 function Opening() {
   return (
@@ -26,19 +43,24 @@ function NoDeck() {
 
 export function ChatDeckView() {
   const [chat, setChat] = useState<ChatHost | null>(null)
-  const [shown, setShown] = useState<Shown | null | undefined>(undefined)
 
   useEffect(() => {
     let live = true
-    void connectChatHost(parentLine()).then((connected) => {
-      if (live) setChat(connected)
-    })
+    void connectChatHost(parentLine()).then(
+      (connected) => {
+        if (live) setChat(connected)
+      },
+      (error: unknown) => {
+        if (!(error instanceof DOMException && error.name === "AbortError")) throw error
+      },
+    )
     return () => {
       live = false
     }
   }, [])
 
-  useEffect(() => chat?.onShown(setShown), [chat])
+  const { shown, context } = useSyncExternalStore(chat?.subscribe ?? nothingToWatch, chat?.state ?? stillUnconnected)
+  useHostLook(context)
 
   const remote = useMemo(() => (chat === null ? null : chatDoomRemote(chat)), [chat])
   const source = useMemo(() => (chat === null ? undefined : chatAssets(chat)), [chat])
@@ -48,8 +70,9 @@ export function ChatDeckView() {
         ? {}
         : {
             openLink: chat.openLink,
-            tellModel: chat.tellModel,
             fitHeight: (height) => chat.sizeTo({ width: Math.ceil(window.innerWidth), height }),
+            closed: chat.closed,
+            ...(chat.tellModel === undefined ? {} : { tellModel: chat.tellModel }),
           },
     [chat],
   )

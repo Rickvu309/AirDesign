@@ -34,7 +34,25 @@ export async function serveMcp(
 ): Promise<void> {
   const names = [...mount.hosts]
   if (!hostHeaderValidation(names)(req, res) || !originValidation(names)(req, res)) return
-  const handler = createServerHandler(session, host, body, { maxRequestBodySize: mount.bodyCap }, mount.origins, view)
+  const disconnected = new AbortController()
+  if (res.destroyed) disconnected.abort()
+  else res.once("close", () => disconnected.abort())
+  const responseView =
+    view === undefined
+      ? undefined
+      : {
+          ...view,
+          since: (input: unknown, signal: AbortSignal) =>
+            view.since(input, AbortSignal.any([signal, disconnected.signal])),
+        }
+  const handler = createServerHandler(
+    session,
+    host,
+    body,
+    { maxRequestBodySize: mount.bodyCap },
+    mount.origins,
+    responseView,
+  )
   let failed = false
   const onerror = (error: Error): void => {
     failed = true
