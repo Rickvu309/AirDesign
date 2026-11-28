@@ -8,11 +8,9 @@ import { bytesOf, limits } from "@airdesign/doom"
 
 import {
   signInRoutes,
-  readApprovalRequest,
   oauthRoutes,
   mcpRoutes,
   readBearer,
-  readClientRequest,
   readCode,
   readEmail,
   readHost,
@@ -36,7 +34,7 @@ import { airaUsageRoute } from "./aira/aira-usage-route.js"
 import { deckListAnswers } from "./doom/deck-list.js"
 import { grantAgentName, readRegistration, registerClient } from "./oauth/clients.js"
 import { ClientDocuments } from "./oauth/cimd.js"
-import { approve, describeClient } from "./oauth/consent.js"
+import { oauthConsentRoutes } from "./oauth-consent-routes.js"
 import { agentHost } from "./doom/agent-host.js"
 import { DeckScreenshots } from "./doom/deck-screenshots.js"
 import { DeckFollowers } from "./doom/deck-followers.js"
@@ -329,41 +327,6 @@ async function registerRoute(visit: Visit): Promise<void> {
   sendJson(visit.res, answer.status, answer.body)
 }
 
-async function clientRoute(visit: Visit): Promise<void> {
-  const { options, now, res } = visit
-  const email = await signedIn(visit)
-  if (email === undefined) return
-  const parsed = await readJson(visit, readClientRequest)
-  if (parsed === undefined) return
-  if (!parsed.ok) {
-    sendJson(res, 400, parsed)
-    return
-  }
-  const answer = await describeClient(
-    { db: options.session, clients: options.clients, own: options.resource, now: now() },
-    parsed,
-  )
-  sendJson(res, answer.status, answer.body)
-}
-
-async function approveRoute(visit: Visit): Promise<void> {
-  const { options, now, res } = visit
-  const email = await signedIn(visit)
-  if (email === undefined) return
-  const parsed = await readJson(visit, readApprovalRequest)
-  if (parsed === undefined) return
-  if (!parsed.ok) {
-    sendJson(res, 400, parsed)
-    return
-  }
-  const answer = await approve(
-    { db: options.session, clients: options.clients, own: options.resource, now: now() },
-    parsed,
-    email,
-  )
-  sendJson(res, answer.status, answer.body)
-}
-
 async function tokenRoute(visit: Visit): Promise<void> {
   const { options, now, res } = visit
   res.setHeader("cache-control", "no-store")
@@ -482,8 +445,7 @@ export const routes: readonly Route[] = [
   airaUsageRoute({ signedIn, answerSize, parsedJson, sendJson, clearSessionCookie }),
   ...creditsRouteList({ signedIn, answerSize, parsedJson, sendJson, clearSessionCookie }),
   { method: "POST", path: oauthRoutes.register.path, serve: registerRoute },
-  { method: "POST", path: oauthRoutes.client.path, serve: clientRoute },
-  { method: "POST", path: oauthRoutes.approve.path, serve: approveRoute },
+  ...oauthConsentRoutes({ signedIn, readJson, sendJson }),
   { method: "POST", path: oauthRoutes.token.path, serve: tokenRoute, cap: limits.form },
   { method: "POST", path: oauthRoutes.revoke.path, serve: revokeRoute, cap: limits.form },
   { method: "POST", path: signInRoutes.email.path, serve: emailRoute },
