@@ -98,8 +98,26 @@ export default async function drive(kit) {
     return answer.result
   }
 
-  const [resource] = (await chat("resources/read", { uri: "ui://airdesign/deck.html" })).result.contents
-  expect(resource.mimeType).toBe(appsHtml)
+  const protocolVersion = "2025-11-25"
+  const extension = "io.modelcontextprotocol/ui"
+  const initialized = await chat("initialize", {
+    protocolVersion,
+    capabilities: { extensions: { [extension]: { mimeTypes: [appsHtml] } } },
+    clientInfo: { name: "chat-host", version: "1.0.0" },
+  })
+  expect(initialized.result, JSON.stringify(initialized)).toMatchObject({
+    protocolVersion,
+    capabilities: { extensions: { [extension]: { mimeTypes: [appsHtml] } } },
+  })
+  const listed = await chat("tools/list", {})
+  const stateTool = listed.result?.tools.find(({ name }) => name === "airdesign_get_app_state")
+  const uri = stateTool?._meta?.ui?.resourceUri
+  expect(uri, "List decks must advertise the deck view in tools/list").toMatch(/^ui:\/\//)
+  const executeTool = listed.result?.tools.find(({ name }) => name === "airdesign_execute")
+  expect(executeTool?._meta?.ui?.resourceUri, "Edit deck must advertise the same view").toBe(uri)
+  const read = await chat("resources/read", { uri })
+  const [resource] = read.result?.contents ?? []
+  expect(resource, JSON.stringify(read.error)).toMatchObject({ uri, mimeType: appsHtml })
   const ours = (text) => text.replaceAll(fakeOrigins.app, origin)
   const shell = ours(resource.text)
   const csp = resource._meta.ui.csp
@@ -291,6 +309,17 @@ export default async function drive(kit) {
       ask,
       unfaulted,
     })
+
+    const state = await chat("tools/call", { name: stateTool.name, arguments: {} })
+    expect(state.result?.structuredContent).toMatchObject({ openDeck: { deck } })
+    await page.evaluate(() => window.frameView("listed", { streams: true }))
+    await expect.poll(async () => (await seenBy("listed"))?.heard).toContain("ui/notifications/initialized")
+    await tell("listed", "ui/notifications/tool-result", state.result)
+    const listedView = page.frameLocator("#listed")
+    await unfaulted(expect(listedView.locator(`[data-deck-view-ready="${deck}"]`)).toBeVisible())
+    await ask("listed", "ui/resource-teardown", {})
+    await page.locator("#listed").evaluate((frame) => frame.remove())
+    note("List decks returned the open deck and its advertised view rendered it.")
 
     await page.evaluate(() => window.frameView("plain", { takesContext: false, modes: ["inline"] }))
     const plain = page.frameLocator("#plain")

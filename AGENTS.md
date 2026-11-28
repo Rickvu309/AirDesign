@@ -51,3 +51,7 @@ An edit, from a person or an agent, is read by `catalog` and applied by `doom` t
 - A bug or repeated mistake lands as a test, check or metric. Plans and notes stay out of commits.
 - Decide what can be undone and report it. Ask the owner only what only the owner can decide.
 - Read the MCP specification before you change a tool. Our limits win.
+
+| Rule | Enforcement |
+| --- | --- |
+| Discover an MCP App through the connector's advertised tool metadata before testing its view. | The `chat-deck-view` CI journey checks the MCP capability, follows the URI from `tools/list`, and renders the result of List decks. |
