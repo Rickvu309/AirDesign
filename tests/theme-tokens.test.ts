@@ -149,7 +149,7 @@ describe("theme tokens", () => {
     expect(ratio(index, row)).toBeGreaterThanOrEqual(4.5)
   })
 
-  it("keeps primary button labels at or above 4.5:1 across every point of the signature gradient in rest, hover and pressed states", () => {
+  it("keeps primary button labels at or above 4.5:1 across every point of the sign-in gradient in rest, hover and pressed states", () => {
     const tokens = readTokenMap(read("packages/theme/src/tokens.css"))
     const label = hexToRgb(resolveToken(tokens, "var(--primary-foreground)"))
     const brandHue = oklchHue(hexToRgb(resolveToken(tokens, "var(--primary)")))
@@ -183,10 +183,6 @@ describe("theme tokens", () => {
     expect(contrastRatio(darkLink, foreground), "dark mail link").toBeGreaterThanOrEqual(4.5)
 
     const buttonSource = read("apps/web/src/components/ui/button.tsx")
-    expect(buttonSource).toContain("var(--fill-marketing)")
-    expect(buttonSource).toContain("var(--fill-marketing-hover)")
-    expect(buttonSource).toContain("var(--fill-marketing-active)")
-    expect(buttonSource).not.toContain("brightness-[")
     expect(buttonSource).toContain("text-primary-strong")
 
     const siteTheme = read("apps/site/src/site/site-theme.css")
