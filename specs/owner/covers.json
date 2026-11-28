@@ -1,17 +1,63 @@
 {
-  "check": "checks-server.md#owner",
+  "check": "checks-owner.md#owner",
   "covers": [
     {
       "file": "apps/api/src/mcp/mcp.ts",
       "names": ["serveMcp"],
-      "digest": "9a39ec97fb69",
-      "blob": "87709e1454f3657b8a2c661662c4a7e3db562c5c"
+      "digest": "bca602c3d793",
+      "blob": "c873e1f4461d41338df31305c28d6384fbf777c3"
     },
     {
       "file": "apps/api/src/oauth/tokens.ts",
       "names": ["bearerPrincipal"],
       "digest": "b1e9c31497ff",
-      "blob": "1fe42dcf49566d1f06c1a7a631d5f24c86b970c9"
+      "blob": "21031d261a8d231790c61122bc95a63b40b570e1"
+    },
+    {
+      "file": "apps/api/src/server.ts",
+      "names": ["caller", "mcpRoute"],
+      "digest": "f9de004c2645",
+      "blob": "bb36a2a5247412873b62e7ca574fc0dac37441ec"
+    },
+    {
+      "file": "apps/api/src/doom/agent-host.ts",
+      "names": ["agentHost"],
+      "digest": "0156cdd7dfc3",
+      "blob": "e2dd51e1ab6c4e1185f4a3480780e6742dff9a7e"
+    },
+    {
+      "file": "apps/api/src/doom/doom-route.ts",
+      "names": ["doomViewHost"],
+      "digest": "578c6e880b14",
+      "blob": "9f739430ba69aae9b8ddc9b810dbd2e88294a625"
+    },
+    {
+      "file": "apps/api/src/doom/doom-deck.ts",
+      "names": [
+        "createDoom",
+        "openDoom",
+        "editDoom",
+        "sinceDoom",
+        "runDoom",
+        "runPositions",
+        "doomRev",
+        "listSql",
+        "spendOnce"
+      ],
+      "digest": "ec1d49b90d86",
+      "blob": "c30beed5cb7548f6205c4ef747ab7bad7874b92b"
+    },
+    {
+      "file": "apps/api/src/doom/media.ts",
+      "names": ["mediaBytes"],
+      "digest": "da9ff83f8907",
+      "blob": "fdc4811e9ba8e1f8fd67eacdb29dfd9f75336e0e"
+    },
+    {
+      "file": "apps/api/src/doom/doom-write.ts",
+      "names": ["runUndoRevs"],
+      "digest": "fc4ce01d9ec0",
+      "blob": "e2cfe89dda936211258ff5341afa2c3f28ba7717"
     }
   ]
 }

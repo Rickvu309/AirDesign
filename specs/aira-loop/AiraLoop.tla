@@ -1,9 +1,9 @@
 ---- MODULE AiraLoop ----
-\* One Aira ask in the browser (askAira in apps/web/src/aira-loop.ts) whose model turn asks
+\* One Aira ask in the browser (askAira in apps/web/src/aira/aira-loop.ts) whose model turn asks
 \* for one edit, while the person may press Stop and then ask again, or the model's next turn
 \* fails and the person presses Try again.
 \* The edit call is sent when the model starts, with a once the browser made from the ask.
-\* server is the call's once in deck.once: none, landed with the edit under run r, or spent
+\* server is the call's once in deck.doom_edit: none, landed with the edit under run r, or spent
 \* by the Stop. The edit and its once are one write, so the server lands only an unspent once.
 \* answer is the browser's fetch of that call: waiting, read, or cut by Stop at once.
 \* named is the stop that names the cut call answered: it spends the once, or finds it landed

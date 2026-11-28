@@ -29,6 +29,7 @@ type World = {
 }
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+const measure = doom.measureWith({})
 const person: doom.Author = { kind: "person", id: "quan" }
 const agent: doom.Author = { kind: "agent", id: "aira", run: "r" }
 const nodes = {
@@ -217,7 +218,15 @@ type Outcome = { readonly world: World; readonly named?: readonly doom.Write[]; 
 function turn(world: World, name: "u" | "r", target: Spec): Outcome | null {
   const source = name === "u" ? "s" : "u"
   const shown = viewNow(world)
-  const writes = invert(world.viewBefore[source] as doom.Doom, shown, invertedEdit(world, source, shown))
+  const before = world.viewBefore[source]
+  if (before === undefined) throw new Error(`no view before ${source}`)
+  const undone = doom.undo(
+    shown,
+    { step: invertedEdit(world, source, shown), before },
+    { author: person, once: name, measure, owned: new Set() },
+  )
+  if (doom.isRefusal(undone)) return null
+  const { writes } = undone.edit
   const kept = mask(writes)
   const wanted = (name === "u" ? target.uK : target.rK) as number
   if (kept !== wanted) return null

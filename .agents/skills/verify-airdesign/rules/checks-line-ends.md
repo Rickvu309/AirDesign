@@ -10,7 +10,7 @@ One connector's start and end beside the shape X its start may attach to. Tab A 
 
 The rule (`packages/doom/src/line-ends.rule.md`) in three parts:
 
-- The device frees each end that still names the same shape after the batch takes that shape off the deck. It writes the point it painted in a line write with no base, so it wins over what landed before it (`freeLineEnds` in `packages/doom/src/freed-line-ends.ts`).
+- The device frees each end that still names the same shape after the batch takes that shape off the deck. It writes the point it painted in a line write with no base, so it wins over what landed before it (`freeLineEnds` in `packages/doom/src/freed-line-ends.ts`). A device push reaches it through `doom.land`. Execute compiles structural intents through `newPlan`, `intentSession` and `freeLineEnds` in Doom before landing the edit.
 - The deck frees any end still on a shape off the deck after the batch where the shape's stored box paints (`freedInFold` in `packages/doom/src/lost-ends.ts`, run by `landEdit`), so the delete lands even from a tab that never saw the attach.
 - A refused undo or redo is sent again with each end the other tab left as the tab read it at the press, the other tab's end for the rest (`lineEndsBack`, the ownership rule of an undo online), and its ends freed again against the caught-up deck (`undo` in `packages/doom/src/undo.ts`).
 
@@ -26,7 +26,7 @@ Properties:
 
 Bounds: one shape, one line, two tabs, one write by the other tab, a delete and one press, one redo, or one undo of a creation and attachment. 136 states. Run: `pnpm check:specs line-ends`. Replay: `tests/line-ends-replay.test.ts` drives all 176 edges from the four starts through the real `createDoomDeck`, `openDoomDeck` and `memoryDoomRemote`, the person's tab cut off from the server except for the edit a send step lets through, and another tab on the same server. `packages/live/src/doom-line-ends-tabs.test.ts` holds the same cases with a frame, `packages/doom/src/lost-ends.test.ts` the deck's freeing, a moved frame and the redo, and `apps/api/src/doom-deck-line-ends.test.ts` the server's partial fold.
 
-Leaves out: frames in the model (`freedInFold` reads the shape's frames as the deck held them before the batch, and `lost-ends.test.ts` holds a moved frame); a removal and undo or redo queued together, and a turn rebuilt behind a resent one (`onStanding` frees the rebuilt turn again; `turn-replay-queued.test.ts` holds the order); agent runs, which take `airdesign_execute` and `undo_run` through the same `freeLineEnds` and `freedInFold`.
+Leaves out: frames, including the geometry of ends freed inside a rotated frame (`freedInFold` reads the shape's frames as the deck held them before the batch, and `lost-ends.test.ts` holds a moved frame); a removal and undo or redo queued together, and a turn rebuilt behind a resent one (`onStanding` frees the rebuilt turn again; `turn-replay-queued.test.ts` holds the order); agent runs, which take `airdesign_execute` and `undo_run` through the same `freeLineEnds` and `freedInFold`.
 
 Known limits:
 
@@ -57,7 +57,7 @@ One batch at a time lands on the server, from an agent or a tab, beside two shap
 The rule:
 
 - Every batch lands. The deck frees each end on a shape off the deck of a line the batch takes a shape from, writes a geometry or a parent to, or brings back onto the deck inside a frame (`deadLines`, `freedInFold` in `packages/doom/src/lost-ends.ts`).
-- The server loads the lines that name every shape the batch deletes and the shapes those lines name (`partSql` in `apps/api/src/doom/doom-deck.ts`). When the folded batch takes another shape off the deck, or brings a subtree back, it reads again with that shape's lines or the subtree's lines (`leavingRoots`, `returningRoots`, `editDoom`), and saves every line the fold freed.
+- The server loads the lines that name every shape the batch deletes and the shapes those lines name (`partSql` in `apps/api/src/doom/doom-edit-part.ts`). When the folded batch takes another shape off the deck, or brings a subtree back, it reads again with that shape's lines or the subtree's lines (`leavingRoots`, `returningRoots`, `editDoom`), and saves every line the fold freed.
 
 Properties:
 

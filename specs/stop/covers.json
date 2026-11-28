@@ -5,13 +5,13 @@
       "file": "apps/api/src/aira/aira-closing.ts",
       "names": ["followSql", "stopSql", "openStopSql", "Closing"],
       "digest": "f6772127a6d3",
-      "blob": "bb49606e9145fd00a5d70d1afb0d36850c710844"
+      "blob": "5c63cf2e4b7963246155c979b0b052736e52c34c"
     },
     {
       "file": "apps/api/src/aira/aira.ts",
       "names": ["reserveTurn", "answered", "settleTurn", "releaseTurn"],
       "digest": "76292cff5825",
-      "blob": "97ec295b896de46094905857bd2c4b255d46850c"
+      "blob": "c5cc8d21ea8e5283e64ff0cb81dcfbc574dab91c"
     }
   ]
 }

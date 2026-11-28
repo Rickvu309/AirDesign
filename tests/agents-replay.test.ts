@@ -143,6 +143,15 @@ function observe(world: World): Spec {
 const refusalOf = (answer: Record<string, unknown>) =>
   answer.ok === true ? undefined : typeof answer.refusal === "string" ? answer.refusal : "unexpected"
 
+function refusedCall(world: World, done: Awaited<ReturnType<typeof call>>, refusal: string): World {
+  expect(doom.propOf(done.server.nodes.get(start.x), "text"), `text after ${refusal}`).toEqual(
+    doom.propOf(world.server.nodes.get(start.x), "text"),
+  )
+  const phases = (fold: doom.Doom) => [...fold.runs].map(([id, run]) => [id, run.phase])
+  expect(phases(done.server), `run phases after ${refusal}`).toEqual(phases(world.server))
+  return { ...world, server: done.server, reads: done.reads, calls: done.calls, out: refusal }
+}
+
 async function edits(world: World, by: Agent, run?: ModelRun): Promise<World> {
   const fresh = owned[by].find((each) => world.ids[each] === undefined)
   const into = run ?? fresh
@@ -154,7 +163,7 @@ async function edits(world: World, by: Agent, run?: ModelRun): Promise<World> {
     ...(named === undefined ? {} : { runId: named }),
   })
   const refusal = refusalOf(done.answer)
-  if (refusal !== undefined) return { ...world, calls: done.calls, out: refusal }
+  if (refusal !== undefined) return refusedCall(world, done, refusal)
   const rev = done.answer.rev
   const runId = done.answer.runId
   if (typeof rev !== "number" || typeof runId !== "string")
@@ -178,7 +187,7 @@ async function edits(world: World, by: Agent, run?: ModelRun): Promise<World> {
 async function stops(world: World, by: Agent, run: ModelRun): Promise<World> {
   const done = await call(world, by, "stop_run", { deck, runId: world.ids[run] })
   const refusal = refusalOf(done.answer)
-  if (refusal !== undefined) return { ...world, calls: done.calls, out: refusal }
+  if (refusal !== undefined) return refusedCall(world, done, refusal)
   const moved = done.server !== world.server
   return {
     ...world,

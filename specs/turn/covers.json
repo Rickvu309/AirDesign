@@ -4,14 +4,14 @@
     {
       "file": "packages/agent/src/execute-tool.ts",
       "names": ["executeTool"],
-      "digest": "76ede65e8a23",
-      "blob": "a3b648bf316b63cd92312cd6ca29a4b38a1185d9"
+      "digest": "98b9b3035e50",
+      "blob": "5631b5eaaa280056370dadefac5aa4e92f7d3551"
     },
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["guardRun", "protect"],
       "digest": "be43bc4f7607",
-      "blob": "c7c15fea3b669c067a4a663e78bee1f750f0f0ae"
+      "blob": "14cab653482100155d028d8d2dc58c16f2ace4c0"
     }
   ]
 }

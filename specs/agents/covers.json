@@ -10,26 +10,26 @@
     {
       "file": "apps/api/src/server.ts",
       "names": ["caller", "mcpRoute"],
-      "digest": "5b2238fda3b9",
-      "blob": "d7f01b67c9b137ffe41b6a4d0f90a987a167722c"
+      "digest": "f9de004c2645",
+      "blob": "bb36a2a5247412873b62e7ca574fc0dac37441ec"
     },
     {
       "file": "packages/agent/src/execute-tool.ts",
       "names": ["executeTool"],
-      "digest": "76ede65e8a23",
-      "blob": "a3b648bf316b63cd92312cd6ca29a4b38a1185d9"
+      "digest": "98b9b3035e50",
+      "blob": "5631b5eaaa280056370dadefac5aa4e92f7d3551"
     },
     {
       "file": "packages/agent/src/stop-tool.ts",
       "names": ["stopRunTool"],
-      "digest": "ecaf7b33d9f9",
-      "blob": "3ec1ac6828bbead572b9c41443b6873e1a7896bc"
+      "digest": "863eedf5c9c7",
+      "blob": "15e086ee619d32a7b187b77778f8bcf9e3620bfa"
     },
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["guardRun", "landEdit", "protect"],
-      "digest": "f35e3cf595ce",
-      "blob": "c7c15fea3b669c067a4a663e78bee1f750f0f0ae"
+      "digest": "03e36ce40a3b",
+      "blob": "14cab653482100155d028d8d2dc58c16f2ace4c0"
     },
     {
       "file": "apps/api/src/account/admit.ts",
@@ -45,15 +45,33 @@
     },
     {
       "file": "packages/agent/src/execute-ops.ts",
-      "names": ["runOperation"],
-      "digest": "1614da98bf31",
-      "blob": "cb56fed90830ae37917a7848deb9a62ebdd6da5b"
+      "names": ["runOperation", "newPlan"],
+      "digest": "bfa3b24277b7",
+      "blob": "0f9b8ea4008de4a4085b6c0e46b67a00fdd002b5"
     },
     {
       "file": "apps/api/src/doom/doom-deck.ts",
       "names": ["lastAgentRead", "personRevs", "rememberAgentRead"],
       "digest": "8337baa545dc",
-      "blob": "c6280f56c7da829fb4060cbf239ae27a6ab86299"
+      "blob": "c30beed5cb7548f6205c4ef747ab7bad7874b92b"
+    },
+    {
+      "file": "apps/api/src/doom/agent-host.ts",
+      "names": ["agentHost"],
+      "digest": "0156cdd7dfc3",
+      "blob": "e2dd51e1ab6c4e1185f4a3480780e6742dff9a7e"
+    },
+    {
+      "file": "packages/agent/src/call-tool.ts",
+      "names": ["callTool"],
+      "digest": "ca8c0d947f19",
+      "blob": "3e0aff509aa87bdf112b3e79c6f6feee453dce21"
+    },
+    {
+      "file": "packages/doom/src/intent-edit.ts",
+      "names": ["intentSession"],
+      "digest": "4f2810cbce54",
+      "blob": "b06d1e665a3664ba658d0c68d08df9f61c0ef5a7"
     }
   ]
 }

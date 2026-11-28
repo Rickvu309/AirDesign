@@ -26,6 +26,7 @@ type World = {
 }
 type Outcome = { readonly world: World; readonly named?: readonly doom.Write[]; readonly before?: doom.Doom }
 
+const measure = doom.measureWith({})
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const person: doom.Author = { kind: "person", id: "quan" }
 const agents: Readonly<Record<RunName, doom.Author>> = {
@@ -210,13 +211,24 @@ function undoWrites(world: World): readonly doom.Write[] {
 }
 
 function undoA(world: World): Outcome {
-  const writes = undoWrites(world)
-  if (writes.length === 0) return { world: { ...world, ua: "empty" } }
-  const result = land(world.server, person, writes)
-  if (doom.isRefusal(result)) return { world: { ...world, ua: "empty" } }
+  const undone = doom.undo(
+    world.server,
+    { run: world.logA, started: world.startA },
+    {
+      author: person,
+      once: `undo-a-${world.server.rev}`,
+      measure,
+      owned: new Set(),
+      runUndo: { run: "a", undone: true },
+    },
+  )
+  if (doom.isRefusal(undone)) throw new Error(`UndoA refused: ${JSON.stringify(undone)}`)
+  const { after, edit } = undone
+  if (edit.writes.length === 0) return { world: { ...world, server: after, ua: "empty" } }
+  expect(after.runs.get("a")?.undone).toBe(true)
   return {
-    world: { ...world, server: result, ua: "landed", tagRev: new Map([...world.tagRev, [3, result.rev]]) },
-    named: writes,
+    world: { ...world, server: after, ua: "landed", tagRev: new Map([...world.tagRev, [3, after.rev]]) },
+    named: edit.writes,
     before: world.server,
   }
 }

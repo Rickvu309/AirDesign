@@ -23,6 +23,9 @@ const id = doom.nodeId
 const [deckNode, row, slide, frame, card] = [id("m:1"), id("m:2"), id("m:3"), id("m:4"), id("m:5")] as const
 const at = (parent: doom.NodeId, key = orderKeyBetween(null, null)) => ({ id: parent, at: key })
 
+const firstBox = { x: 20, y: 30, w: 120, h: 80, rotation: 0, flipH: false, flipV: false }
+const movedBox = { ...firstBox, x: 55 }
+
 const start: doom.Edit = {
   once: "start",
   author: { kind: "person", id: "start" },
@@ -36,6 +39,7 @@ const start: doom.Edit = {
     { node: frame, prop: "parent", value: at(slide) },
     { node: card, prop: "type", value: "shape" },
     { node: card, prop: "parent", value: at(frame) },
+    { node: card, prop: "box", value: firstBox },
   ],
 }
 
@@ -67,7 +71,8 @@ async function played(route: readonly { readonly action: string; readonly from: 
   const theirs = await join(remote, "b", "open")
   const edits = new Map<string, number>([["start", 0]])
   let landed = 0
-  let reorder: string | undefined
+  let pendingOnce: string | undefined
+  let queuedInverse = false
   const named = (once: string) => edits.set(once, (landed += 1))
   const settled = async () => {
     expect(await theirs.sync()).toEqual({ ok: true })
@@ -82,12 +87,56 @@ async function played(route: readonly { readonly action: string; readonly from: 
       const key = parentOf(mine.view(), card)!.at
       const pushed = mine.push([{ node: card, prop: "parent", value: at(frame, orderKeyBetween(key, null)) }])
       if (!("once" in pushed)) throw new Error(`the reorder sent nothing: ${JSON.stringify(pushed)}`)
-      reorder = pushed.once
+      pendingOnce = pushed.once
+    } else if (action === "QueueMoveInverse") {
+      const key = parentOf(mine.view(), card)!.at
+      const moved = mine.push([
+        { node: card, prop: "parent", value: at(frame, orderKeyBetween(key, null)) },
+        { node: card, prop: "box", value: movedBox },
+      ])
+      if (!("once" in moved)) throw new Error(`the move sent nothing: ${JSON.stringify(moved)}`)
+      await settled()
+      const movedRev = mine.server().onces.get(moved.once)
+      expect(movedRev).toBeDefined()
+      edits.set(moved.once, 0)
+      cut.off = true
+      const undone = mine.undo()
+      if (!undone.ok) throw new Error(`the move inverse sent nothing: ${JSON.stringify(undone)}`)
+      pendingOnce = undone.once
+      queuedInverse = true
+      const pending = mine.pending().find((edit) => edit.once === undone.once)
+      expect(pending?.writes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ node: card, prop: "parent", base: movedRev }),
+          expect.objectContaining({ node: card, prop: "box", value: firstBox }),
+        ]),
+      )
     } else if (action === "Replay") {
+      if (pendingOnce === undefined) throw new Error("no pending edit")
       cut.off = false
+      const deleteRev = theirs.server().revs.get(card)?.get("parent")
+      if (queuedInverse) {
+        expect(await mine.catchUp()).toEqual({ ok: true })
+        expect(mine.pending().some((edit) => edit.once === pendingOnce)).toBe(true)
+        const basedOn = mine
+          .pending()
+          .find((edit) => edit.once === pendingOnce)
+          ?.writes.find((write) => write.node === card && write.prop === "parent")?.base
+        expect(basedOn).toBeLessThan(deleteRev!)
+        expect(parentOf(mine.view(), card), "projected K parent").toBeNull()
+        expect(mine.view().revs.get(card)?.get("parent"), "projected K parent writer").toBe(deleteRev)
+        expect(mine.view().nodes.get(card), "projected K box").toMatchObject({ box: movedBox })
+      }
       expect(await mine.sync()).toEqual({ ok: true })
       await mine.catchUp()
-      if (mine.server().onces.has(reorder!)) named(reorder!)
+      const landed = mine.server()
+      if (landed.onces.has(pendingOnce)) named(pendingOnce)
+      if (queuedInverse) {
+        expect(landed.onces.has(pendingOnce), "the inverse edit row landed").toBe(true)
+        expect(parentOf(landed, card), "landed K parent").toBeNull()
+        expect(landed.revs.get(card)?.get("parent"), "landed K parent writer").toBe(deleteRev)
+        expect(landed.nodes.get(card), "landed K box").toMatchObject({ box: movedBox })
+      }
     } else if (action === "PersonDelete") {
       const pushed = mine.push([{ node: card, prop: "parent", value: null }])
       if (!("once" in pushed)) throw new Error(`the delete sent nothing: ${JSON.stringify(pushed)}`)
@@ -119,13 +168,15 @@ async function played(route: readonly { readonly action: string; readonly from: 
     return once === undefined ? -1 : (edits.get(once) ?? -1)
   }
   const pending =
-    reorder === undefined
+    pendingOnce === undefined
       ? "none"
-      : mine.pending().some((edit) => edit.once === reorder)
-        ? "queued"
-        : now.onces.has(reorder)
+      : mine.pending().some((edit) => edit.once === pendingOnce)
+        ? queuedInverse
+          ? "inverse"
+          : "queued"
+        : now.onces.has(pendingOnce)
           ? "landed"
-          : mine.notices().some((notice) => notice.once === reorder && notice.refused === "missing")
+          : mine.notices().some((notice) => notice.once === pendingOnce && notice.refused === "missing")
             ? "refused"
             : "lost"
   const seen: Seen = {
@@ -154,7 +205,14 @@ async function replayed(graph: Graph, failures: string[]) {
   type Leg = { readonly action: string; readonly from: Spec; readonly to: Spec }
   const paths = new Map<string, readonly Leg[]>(firsts.map((name) => [name, []]))
   const queued = [...firsts]
-  const seen = { starts: firsts.length, edges: 0, refused: 0, restoredIntoDeleted: 0 }
+  const seen = {
+    starts: firsts.length,
+    edges: 0,
+    refused: 0,
+    restoredIntoDeleted: 0,
+    olderIntoStanding: 0,
+    olderIntoDeleted: 0,
+  }
   while (queued.length > 0) {
     const from = queued.shift() as string
     const source = graph.states.get(from) as Spec
@@ -174,6 +232,10 @@ async function replayed(graph: Graph, failures: string[]) {
           `undo-pending-moves ${route.map((leg) => leg.action).join(" ")} ${said(source)} -${edge.action}-> ${said(target)}\n  the code disagrees: ${found.join("; ")}`,
         )
       if (edge.action === "Replay" && target.pending === "refused" && Number(source.pK) === -1) seen.refused += 1
+      if (edge.action === "Replay" && source.pending === "inverse") {
+        if (source.pP === 0) seen.olderIntoStanding += 1
+        else seen.olderIntoDeleted += 1
+      }
       if (edge.action === "PersonUndo" && Number(source.pP) === -1 && Number(target.pK) === 1)
         seen.restoredIntoDeleted += 1
       if (!paths.has(edge.to)) {
@@ -188,7 +250,7 @@ async function replayed(graph: Graph, failures: string[]) {
 }
 
 describe("undo pending moves replay", () => {
-  it("drives every edge of a reorder sent before the tab saw another tab's deletes, and both tabs' undos, through the real device deck", async () => {
+  it("drives queued reorders, move inverses and both tabs' undos through the real device deck", async () => {
     assertJar(jarPath())
     const spec = topics(root).find((topic: { name: string }) => topic.name === "undo-pending-moves")
     if (spec === undefined) throw new Error("no undo-pending-moves spec")
@@ -199,7 +261,7 @@ describe("undo pending moves replay", () => {
     const seen = await replayed(graph, failures)
     expect(failures.slice(0, 5), `${failures.length} edges disagree; ${JSON.stringify(seen)}`).toEqual([])
     expect(seen.edges).toBe(graph.edges.length)
-    expect(seen).toMatchObject({ starts: 1 })
+    expect(seen).toMatchObject({ starts: 1, olderIntoStanding: 1, olderIntoDeleted: 1 })
     expect(seen.refused).toBeGreaterThan(0)
     expect(seen.restoredIntoDeleted).toBeGreaterThan(0)
   }, 120_000)

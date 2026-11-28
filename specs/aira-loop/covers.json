@@ -3,15 +3,25 @@
   "covers": [
     {
       "file": "apps/web/src/aira/aira-loop.ts",
-      "names": ["askAira", "retryAira", "converse", "callTool", "stopAsk", "continues", "landedIn", "closeRuns"],
-      "digest": "e85920eb2e60",
-      "blob": "a6f3a28dc6ac9a9175952363969c6ae2af2f5c4c"
+      "names": [
+        "askAira",
+        "retryAira",
+        "converse",
+        "callTool",
+        "stopAsk",
+        "continues",
+        "landedIn",
+        "closeRuns",
+        "changes"
+      ],
+      "digest": "bca0a63ceadb",
+      "blob": "ee909f1764e8e8f132602384ec1697095b28e28d"
     },
     {
       "file": "apps/web/src/aira/aira-panel.tsx",
       "names": ["AiraPanel"],
-      "digest": "a52501779892",
-      "blob": "c5d0456501a0abe96a2393699cc372ce4582e16c"
+      "digest": "08d6801fd33a",
+      "blob": "31545dde53fe67f759021314711ebf16198e90d8"
     },
     {
       "file": "apps/api/src/aira/aira-route.ts",
@@ -21,15 +31,33 @@
     },
     {
       "file": "apps/api/src/doom/doom-deck.ts",
-      "names": ["spendOnce"],
-      "digest": "cd1493e076e5",
-      "blob": "f0f240f19a9ceb32ae42328210004f99b5ceb3ad"
+      "names": ["spendOnce", "editDoom"],
+      "digest": "a380352caa2c",
+      "blob": "c30beed5cb7548f6205c4ef747ab7bad7874b92b"
     },
     {
       "file": "apps/api/src/mcp/mcp.ts",
       "names": ["serveMcp"],
-      "digest": "9a39ec97fb69",
-      "blob": "87709e1454f3657b8a2c661662c4a7e3db562c5c"
+      "digest": "bca602c3d793",
+      "blob": "c873e1f4461d41338df31305c28d6384fbf777c3"
+    },
+    {
+      "file": "packages/mcp/src/http.ts",
+      "names": ["createServerHandler"],
+      "digest": "b24679873e79",
+      "blob": "bf39395b48e2e68f79c0003b9642d6c58b80cdde"
+    },
+    {
+      "file": "packages/mcp/src/server.ts",
+      "names": ["createServer"],
+      "digest": "ac8d11f84fdd",
+      "blob": "14a865023e233832ff612be525516481ad8004b7"
+    },
+    {
+      "file": "packages/catalog/src/mcp-routes.ts",
+      "names": ["readOnce"],
+      "digest": "3f52293ac5f3",
+      "blob": "faeaf44fd47fb4bfe615cceee8e61524759275a6"
     }
   ]
 }
