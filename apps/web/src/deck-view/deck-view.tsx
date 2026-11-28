@@ -1,7 +1,6 @@
 import * as doom from "@airdesign/doom"
 import type { DoomDeck, DoomRemote } from "@airdesign/live"
 import { DoomSlide, Filmstrip, SlidePaint, useDoomSlide } from "@airdesign/render"
-import { ArrowUpRightIcon, ChevronLeftIcon, ChevronRightIcon, MaximizeIcon, MinimizeIcon } from "lucide-react"
 import {
   useEffect,
   useLayoutEffect,
@@ -16,6 +15,7 @@ import {
 } from "react"
 import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { EditorIcon } from "@/components/ui/editor-icons"
 import { hairlineShadow, surfaceShadow } from "@/components/ui/shadows"
 import { Skeleton } from "@/components/ui/skeleton"
 import { deckViewCopy } from "@/copy/deck-view-copy"
@@ -113,7 +113,7 @@ function OpenLink({ href, shell }: { readonly href: string; readonly shell: Shel
       onClick={opener(shell)}
     >
       <span className="max-[480px]:hidden">{deckViewCopy.openInAirDesign}</span>
-      <ArrowUpRightIcon aria-hidden="true" />
+      <EditorIcon name="arrowUpRight" strokeWidth={2} />
     </a>
   )
 }
@@ -337,7 +337,7 @@ function ShownDeck({
               focusableWhenDisabled
               onClick={() => choose(at - 1)}
             >
-              <ChevronLeftIcon aria-hidden="true" />
+              <EditorIcon name="chevl" strokeWidth={2} />
             </Button>
             <span
               className="min-w-10 text-center text-xs whitespace-nowrap text-(--deck-view-quiet) tabular-nums"
@@ -357,7 +357,7 @@ function ShownDeck({
               focusableWhenDisabled
               onClick={() => choose(at + 1)}
             >
-              <ChevronRightIcon aria-hidden="true" />
+              <EditorIcon name="chevr" strokeWidth={2} />
             </Button>
           </div>
         )}
@@ -371,7 +371,11 @@ function ShownDeck({
             title={fullscreen ? deckViewCopy.exitFullscreen : deckViewCopy.fullscreen}
             onClick={() => void requestDisplayMode(fullscreen ? "inline" : "fullscreen")}
           >
-            {fullscreen ? <MinimizeIcon aria-hidden="true" /> : <MaximizeIcon aria-hidden="true" />}
+            {fullscreen ? (
+              <EditorIcon name="exitFullscreen" strokeWidth={2} />
+            ) : (
+              <EditorIcon name="fullscreen" strokeWidth={2} />
+            )}
           </Button>
         )}
         <OpenLink href={appUrl(`/s/${id}`)} shell={shell} />
