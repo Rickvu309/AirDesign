@@ -7,6 +7,8 @@ import { chatAssets, chatDoomRemote } from "./chat-remote"
 
 type Sent = { readonly jsonrpc: "2.0"; readonly id?: number; readonly method?: string; readonly params?: unknown }
 
+const unanswered = Symbol("unanswered")
+
 function fakeHost(answer: (sent: Sent) => unknown) {
   const sent: Sent[] = []
   let heard: (message: never) => void = () => undefined
@@ -14,8 +16,8 @@ function fakeHost(answer: (sent: Sent) => unknown) {
     post: (message) => {
       const each = message as Sent
       sent.push(each)
-      if (each.id !== undefined && each.method !== undefined)
-        queueMicrotask(() => heard({ jsonrpc: "2.0", id: each.id, result: answer(each) } as never))
+      const result = each.id !== undefined && each.method !== undefined ? answer(each) : unanswered
+      if (result !== unanswered) queueMicrotask(() => heard({ jsonrpc: "2.0", id: each.id, result } as never))
     },
     listen: (listener) => {
       heard = listener as never
@@ -38,6 +40,11 @@ const foldWire = (fold: doom.Doom): unknown =>
     }),
   )
 
+const darkVariables = {
+  "--color-background-primary": "light-dark(white, black)",
+  "--color-text-primary": "light-dark(black, white)",
+}
+
 describe("the deck view's line to the chat that shows it", () => {
   it("opens with the MCP Apps handshake before anything else", async () => {
     const host = fakeHost(() => ({ protocolVersion: "2026-01-26", hostCapabilities: {}, hostContext: {} }))
@@ -54,7 +61,7 @@ describe("the deck view's line to the chat that shows it", () => {
     const host = fakeHost(() => ({}))
     const chat = await connectChatHost(host.line)
     const shown: (string | null)[] = []
-    chat.onShown((each) => shown.push(each?.deck ?? null))
+    chat.subscribe(() => shown.push(chat.state().shown?.deck ?? null))
     host.tell("ui/notifications/tool-input", { arguments: { deck: "d1", script: "get()" } })
     host.tell("ui/notifications/tool-result", { content: [], structuredContent: { ok: true, deck: "d1", rev: 3 } })
     host.tell("ui/notifications/tool-input", { arguments: { script: 'createDeck({ name: "Q3" })' } })
@@ -68,16 +75,14 @@ describe("the deck view's line to the chat that shows it", () => {
     host.tell("ui/notifications/tool-input", { arguments: { deck: "d5", script: "throw 1" } })
     host.tell("ui/notifications/tool-result", { content: [], structuredContent: { ok: false, refusal: "script" } })
     expect(shown).toEqual(["d1", "d1", "d2", "d3", "d4", null, "d5", "d5"])
-    const late: (string | null)[] = []
-    chat.onShown((each) => late.push(each?.deck ?? null))
-    expect(late).toEqual(["d5"])
+    expect(chat.state().shown).toEqual({ deck: "d5" })
   })
 
   it("opens on the slide the agent took a screenshot of", async () => {
     const host = fakeHost(() => ({}))
     const chat = await connectChatHost(host.line)
     const shown: unknown[] = []
-    chat.onShown((each) => shown.push(each))
+    chat.subscribe(() => shown.push(chat.state().shown))
     host.tell("ui/notifications/tool-input", { arguments: { deck: "d1", script: "screenshot()" } })
     host.tell("ui/notifications/tool-result", {
       content: [],
@@ -109,10 +114,10 @@ describe("the deck view's line to the chat that shows it", () => {
     const host = fakeHost((sent) =>
       sent.method === "ui/initialize" ? { hostCapabilities: { updateModelContext: { text: {} } } } : {},
     )
-    const chat = await connectChatHost(host.line)
-    chat.tellModel({ deck: "d1", slide: "s1", slideNumber: 1, selected: [] })
-    chat.tellModel({ deck: "d1", slide: "s1", slideNumber: 1, selected: [] })
-    chat.tellModel({ deck: "d1", slide: "s1", slideNumber: 1, selected: ["n5"] })
+    const { tellModel } = await connectChatHost(host.line)
+    tellModel?.({ deck: "d1", slide: "s1", slideNumber: 1, selected: [] })
+    tellModel?.({ deck: "d1", slide: "s1", slideNumber: 1, selected: [] })
+    tellModel?.({ deck: "d1", slide: "s1", slideNumber: 1, selected: ["n5"] })
     const told = host.sent.filter((each) => each.method === "ui/update-model-context")
     expect(told.map((each) => each.params)).toEqual([
       modelContextOf({ deck: "d1", slide: "s1", slideNumber: 1, selected: [] }),
@@ -121,18 +126,151 @@ describe("the deck view's line to the chat that shows it", () => {
     expect(told.every((each) => typeof each.id === "number")).toBe(true)
   })
 
-  it("keeps the selection to itself when the chat takes no model context", async () => {
+  it("offers no way to tell the model when the chat takes no model context", async () => {
     const host = fakeHost(() => ({ hostCapabilities: {} }))
     const chat = await connectChatHost(host.line)
-    chat.tellModel({ deck: "d1", slide: "s1", slideNumber: 1, selected: ["n5"] })
-    expect(host.sent.map((each) => each.method)).toEqual(["ui/initialize", "ui/notifications/initialized"])
+    expect(chat.tellModel).toBeUndefined()
   })
 
-  it("answers the chat's requests so it can tear the view down", async () => {
+  it("offers inline and fullscreen, and reads the chat's look, mode and room from the handshake", async () => {
+    const host = fakeHost(() => ({
+      protocolVersion: "2026-01-26",
+      hostCapabilities: {},
+      hostContext: {
+        theme: "dark",
+        styles: { variables: { ...darkVariables, color: "red", "--font-sans": 3 } },
+        displayMode: "inline",
+        availableDisplayModes: ["inline", "fullscreen", "theatre"],
+        containerDimensions: { width: 736, maxHeight: 600 },
+        safeAreaInsets: { top: 0, right: 0, bottom: 34, left: 0 },
+        locale: "en-US",
+      },
+    }))
+    const chat = await connectChatHost(host.line)
+    expect(host.sent[0]?.params).toMatchObject({ appCapabilities: { availableDisplayModes: ["inline", "fullscreen"] } })
+    expect(chat.state().context).toEqual({
+      theme: "dark",
+      styles: { variables: darkVariables },
+      displayMode: "inline",
+      availableDisplayModes: ["inline", "fullscreen"],
+      containerDimensions: { width: 736, maxHeight: 600 },
+      safeAreaInsets: { top: 0, right: 0, bottom: 34, left: 0 },
+    })
+  })
+
+  it("merges each change of the chat's context into what it knows and tells the view", async () => {
+    const host = fakeHost(() => ({ hostContext: { theme: "light", displayMode: "inline" } }))
+    const chat = await connectChatHost(host.line)
+    let told = 0
+    chat.subscribe(() => (told += 1))
+    host.tell("ui/notifications/host-context-changed", { theme: "dark", styles: { variables: darkVariables } })
+    host.tell("ui/notifications/host-context-changed", { theme: "dusk", safeAreaInsets: { top: "1" } })
+    expect(told).toBeGreaterThan(0)
+    expect(chat.state().context).toEqual({ theme: "dark", styles: { variables: darkVariables }, displayMode: "inline" })
+  })
+
+  it("asks for fullscreen only when the chat offers it, and keeps the mode the chat answers", async () => {
+    const host = fakeHost((sent) => {
+      if (sent.method === "ui/initialize")
+        return { hostContext: { displayMode: "inline", availableDisplayModes: ["inline"] } }
+      return sent.method === "ui/request-display-mode" ? { mode: "fullscreen" } : {}
+    })
+    const chat = await connectChatHost(host.line)
+    expect(await chat.requestDisplayMode("fullscreen")).toBe("inline")
+    expect(host.sent.map((each) => each.method)).not.toContain("ui/request-display-mode")
+    host.tell("ui/notifications/host-context-changed", { availableDisplayModes: ["inline", "fullscreen"] })
+    expect(await chat.requestDisplayMode("fullscreen")).toBe("fullscreen")
+    expect(chat.state().context.displayMode).toBe("fullscreen")
+    expect(await chat.requestDisplayMode("inline")).toBe("fullscreen")
+    expect(chat.state().context.displayMode).toBe("fullscreen")
+    expect(host.sent.filter((each) => each.method === "ui/request-display-mode").map((each) => each.params)).toEqual([
+      { mode: "fullscreen" },
+      { mode: "inline" },
+    ])
+  })
+
+  it("sizes its frame up to the chat's limit and leaves the height to the chat in fullscreen", async () => {
+    const host = fakeHost(() => ({
+      hostContext: {
+        displayMode: "inline",
+        availableDisplayModes: ["inline", "fullscreen"],
+        containerDimensions: { maxHeight: 400 },
+      },
+    }))
+    const chat = await connectChatHost(host.line)
+    chat.sizeTo({ width: 736, height: 520 })
+    chat.sizeTo({ width: 736, height: 300 })
+    host.tell("ui/notifications/host-context-changed", { displayMode: "fullscreen" })
+    chat.sizeTo({ width: 1470, height: 900 })
+    host.tell("ui/notifications/host-context-changed", { displayMode: "inline" })
+    host.tell("ui/notifications/host-context-changed", { theme: "dark" })
+    host.tell("ui/notifications/host-context-changed", { containerDimensions: { maxHeight: 200 } })
+    host.tell("ui/notifications/host-context-changed", { containerDimensions: { height: 500 } })
+    chat.sizeTo({ width: 736, height: 520 })
+    expect(
+      host.sent.filter((each) => each.method === "ui/notifications/size-changed").map((each) => each.params),
+    ).toEqual([
+      { width: 736, height: 400 },
+      { width: 736, height: 300 },
+      { width: 736, height: 300 },
+      { width: 736, height: 200 },
+    ])
+  })
+
+  it("follows the deck field in streaming input regardless of argument order", async () => {
     const host = fakeHost(() => ({}))
-    await connectChatHost(host.line)
-    host.tell("ui/resource-teardown", { reason: "closed" }, 7)
-    expect(host.sent.at(-1)).toEqual({ jsonrpc: "2.0", id: 7, result: {} })
+    const chat = await connectChatHost(host.line)
+    const shown: unknown[] = []
+    chat.subscribe(() => shown.push(chat.state().shown))
+    host.tell("ui/notifications/tool-input-partial", { arguments: { deck: "d1" } })
+    expect(chat.state().shown).toEqual({ deck: "d1" })
+    host.tell("ui/notifications/tool-input-partial", { arguments: { script: "get(", deck: "d12" } })
+    host.tell("ui/notifications/tool-input-partial", { arguments: { deck: "d12", script: "get()" } })
+    host.tell("ui/notifications/tool-cancelled", { reason: "The person stopped the reply" })
+    expect(shown).toEqual([{ deck: "d1" }, { deck: "d12" }])
+  })
+
+  it("stops waiting for a deck when the call is cancelled before it names one", async () => {
+    const host = fakeHost(() => ({}))
+    const chat = await connectChatHost(host.line)
+    host.tell("ui/notifications/tool-input-partial", { arguments: { script: "createDeck({ na" } })
+    expect(chat.state().shown).toBeUndefined()
+    host.tell("ui/notifications/tool-cancelled", {})
+    expect(chat.state().shown).toBeNull()
+  })
+
+  it("lets go of every held call before it answers the chat's teardown, and calls nothing after", async () => {
+    const host = fakeHost((sent) => (sent.method === "tools/call" ? unanswered : {}))
+    const chat = await connectChatHost(host.line)
+    const remote = chatDoomRemote(chat)
+    const held = remote.since({ deck: "d1", rev: 1, wait: true }, new AbortController().signal)
+    const opening = remote.open({ deck: "d1" })
+    const calls = host.sent.flatMap((each) => (each.method === "tools/call" ? [each.id] : []))
+    host.tell("ui/resource-teardown", { reason: "The chat closed the view" }, 7)
+    await expect(held).rejects.toThrow(DOMException)
+    await expect(opening).rejects.toThrow(DOMException)
+    expect(chat.closed.aborted).toBe(true)
+    const answer = host.sent.findIndex((each) => each.id === 7)
+    expect(answer).toBe(host.sent.length - 1)
+    expect(host.sent[answer]).toEqual({ jsonrpc: "2.0", id: 7, result: {} })
+    expect(
+      host.sent
+        .slice(0, answer)
+        .filter((each) => each.method === "notifications/cancelled")
+        .map((each) => each.params),
+    ).toEqual(expect.arrayContaining(calls.map((requestId) => ({ requestId }))))
+    const before = host.sent.length
+    chat.sizeTo({ width: 736, height: 300 })
+    await expect(chat.callTool(viewTools.open, { deck: "d1" })).rejects.toThrow(DOMException)
+    expect(host.sent).toHaveLength(before)
+  })
+
+  it("acknowledges teardown during initialization without cancelling the initialize request", async () => {
+    const host = fakeHost(() => unanswered)
+    const opening = connectChatHost(host.line)
+    host.tell("ui/resource-teardown", {}, 7)
+    await expect(opening).rejects.toMatchObject({ name: "AbortError" })
+    expect(host.sent.slice(1)).toEqual([{ jsonrpc: "2.0", id: 7, result: {} }])
   })
 
   it("reads, follows and paints the deck through the view's tools", async () => {
@@ -187,20 +325,18 @@ describe("the deck view's line to the chat that shows it", () => {
     ])
   })
 
-  it("lets go of a held wait when the view stops following", async () => {
-    const host = fakeHost(() => ({}))
-    const line: HostLine = {
-      post: (message) => {
-        const each = message as Sent
-        if (each.method === "tools/call") return
-        host.line.post(message)
-      },
-      listen: host.line.listen,
-    }
-    const remote = chatDoomRemote(await connectChatHost(line))
+  it("asks the chat to end a held wait when the view stops following", async () => {
+    const host = fakeHost((sent) => (sent.method === "tools/call" ? unanswered : {}))
+    const remote = chatDoomRemote(await connectChatHost(host.line))
     const stop = new AbortController()
     const held = remote.since({ deck: "d1", rev: 1, wait: true }, stop.signal)
+    const call = host.sent.at(-1)
     stop.abort()
-    await expect(held).rejects.toThrow()
+    await expect(held).rejects.toThrow(DOMException)
+    expect(host.sent.at(-1)).toEqual({
+      jsonrpc: "2.0",
+      method: "notifications/cancelled",
+      params: { requestId: call?.id },
+    })
   })
 })
