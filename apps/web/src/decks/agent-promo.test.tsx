@@ -37,7 +37,7 @@ it("shows only the Connect an agent button, on the sidebar's color with a border
 it("opens the connect dialog from the signature button, never a link to another page", () => {
   const html = card()
   const button = html.match(/<button type="button" class="([^"]*)"[^>]*>[^]*?Connect an agent<\/button>/)?.[1]
-  expect(button).toContain("bg-[image:var(--fill-marketing)]")
+  expect(button).toContain("bg-[image:linear-gradient(180deg,var(--primary-top)_0%,var(--primary)_100%)]")
   expect(html).not.toContain("<a ")
 })
 
